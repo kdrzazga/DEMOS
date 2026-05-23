@@ -1,5 +1,4 @@
 import math
-import random
 import arcade
 
 from arcade.types import Color

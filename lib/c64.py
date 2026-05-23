@@ -22,15 +22,11 @@ class C64:
 		self.top = self.bottom + self.height
 
 	def on_draw(self, frame):
-		blue = Color.from_hex_string(Constants.BLUE)
 		lblue = Color.from_hex_string(Constants.LIGHT_BLUE)
 
-		x = self.left + self.width // 2
-		y = self.bottom + self.height // 2
-		r = Rect(self.left, self.right, self.bottom, self.top, self.width, self.height, x, y)
-
+		self.draw_background()
 		y = self.line_to_coord(2)
-		arcade.draw_rect_filled(r, color=blue)
+
 		arcade.draw_text("**** COMMODORE 64 BASIC V2 ****", self.header_x, y
 		                 , color=lblue, font_size=self.font_size, anchor_x="center", font_name="C64 Pro Mono")
 		y = self.line_to_coord(4)
@@ -39,6 +35,13 @@ class C64:
 		y = self.line_to_coord(6)
 		arcade.draw_text("READY.", self.left, y
 		                 , color=lblue, font_size=self.font_size, anchor_x="left", font_name="C64 Pro Mono")
+
+	def draw_background(self):
+		blue = Color.from_hex_string(Constants.BLUE)
+		x = self.left + self.width // 2
+		y = self.bottom + self.height // 2
+		r = Rect(self.left, self.right, self.bottom, self.top, self.width, self.height, x, y)
+		arcade.draw_rect_filled(r, color=blue)
 
 	def line_to_coord(self, line_number) -> int:
 		return self.top - line_number * self.font_size*1.5

@@ -3,7 +3,7 @@ import cv2
 from arcade import Rect
 
 from demos.demo1 import Constants
-from libs.c64 import C64
+from lib.c64 import C64
 
 
 class Outro(C64):

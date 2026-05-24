@@ -17,14 +17,16 @@ class Stage4(C64):
 			, center_y=-100)
 		self.ampersand = Sprite("demos/demo1/resources/ampersand.png", center_x=Constants.WIDTH//2
 			, center_y=-200)
+		self.amiga = Sprite("demos/demo1/resources/amiga.png", center_x=Constants.WIDTH//2
+			, center_y=-300)
 		self.plus = Sprite("demos/demo1/resources/plus.png", center_x=Constants.WIDTH//2
 			, center_y=-400)
 		self.komoda.scale = (0.3, 0.3)
 
 	def on_draw(self, frame):
-		for sprite in (self.komoda, self.ampersand, self.plus):
-			sprite.center_y += 10
-			coeff = (frame - Stage4.START_FRAME) * math.pi/12
-			sprite.scale = (0.3 * math.sin(coeff) + 0.5, 0.3 * math.sin(coeff) + 0.5)
+		for sprite in (self.komoda, self.ampersand, self.amiga, self.plus):
+			sprite.center_y += 6
+			coeff = (frame - Stage4.START_FRAME) * math.pi/50
+			sprite.scale = (0.3 * math.sin(coeff) + 0.5, 0.3 * math.sin(coeff) + 0.3)
 			arcade.draw_sprite(sprite)
 

@@ -14,7 +14,7 @@ from lib.c64 import C64
 class Stage5(C64):
 
 	LAST_KnA_ISSUE = 30
-	START_FRAME = Stage4.START_FRAME + 70
+	START_FRAME = Stage4.START_FRAME + 270
 
 	def __init__(self):
 		super().__init__()

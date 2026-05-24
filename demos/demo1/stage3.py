@@ -1,18 +1,16 @@
-import math
-import random
 import arcade
 from arcade import Rect
 from arcade.color import BLACK
-
 from arcade.types import Color
 
 from demos.demo1 import Constants
+from demos.demo1.stage2 import Stage2
 from lib.c64 import C64
 
 
 class Stage3(C64):
 
-	START_FRAME = 600
+	START_FRAME = Stage2.START_FRAME + 200
 
 	def __init__(self):
 		super().__init__()
@@ -30,10 +28,7 @@ class Stage3(C64):
 		self.clear_background()
 		self.text.draw()
 		r = Rect(0, Constants.WIDTH, 0, Constants.HEIGHT, Constants.WIDTH, Constants.HEIGHT, Constants.WIDTH//2, Constants.HEIGHT//2)
-		arcade.draw_texture_rect(
-			texture=self.background,
-			rect=r
-		)
+		arcade.draw_texture_rect(texture=self.background, rect=r)
 		self.text.x += 5
 
 	def clear_background(self):

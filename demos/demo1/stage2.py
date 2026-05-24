@@ -2,13 +2,14 @@ import arcade
 from arcade.types import Color
 
 from demos.demo1 import Constants
+from demos.demo1.stage1 import Stage1
 from lib.animated_sprite import AnimatedSprite
 from lib.c64 import C64
 
 
 class Stage2(C64):
 
-	START_FRAME = 400
+	START_FRAME = Stage1.START_FRAME + 200
 
 	def __init__(self):
 		super().__init__()
@@ -22,7 +23,7 @@ class Stage2(C64):
 		if frame == Stage2.START_FRAME + 1:
 			self.sound.play(loop=False)
 
-		print(frame, end=' ')
+		#print(frame, end=' ')
 		self.tramiels.update(0.16)
 		self.tramiels.draw()
 

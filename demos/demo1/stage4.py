@@ -1,3 +1,5 @@
+import math
+
 import arcade
 from arcade import Sprite
 
@@ -12,11 +14,17 @@ class Stage4(C64):
 	def __init__(self):
 		super().__init__()
 		self.komoda = Sprite("demos/demo1/resources/komoda.png", center_x=Constants.WIDTH//2
-		                     , center_y=-100)
+			, center_y=-100)
+		self.ampersand = Sprite("demos/demo1/resources/ampersand.png", center_x=Constants.WIDTH//2
+			, center_y=-200)
+		self.plus = Sprite("demos/demo1/resources/plus.png", center_x=Constants.WIDTH//2
+			, center_y=-400)
 		self.komoda.scale = (0.3, 0.3)
 
-
 	def on_draw(self, frame):
-		self.komoda.center_y += 10
-		arcade.draw_sprite(self.komoda)
+		for sprite in (self.komoda, self.ampersand, self.plus):
+			sprite.center_y += 10
+			coeff = (frame - Stage4.START_FRAME) * math.pi/12
+			sprite.scale = (0.3 * math.sin(coeff) + 0.5, 0.3 * math.sin(coeff) + 0.5)
+			arcade.draw_sprite(sprite)
 

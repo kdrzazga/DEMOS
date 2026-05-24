@@ -29,7 +29,7 @@ class Outro(C64):
 			x = left + width // 2
 			y = bottom + height // 2
 			r = Rect(left, right, bottom, self.top, width, height, x, y)
-
+			#r = Rect(0, Constants.WIDTH, 0, Constants.HEIGHT, Constants.WIDTH, Constants.HEIGHT, 0, 0)
 			arcade.draw_texture_rect(
 				texture=arcade.Texture(image=rgb_frame),
 				rect=r

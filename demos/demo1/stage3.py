@@ -1,6 +1,8 @@
 import math
 import random
 import arcade
+from arcade import Rect
+from arcade.color import BLACK
 
 from arcade.types import Color
 
@@ -11,3 +13,31 @@ from lib.c64 import C64
 class Stage3(C64):
 
 	START_FRAME = 600
+
+	def __init__(self):
+		super().__init__()
+		self.background = arcade.load_texture("demos/demo1/resources/K&Awhite.png")
+
+		self.text = arcade.Text(text="PROUDLY PRESENTS", x=-100, y=Constants.HEIGHT//2, color=BLACK,
+			font_size=self.font_size, font_name="C64 Pro Mono", anchor_x="left")
+		arcade.set_background_color(arcade.color.WHITE)
+		self.sound = arcade.load_sound("demos/demo1/resources/FistfulBucks.mp3")
+		self.player = None
+
+	def on_draw(self, frame):
+		if frame == Stage3.START_FRAME:
+			self.player = self.sound.play()
+		self.clear_background()
+		self.text.draw()
+		r = Rect(0, Constants.WIDTH, 0, Constants.HEIGHT, Constants.WIDTH, Constants.HEIGHT, Constants.WIDTH//2, Constants.HEIGHT//2)
+		arcade.draw_texture_rect(
+			texture=self.background,
+			rect=r
+		)
+		self.text.x += 5
+
+	def clear_background(self):
+		wh = Color.from_hex_string(Constants.WHITE)
+		r = Rect(0, Constants.WIDTH, 0, Constants.HEIGHT, Constants.WIDTH, Constants.HEIGHT, Constants.WIDTH // 2,
+		         Constants.HEIGHT // 2)
+		arcade.draw_rect_filled(r, color=wh)

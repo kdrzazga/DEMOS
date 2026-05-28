@@ -14,7 +14,7 @@ from demos.demo1.stage6 import Stage6
 
 class Demo1(arcade.Window):
     def __init__(self):
-        super().__init__(Constants.WIDTH, Constants.HEIGHT, "Demo 1")
+        super().__init__(Constants.WIDTH, Constants.HEIGHT, "Demo 1", fullscreen=False)
 
         self.frame = 0
         self.intro = Intro()

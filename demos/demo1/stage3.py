@@ -19,7 +19,7 @@ class Stage3(C64):
 		self.text = arcade.Text(text="PROUDLY PRESENTS", x=-100, y=Constants.HEIGHT//2, color=BLACK,
 			font_size=self.font_size, font_name="C64 Pro Mono", anchor_x="left")
 		arcade.set_background_color(arcade.color.WHITE)
-		self.sound = arcade.load_sound("demos/demo1/resources/FistfulBucks.mp3")
+		self.sound = arcade.load_sound("demos/demo1/resources/civ3modernMarkCromer.mp3")
 		self.player = None
 
 	def on_draw(self, frame):

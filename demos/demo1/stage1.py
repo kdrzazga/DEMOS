@@ -40,7 +40,7 @@ class Stage1(C64):
 			str(Stage1.START_FRAME + 72): ["11", '50 POKE V+5, X'],
 			str(Stage1.START_FRAME + 77): ["12", '60 NEXT X'],
 			str(Stage1.START_FRAME + 81): ["13", '70 GOTO 30'],
-			str(Stage1.START_FRAME + 83): ["14", '200 DATA 0, 127, 0, 1, 255, 192, 3, 255, 224, 3, 231, 224'],
+			str(Stage1.START_FRAME + 83): ["14", '200 DATA 0, 127, 0, 1, 255, 192, 3, 255, 224'], #, 3, 231, 224'],
 			str(Stage1.START_FRAME + 85): ["15", 'DATA 44, 55, 221,44, 48, 180, 240, 58, 43'],
 			str(Stage1.START_FRAME + 86): ["16", 'DATA 44, 55, 141, 43, 230, 240, 155, 43, 22, 33'],
 			str(Stage1.START_FRAME + 87): ["17", 'DATA 124, 55, 55, 66, 77, 241,124, 55, 241, 43'],

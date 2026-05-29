@@ -18,8 +18,8 @@ class Stage5(C64):
 
 	def __init__(self):
 		super().__init__()
-		self.background = arcade.load_texture("demos/demo1/resources/magazine.png")
-		arcade.load_font("demos/demo1/resources/HomelandItalic.ttf")
+		self.background = arcade.load_texture(Constants.RES_PATH + "magazine.png")
+		arcade.load_font(Constants.RES_PATH + "HomelandItalic.ttf")
 
 	def on_draw(self, frame):
 		r = Rect(0, Constants.WIDTH, 0, Constants.HEIGHT, Constants.WIDTH, Constants.HEIGHT, Constants.WIDTH // 2,

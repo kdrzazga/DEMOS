@@ -1,3 +1,5 @@
+import math
+
 import arcade
 from arcade.types import Color
 
@@ -16,7 +18,8 @@ class Stage2(C64):
 		self.sound = arcade.load_sound("demos/demo1/resources/masses-not-classes.mp3")
 		x = Constants.WIDTH//2
 		y = Constants.HEIGHT//2
-		self.tramiels = AnimatedSprite("demos/demo1/resources/tramiels.png", x, y, 1775//5,261,5, 7)
+		self.tramiels = AnimatedSprite("demos/demo1/resources/tramiels.png", x, y, 1775//5, 261,5, 7)
+		self.trzmiel = AnimatedSprite("demos/demo1/resources/trzmiel.png", Constants.WIDTH*1.3, y, 384//3, 128,3, 2)
 
 	def on_draw(self, frame):
 		super().on_draw(frame)
@@ -31,6 +34,10 @@ class Stage2(C64):
 			y = self.line_to_coord(24)
 			text1 = self.create_cyan_text("Computer for the MASSES,", y)
 			text1.draw()
+			self.trzmiel.draw()
+			self.trzmiel.sprite.center_x -=13
+			self.trzmiel.sprite.center_y = Constants.HEIGHT//2 + (Constants.HEIGHT*0.042
+				* math.sin(self.trzmiel.sprite.center_x * math.pi//83))
 
 		if frame > Stage2.START_FRAME + 140:
 			y = self.line_to_coord(25)

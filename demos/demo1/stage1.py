@@ -1,5 +1,6 @@
 import math
 import arcade
+from arcade import Sprite
 
 from arcade.types import Color
 
@@ -14,6 +15,9 @@ class Stage1(C64):
 	def __init__(self):
 		super().__init__()
 		self.handbook = arcade.load_texture(Constants.RES_PATH + 'c64handbook.png')
+		self.baloon = Sprite(Constants.RES_PATH + "baloon.png")
+		self.baloon.center_x = Constants.WIDTH//2
+		self.baloon.center_y = Constants.HEIGHT//2
 
 	def on_update(self, frame):
 		self.left -= 34*math.sin(math.pi/frame)
@@ -25,10 +29,9 @@ class Stage1(C64):
 		relative_frame = frame - Stage1.START_FRAME
 
 		white = Color.from_hex_string(Constants.WHITE)
-		if frame > Stage1.START_FRAME + 140:
+		if relative_frame > 140:
 			arcade.draw_text("SYS 49152", Constants.WIDTH //2, 0.2*Constants.HEIGHT
 		                 , color=white, font_size=self.font_size * 2, anchor_x="left", font_name="C64 Pro Mono")
-
 
 		r = self.create_bkg_rect()
 
@@ -37,6 +40,11 @@ class Stage1(C64):
 		else:
 			self.write1(relative_frame)
 
+		if relative_frame > 140:
+			arcade.draw_sprite(self.baloon)
+			if relative_frame % 6 ==0:
+				scale = self.baloon.scale_x + 1
+				self.baloon.scale = (scale, scale)
 
 	def write1(self, frame):
 

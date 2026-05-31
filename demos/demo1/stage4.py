@@ -21,7 +21,6 @@ class Stage4(C64):
 		self.komoda.scale = (0.3, 0.3)
 
 	def on_draw(self, frame):
-
 		for sprite in (self.komoda, self.ampersand, self.amiga, self.plus):
 			sprite.angle += 0.3
 			sprite.center_y += 6

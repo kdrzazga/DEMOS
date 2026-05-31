@@ -14,7 +14,7 @@ class Stage3(C64):
 
 	def __init__(self):
 		super().__init__()
-		self.background = arcade.load_texture(Constants.RES_PATH + "K&Awhite.png")
+		self.background = arcade.load_texture(Constants.RES_PATH + "kna/K&Awhite.png")
 
 		self.text = arcade.Text(text="PROUDLY PRESENTS", x=-100, y=Constants.HEIGHT//2, color=BLACK,
 			font_size=self.font_size, font_name="C64 Pro Mono", anchor_x="left")

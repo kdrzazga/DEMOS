@@ -13,14 +13,11 @@ class Stage4(C64):
 
 	def __init__(self):
 		super().__init__()
-		self.komoda = Sprite(Constants.RES_PATH + "komoda.png", center_x=Constants.WIDTH//2
-			, center_y=-100)
-		self.ampersand = Sprite(Constants.RES_PATH + "ampersand.png", center_x=Constants.WIDTH//2
-			, center_y=-200)
-		self.amiga = Sprite(Constants.RES_PATH + "amiga.png", center_x=Constants.WIDTH//2
-			, center_y=-300)
-		self.plus = Sprite(Constants.RES_PATH + "plus.png", center_x=Constants.WIDTH//2
-			, center_y=-400)
+		path = Constants.RES_PATH + "kna/"
+		self.komoda = Sprite(path + "komoda.png", center_x=Constants.WIDTH // 2, center_y=-100)
+		self.ampersand = Sprite(path + "ampersand.png", center_x=Constants.WIDTH // 2, center_y=-200)
+		self.amiga = Sprite(path + "amiga.png", center_x=Constants.WIDTH // 2, center_y=-300)
+		self.plus = Sprite(path + "plus.png", center_x=Constants.WIDTH // 2, center_y=-400)
 		self.komoda.scale = (0.3, 0.3)
 
 	def on_draw(self, frame):

@@ -14,8 +14,8 @@ class Stage2(C64):
 	def __init__(self):
 		super().__init__()
 		self.sound = arcade.load_sound("demos/demo1/resources/masses-not-classes.mp3")
-		x = Constants.HEIGHT//2
-		y = Constants.WIDTH//4
+		x = Constants.WIDTH//2
+		y = Constants.HEIGHT//2
 		self.tramiels = AnimatedSprite("demos/demo1/resources/tramiels.png", x, y, 1775//5,261,5, 7)
 
 	def on_draw(self, frame):

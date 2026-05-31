@@ -4,4 +4,4 @@ from lib.c64 import C64
 
 class Stage7(C64):
 
-	START_FRAME = Stage6.START_FRAME + 630
+	START_FRAME = Stage6.START_FRAME + 6300

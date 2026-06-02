@@ -9,8 +9,9 @@ from demos.demo1.stage2 import Stage2
 from demos.demo1.stage3 import Stage3
 from demos.demo1.stage4 import Stage4
 from demos.demo1.stage5 import Stage5
-from demos.demo1.stage6 import Stage6
 from demos.demo1.stage7 import Stage7
+from demos.demo1.stage6 import Stage6
+from demos.demo1.stage8 import Stage8
 
 
 class Demo1(arcade.Window):
@@ -25,6 +26,7 @@ class Demo1(arcade.Window):
         self.stage4 = Stage4()
         self.stage5 = Stage5()
         self.stage6 = Stage6()
+        self.stage7 = Stage7()
         self.outro = Outro()
         # arcade.set_background_color(arcade.color.WHITE)
 
@@ -37,8 +39,8 @@ class Demo1(arcade.Window):
             self.intro.on_update(self.frame)
         elif self.frame < Stage2.START_FRAME:
             self.stage1.on_update(self.frame, Stage1)
-        elif Stage6.START_FRAME < self.frame < Stage7.START_FRAME:
-            self.stage6.on_update(self.frame, Stage6)
+        elif Stage7.START_FRAME < self.frame < Stage8.START_FRAME:
+            self.stage7.on_update(self.frame, Stage7)
         else:
             self.outro.on_update(delta_time)
 
@@ -61,6 +63,8 @@ class Demo1(arcade.Window):
             self.stage5.on_draw(self.frame)
         elif self.frame < Stage7.START_FRAME:
             self.stage6.on_draw(self.frame)
+        elif self.frame < Stage8.START_FRAME:
+            self.stage7.on_draw(self.frame)
 
         else:
             self.outro.on_draw()

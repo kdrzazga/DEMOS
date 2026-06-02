@@ -44,7 +44,7 @@ class Stage1(Demo1Base):
 
 		if relative_frame > 140:
 			arcade.draw_sprite(self.baloon)
-			if relative_frame % 6 ==0:
+			if relative_frame % 6 == 0:
 				scale = self.baloon.scale_x + 1
 				self.baloon.scale = (scale, scale)
 
@@ -81,4 +81,4 @@ class Stage1(Demo1Base):
 				line_number = int(lines[key][0])
 				y = self.line_to_coord(line_number)
 				arcade.Text(text=lines[key][1], x=self.left, y=y, color=lblue, font_size=self.font_size
-				            , anchor_x="left", font_name="C64 Pro Mono")
+				            , anchor_x="left", font_name="C64 Pro Mono").draw()

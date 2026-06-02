@@ -22,7 +22,7 @@ class Stage6(Demo1Base):
 	def on_draw(self, frame):
 		relative_frame = frame - Stage6.START_FRAME
 		r = self.create_bkg_rect()
-		interval = 11
+		interval = 3
 		last = 6 * interval
 
 		relative_frame = relative_frame % last

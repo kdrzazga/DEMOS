@@ -27,10 +27,8 @@ class Stage6(C64):
 		self.draw_cover()
 
 		if relative_frame > 250:
-			self.pinky.draw()
-			self.inky.draw()
-			self.blinky.draw()
-			self.clyde.draw()
+			for ghost in (self.pinky, self.inky, self.blinky, self.clyde):
+				ghost.draw()
 
 	def on_update(self, frame):
 		self.hand.update(frame - Stage6.START_FRAME)
@@ -38,6 +36,9 @@ class Stage6(C64):
 			self.hand.move_up()
 		else:
 			self.hand.move_down()
+
+		for ghost in (self.pinky, self.inky, self.blinky, self.clyde):
+			ghost.move()
 
 	def draw_cover(self):
 		y = 0.1 * Constants.HEIGHT

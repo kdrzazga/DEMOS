@@ -1,5 +1,5 @@
 import arcade
-from arcade import Rect
+from arcade import Rect, Text
 from arcade.types import Color
 
 from demos.demo1 import Constants
@@ -25,16 +25,18 @@ class C64:
 		lblue = Color.from_hex_string(Constants.LIGHT_BLUE)
 
 		self.draw_background()
-		y = self.line_to_coord(2)
 
-		arcade.draw_text("**** COMMODORE 64 BASIC V2 ****", self.header_x, y
-		                 , color=lblue, font_size=self.font_size, anchor_x="center", font_name="C64 Pro Mono")
+		y = self.line_to_coord(2)
+		Text(text="**** COMMODORE 64 BASIC V2 ****", x=self.header_x, y=y, color=lblue,
+		            font_size=self.font_size, anchor_x="center", font_name="C64 Pro Mono").draw()
+
 		y = self.line_to_coord(4)
-		arcade.draw_text(" 64K RAM SYSTEM  38911 BASIC BYTES FREE ", self.header_x, y
-		                 , color=lblue, font_size=self.font_size, anchor_x="center", font_name="C64 Pro Mono")
+		Text(text=" 64K RAM SYSTEM  38911 BASIC BYTES FREE ", x=self.header_x, y=y, color=lblue,
+		     font_size=self.font_size, anchor_x="center", font_name="C64 Pro Mono").draw()
+
 		y = self.line_to_coord(6)
-		arcade.draw_text("READY.", self.left, y
-		                 , color=lblue, font_size=self.font_size, anchor_x="left", font_name="C64 Pro Mono")
+		Text(text="READY.", x=self.left, y=y, color=lblue, font_size=self.font_size, anchor_x="left"
+		     , font_name="C64 Pro Mono").draw()
 
 	def draw_background(self):
 		blue = Color.from_hex_string(Constants.BLUE)

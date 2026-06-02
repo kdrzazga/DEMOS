@@ -26,12 +26,12 @@ class Demo1(arcade.Window):
         self.stage5 = Stage5()
         self.stage6 = Stage6()
         self.outro = Outro()
-        #arcade.set_background_color(arcade.color.WHITE)
+        # arcade.set_background_color(arcade.color.WHITE)
 
     def on_update(self, delta_time):
         self.frame += 1
 
-        #print(self.frame, end=' ')
+        # print(self.frame, end=' ')
 
         if self.frame < Stage1.START_FRAME:
             self.intro.on_update(self.frame)

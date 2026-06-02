@@ -5,7 +5,7 @@ from arcade import Sprite
 from arcade.types import Color
 
 from demos.demo1 import Constants
-from demos.demo1.Demo1Base import Demo1Base
+from demos.demo1.base import Demo1Base
 
 
 class Stage1(Demo1Base):
@@ -31,8 +31,9 @@ class Stage1(Demo1Base):
 
 		white = Color.from_hex_string(Constants.WHITE)
 		if relative_frame > 140:
-			arcade.draw_text("SYS 49152", Constants.WIDTH //2, 0.2*Constants.HEIGHT
-		                 , color=white, font_size=self.font_size * 2, anchor_x="left", font_name="C64 Pro Mono")
+			caption = arcade.Text(text="SYS 49152", x=Constants.WIDTH // 2, y=0.2*Constants.HEIGHT, color=white,
+			            font_size=self.font_size * 2, anchor_x="left", font_name="C64 Pro Mono")
+			caption.draw()
 
 		r = self.create_bkg_rect()
 
@@ -79,5 +80,5 @@ class Stage1(Demo1Base):
 			if frame > key_int:
 				line_number = int(lines[key][0])
 				y = self.line_to_coord(line_number)
-				arcade.draw_text(lines[key][1], self.left, y
-			                 , color=lblue, font_size=self.font_size, anchor_x="left", font_name="C64 Pro Mono")
+				arcade.Text(text=lines[key][1], x=self.left, y=y, color=lblue, font_size=self.font_size
+				            , anchor_x="left", font_name="C64 Pro Mono")

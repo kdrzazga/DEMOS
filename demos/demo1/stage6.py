@@ -3,7 +3,7 @@ from arcade import Rect
 from arcade.types import Color
 
 from demos.demo1 import Constants
-from demos.demo1.Demo1Base import Demo1Base
+from demos.demo1.base import Demo1Base
 from demos.demo1.ghost import Ghost
 from demos.demo1.handfloppy import Hand
 from demos.demo1.stage5 import Stage5

@@ -4,7 +4,7 @@ import arcade
 from arcade.types import Color
 
 from demos.demo1 import Constants
-from demos.demo1.Demo1Base import Demo1Base
+from demos.demo1.base import Demo1Base
 from demos.demo1.stage1 import Stage1
 from lib.animated_sprite import AnimatedSprite
 

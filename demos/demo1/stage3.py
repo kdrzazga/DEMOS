@@ -4,7 +4,7 @@ from arcade.color import BLACK
 from arcade.types import Color
 
 from demos.demo1 import Constants
-from demos.demo1.Demo1Base import Demo1Base
+from demos.demo1.base import Demo1Base
 from demos.demo1.stage2 import Stage2
 
 

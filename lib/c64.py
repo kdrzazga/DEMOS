@@ -38,10 +38,14 @@ class C64:
 
 	def draw_background(self):
 		blue = Color.from_hex_string(Constants.BLUE)
+		r = self.create_bkg_rect()
+		arcade.draw_rect_filled(r, color=blue)
+
+	def create_bkg_rect(self):
 		x = self.left + self.width // 2
 		y = self.bottom + self.height // 2
 		r = Rect(self.left, self.right, self.bottom, self.top, self.width, self.height, x, y)
-		arcade.draw_rect_filled(r, color=blue)
+		return r
 
 	def line_to_coord(self, line_number) -> int:
 		return self.top - line_number * self.font_size*1.5

@@ -33,20 +33,17 @@ class AnimatedSprite:
             self.current_frame = (self.current_frame + 1) % len(self.frames)
             self.sprite.texture = self.frames[self.current_frame]
             self.time_since_last_frame = 0
-            print("texture chnge")
+            #print("texture chnge")
 
     def draw(self):
-        window = arcade.get_window()
-        current_width = window.width
-        current_height = window.height
 
         rect = Rect(
-            x=current_width // 2,  # center x
-            y=current_height // 2,  # center y
+            x=self.sprite.center_x,
+            y=self.sprite.center_y,
             width=self.frame_width,
             height=self.frame_height,
-            left=current_width // 2,  # optional, defaults to x - width/2
-            right=current_height // 2,  # optional, defaults to x + width/2
+            left=self.sprite.center_x,  # optional, defaults to x - width/2
+            right=self.sprite.center_y,  # optional, defaults to x + width/2
             bottom=0,  # optional, defaults to y - height/2
             top=0  # optional, defaults to y + height/2
         )

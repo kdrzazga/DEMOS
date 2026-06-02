@@ -1,7 +1,5 @@
-import math
-import random
 import arcade
-from arcade import Rect
+from arcade import Rect, Sprite
 from arcade.color import WHITE
 
 from arcade.types import Color
@@ -14,12 +12,16 @@ from lib.c64 import C64
 class Stage5(C64):
 
 	LAST_KnA_ISSUE = 30
-	START_FRAME = Stage4.START_FRAME + 70
+	START_FRAME = Stage4.START_FRAME + 270
 
 	def __init__(self):
 		super().__init__()
-		self.background = arcade.load_texture("demos/demo1/resources/magazine.png")
-		arcade.load_font("demos/demo1/resources/HomelandItalic.ttf")
+		self.background = arcade.load_texture(Constants.RES_PATH + "kna/magazine.png")
+		arcade.load_font(Constants.RES_PATH + "HomelandItalic.ttf")
+
+		self.issues = Sprite(Constants.RES_PATH + "kna/issues.png", center_x=Constants.WIDTH // 2 - 1856 // 2,
+	                     center_y=Constants.HEIGHT *0.05)
+
 
 	def on_draw(self, frame):
 		r = Rect(0, Constants.WIDTH, 0, Constants.HEIGHT, Constants.WIDTH, Constants.HEIGHT, Constants.WIDTH // 2,
@@ -32,3 +34,6 @@ class Stage5(C64):
 			text = arcade.Text(text="#" + str(issue_number), x=3.5*Constants.WIDTH // 5 - 10, y=3.5*Constants.HEIGHT // 5 + 10
 			                   , color=WHITE, font_size=4*self.font_size, font_name="Homeland Italic", anchor_x="left")
 			text.draw()
+
+		arcade.draw_sprite(self.issues)
+		self.issues.center_x += 11

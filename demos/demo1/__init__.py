@@ -10,3 +10,5 @@ class Constants:
 	PURPLE = "c882c8"
 	YELLOW = "ffff00"
 	BLUE = "200080"
+
+	RES_PATH = "demos/demo1/resources/"

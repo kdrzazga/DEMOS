@@ -1,3 +1,6 @@
+from datetime import datetime
+
+
 class Constants:
 	WIDTH = 800
 	HEIGHT = 600
@@ -12,3 +15,12 @@ class Constants:
 	BLUE = "200080"
 
 	RES_PATH = "demos/demo1/resources/"
+
+
+class Globals:
+	start_time = datetime.now()
+
+	@classmethod
+	def get_duration(cls):
+		current_time = datetime.now()
+		return current_time - Globals.start_time

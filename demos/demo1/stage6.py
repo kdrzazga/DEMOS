@@ -3,13 +3,13 @@ from arcade import Rect
 from arcade.types import Color
 
 from demos.demo1 import Constants
+from demos.demo1.Demo1Base import Demo1Base
 from demos.demo1.ghost import Ghost
 from demos.demo1.handfloppy import Hand
 from demos.demo1.stage5 import Stage5
-from lib.c64 import C64
 
 
-class Stage6(C64):
+class Stage6(Demo1Base):
 	START_FRAME = Stage5.START_FRAME + 130
 
 	def __init__(self):
@@ -30,7 +30,8 @@ class Stage6(C64):
 			for ghost in (self.pinky, self.inky, self.blinky, self.clyde):
 				ghost.draw()
 
-	def on_update(self, frame):
+	def on_update(self, frame, klass):
+		super().on_update(frame, klass)
 		self.hand.update(frame - Stage6.START_FRAME)
 		if self.hand.floppy.center_y < Constants.HEIGHT//2:
 			self.hand.move_up()

@@ -4,11 +4,11 @@ from arcade.color import BLACK
 from arcade.types import Color
 
 from demos.demo1 import Constants
+from demos.demo1.Demo1Base import Demo1Base
 from demos.demo1.stage2 import Stage2
-from lib.c64 import C64
 
 
-class Stage3(C64):
+class Stage3(Demo1Base):
 
 	START_FRAME = Stage2.START_FRAME + 200
 

@@ -4,12 +4,12 @@ import arcade
 from arcade.types import Color
 
 from demos.demo1 import Constants
+from demos.demo1.Demo1Base import Demo1Base
 from demos.demo1.stage1 import Stage1
 from lib.animated_sprite import AnimatedSprite
-from lib.c64 import C64
 
 
-class Stage2(C64):
+class Stage2(Demo1Base):
 
 	START_FRAME = Stage1.START_FRAME + 200
 
@@ -20,6 +20,9 @@ class Stage2(C64):
 		y = Constants.HEIGHT//2
 		self.tramiels = AnimatedSprite("demos/demo1/resources/tramiels.png", x, y, 1775//5, 261,5, 7)
 		self.trzmiel = AnimatedSprite("demos/demo1/resources/trzmiel.png", Constants.WIDTH*1.3, y, 384//3, 128,3, 2)
+
+	def on_update(self, frame, klass):
+		super().on_update(frame, klass)
 
 	def on_draw(self, frame):
 		super().on_draw(frame)

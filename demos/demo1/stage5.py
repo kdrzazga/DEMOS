@@ -2,14 +2,13 @@ import arcade
 from arcade import Rect, Sprite
 from arcade.color import WHITE
 
-from arcade.types import Color
 
 from demos.demo1 import Constants
+from demos.demo1.Demo1Base import Demo1Base
 from demos.demo1.stage4 import Stage4
-from lib.c64 import C64
 
 
-class Stage5(C64):
+class Stage5(Demo1Base):
 
 	LAST_KnA_ISSUE = 30
 	START_FRAME = Stage4.START_FRAME + 270
@@ -21,7 +20,6 @@ class Stage5(C64):
 
 		self.issues = Sprite(Constants.RES_PATH + "kna/issues.png", center_x=Constants.WIDTH // 2 - 1856 // 2,
 	                     center_y=Constants.HEIGHT *0.05)
-
 
 	def on_draw(self, frame):
 		r = Rect(0, Constants.WIDTH, 0, Constants.HEIGHT, Constants.WIDTH, Constants.HEIGHT, Constants.WIDTH // 2,

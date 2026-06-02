@@ -5,10 +5,10 @@ from arcade import Sprite
 from arcade.types import Color
 
 from demos.demo1 import Constants
-from lib.c64 import C64
+from demos.demo1.Demo1Base import Demo1Base
 
 
-class Stage1(C64):
+class Stage1(Demo1Base):
 
 	START_FRAME = 200
 
@@ -19,7 +19,8 @@ class Stage1(C64):
 		self.baloon.center_x = Constants.WIDTH//2
 		self.baloon.center_y = Constants.HEIGHT//2
 
-	def on_update(self, frame):
+	def on_update(self, frame, klass):
+		super().on_update(frame, klass)
 		self.left -= 34*math.sin(math.pi/frame)
 		self.top -= 44*math.sin(math.pi/frame)
 		self.font_size -= 0.02

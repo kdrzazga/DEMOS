@@ -36,9 +36,9 @@ class Demo1(arcade.Window):
         if self.frame < Stage1.START_FRAME:
             self.intro.on_update(self.frame)
         elif self.frame < Stage2.START_FRAME:
-            self.stage1.on_update(self.frame)
+            self.stage1.on_update(self.frame, Stage1)
         elif Stage6.START_FRAME < self.frame < Stage7.START_FRAME:
-            self.stage6.on_update(self.frame)
+            self.stage6.on_update(self.frame, Stage6)
         else:
             self.outro.on_update(delta_time)
 

@@ -28,7 +28,7 @@ class Hand:
 			self.shutter.draw()
 
 	def update(self, relative_frame):
-		print(relative_frame)
+		#print(relative_frame)
 		if relative_frame < 230:
 			return
 

@@ -3,6 +3,7 @@ from arcade import Rect
 from arcade.types import Color
 
 from demos.demo1 import Constants
+from demos.demo1.ghost import Ghost
 from demos.demo1.handfloppy import Hand
 from demos.demo1.stage5 import Stage5
 from lib.c64 import C64
@@ -14,11 +15,22 @@ class Stage6(C64):
 	def __init__(self):
 		super().__init__()
 		self.hand = Hand()
+		self.pinky = Ghost('pinky')
+		self.inky = Ghost('inky')
+		self.blinky = Ghost('blinky')
+		self.clyde = Ghost('clyde')
 
 	def on_draw(self, frame):
 		super().draw_background()
-		self.hand.draw(frame - Stage6.START_FRAME)
+		relative_frame = frame - Stage6.START_FRAME
+		self.hand.draw(relative_frame)
 		self.draw_cover()
+
+		if relative_frame > 250:
+			self.pinky.draw()
+			self.inky.draw()
+			self.blinky.draw()
+			self.clyde.draw()
 
 	def on_update(self, frame):
 		self.hand.update(frame - Stage6.START_FRAME)

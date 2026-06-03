@@ -1,4 +1,5 @@
 import arcade
+from arcade import Rect
 
 from demos.demo1 import Constants
 from demos.demo1.base import Demo1Base

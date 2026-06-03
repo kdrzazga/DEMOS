@@ -38,8 +38,8 @@ class C64:
 		Text(text="READY.", x=self.left, y=y, color=lblue, font_size=self.font_size, anchor_x="left"
 		     , font_name="C64 Pro Mono").draw()
 
-	def draw_background(self):
-		blue = Color.from_hex_string(Constants.BLUE)
+	def draw_background(self, color=Constants.BLUE):
+		blue = Color.from_hex_string(color)
 		r = self.create_bkg_rect()
 		arcade.draw_rect_filled(r, color=blue)
 
@@ -51,3 +51,11 @@ class C64:
 
 	def line_to_coord(self, line_number) -> int:
 		return self.top - line_number * self.font_size*1.5
+
+	def fullscreen(self):
+		self.left = 0
+		self.bottom = 0.1*Constants.HEIGHT
+		self.width = Constants.WIDTH
+		self.height = 2*Constants.HEIGHT
+		self.right = self.left + self.width
+		self.top = self.bottom + self.height

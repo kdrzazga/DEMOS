@@ -1,6 +1,5 @@
 import arcade
-from arcade import Rect
-from arcade.types import Color
+from arcade import Sprite
 
 from demos.demo1 import Constants
 from demos.demo1.base import Demo1Base
@@ -20,9 +19,32 @@ class Stage7(Demo1Base):
 		self.blinky = Ghost('blinky')
 		self.clyde = Ghost('clyde')
 
+		self.bkg_color = Constants.BLUE
+		self.poke53280 = self.create_poke_sprite(str(53280))
+		self.poke53281 = self.create_poke_sprite(str(53280))
+
+	def create_poke_sprite(self, cell):
+		poke = Sprite(Constants.RES_PATH + cell + ".png")
+		poke.center_x = Constants.WIDTH // 2
+		poke.center_y = Constants.HEIGHT // 2
+		poke.scale = (0.05, 0.05)
+		return poke
+
 	def on_draw(self, frame):
-		super().draw_background()
 		relative_frame = frame - Stage7.START_FRAME
+
+		if relative_frame >= 333 + 100:
+			self.bkg_color = Constants.BLACK
+			self.draw_cover(Constants.BLACK)
+
+		if relative_frame == 444 + 100:
+			self.fullscreen()
+			r = self.create_bkg_rect()
+			arcade.draw_rect_filled(rect=r, color=(0, 0, 0))
+			self.draw_cover(Constants.BLACK)
+		else:
+			super().draw_background(self.bkg_color)
+
 		self.hand.draw(relative_frame)
 		self.draw_cover()
 
@@ -30,9 +52,22 @@ class Stage7(Demo1Base):
 			for ghost in (self.pinky, self.inky, self.blinky, self.clyde):
 				ghost.draw()
 
+			increment = 0.004
+			if 333 < relative_frame < 333 + 1/increment:
+				scale_x = self.poke53281.scale_x + increment
+				self.poke53281.scale = (scale_x, scale_x)
+				self.poke53281.center_y += 1.5
+				arcade.draw_sprite(self.poke53281)
+			if 444 < relative_frame < 444 + 1/increment:
+				scale_x = self.poke53280.scale_x + increment
+				self.poke53280.scale = (scale_x, scale_x)
+				self.poke53280.center_y -= 1.5
+				arcade.draw_sprite(self.poke53280)
+
 	def on_update(self, frame, klass):
 		super().on_update(frame, klass)
-		self.hand.update(frame - Stage7.START_FRAME)
+		relative_frame = frame - Stage7.START_FRAME
+		self.hand.update(relative_frame)
 		if self.hand.floppy.center_y < Constants.HEIGHT//2:
 			self.hand.move_up()
 		else:
@@ -40,10 +75,3 @@ class Stage7(Demo1Base):
 
 		for ghost in (self.pinky, self.inky, self.blinky, self.clyde):
 			ghost.move()
-
-	def draw_cover(self):
-		y = 0.1 * Constants.HEIGHT
-		height = 0.05 * Constants.HEIGHT
-		lb = Color.from_hex_string(Constants.LIGHT_BLUE)
-		r = Rect(0, Constants.WIDTH, 0, Constants.HEIGHT, Constants.WIDTH, y, Constants.WIDTH // 2, height)
-		arcade.draw_rect_filled(r, color=lb)

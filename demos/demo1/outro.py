@@ -1,5 +1,7 @@
+import math
+
 import arcade
-import cv2
+#import cv2
 from arcade import Rect
 
 from demos.demo1 import Constants
@@ -8,18 +10,21 @@ from lib.c64 import C64
 
 class Outro(C64):
 
+	START_FRAME = math.inf
+	pass
+
 	def __init__(self):
 		super().__init__()
 
-		self.video_capture = cv2.VideoCapture('resources/TramielHaHa.mp4')
+		self.video_capture = None #cv2.VideoCapture('resources/TramielHaHa.mp4')
 		self.frame = None
 
 	def on_draw(self):
 		super().on_draw(self.frame)
-
+		pass
 		if self.frame is not None:
 			# Convert BGR to RGB
-			rgb_frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
+			rgb_frame = None#cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
 			height, width, _ = rgb_frame.shape
 
 			left = 0.1 * Constants.WIDTH
@@ -40,7 +45,7 @@ class Outro(C64):
 		if ret:
 			self.frame = frame
 		else:
-			self.video_capture.set(cv2.CAP_PROP_POS_FRAMES, 0)  # Loop video
+			pass#self.video_capture.set(cv2.CAP_PROP_POS_FRAMES, 0)  # Loop video
 
 	def on_close(self):
-		self.video_capture.release()
+				self.video_capture.release()

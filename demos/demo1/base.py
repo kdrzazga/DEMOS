@@ -20,13 +20,13 @@ class Demo1Base(C64):
 
 	def clear_screen(self, color):
 		arcade.set_background_color(color)
-		bottom = self.left
+		bottom = 0
 		width = Constants.WIDTH
 		height = Constants.HEIGHT
-		right = self.left + width
+		right =  width
 		top = bottom + height
 
-		x = self.left + width // 2
+		x =  width // 2
 		y = bottom + height // 2
-		r = Rect(self.left, right, bottom, top, width, height, x, y)
+		r = Rect(0, right, bottom, top, width, height, x, y)
 		arcade.draw_rect_filled(r, color=color)

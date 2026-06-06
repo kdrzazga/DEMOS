@@ -1,5 +1,6 @@
 import arcade
 from arcade import Sprite
+from arcade.color import BLACK
 
 from demos.demo1 import Constants
 from demos.demo1.base import Demo1Base
@@ -37,16 +38,14 @@ class Stage7(Demo1Base):
 			self.bkg_color = Constants.BLACK
 			self.draw_cover(Constants.BLACK)
 
-		if relative_frame == 444 + 100:
-			self.fullscreen()
-			r = self.create_bkg_rect()
-			arcade.draw_rect_filled(rect=r, color=(0, 0, 0))
-			self.draw_cover(Constants.BLACK)
+		if relative_frame > 444 + 100:
+			self.clear_screen(BLACK)
 		else:
 			super().draw_background(self.bkg_color)
 
 		self.hand.draw(relative_frame)
-		self.draw_cover()
+		if relative_frame < 444 + 100:
+			self.draw_cover()
 
 		if relative_frame > 250:
 			for ghost in (self.pinky, self.inky, self.blinky, self.clyde):

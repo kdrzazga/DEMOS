@@ -1,6 +1,7 @@
 import math
 import random
 import arcade
+from arcade import Text
 
 from arcade.types import Color
 
@@ -47,6 +48,7 @@ class Intro(C64):
 			if frame > key_int:
 				line_number = int(lines[key][0])
 				y = self.line_to_coord(line_number)
-				arcade.draw_text(lines[key][1], self.left, y
-			                 , color=lblue, font_size=self.font_size, anchor_x="left", font_name="C64 Pro Mono")
+				Text(text=lines[key][1], x=self.left, y=y, color=lblue, font_size=self.font_size, anchor_x="left"
+				     , font_name="C64 Pro Mono").draw()
+
 

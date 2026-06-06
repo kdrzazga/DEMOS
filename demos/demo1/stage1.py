@@ -5,10 +5,10 @@ from arcade import Sprite
 from arcade.types import Color
 
 from demos.demo1 import Constants
-from lib.c64 import C64
+from demos.demo1.base import Demo1Base
 
 
-class Stage1(C64):
+class Stage1(Demo1Base):
 
 	START_FRAME = 200
 
@@ -19,7 +19,8 @@ class Stage1(C64):
 		self.baloon.center_x = Constants.WIDTH//2
 		self.baloon.center_y = Constants.HEIGHT//2
 
-	def on_update(self, frame):
+	def on_update(self, frame, klass):
+		super().on_update(frame, klass)
 		self.left -= 34*math.sin(math.pi/frame)
 		self.top -= 44*math.sin(math.pi/frame)
 		self.font_size -= 0.02
@@ -30,8 +31,9 @@ class Stage1(C64):
 
 		white = Color.from_hex_string(Constants.WHITE)
 		if relative_frame > 140:
-			arcade.draw_text("SYS 49152", Constants.WIDTH //2, 0.2*Constants.HEIGHT
-		                 , color=white, font_size=self.font_size * 2, anchor_x="left", font_name="C64 Pro Mono")
+			caption = arcade.Text(text="SYS 49152", x=Constants.WIDTH // 2, y=0.2*Constants.HEIGHT, color=white,
+			            font_size=self.font_size * 2, anchor_x="left", font_name="C64 Pro Mono")
+			caption.draw()
 
 		r = self.create_bkg_rect()
 
@@ -42,7 +44,7 @@ class Stage1(C64):
 
 		if relative_frame > 140:
 			arcade.draw_sprite(self.baloon)
-			if relative_frame % 6 ==0:
+			if relative_frame % 6 == 0:
 				scale = self.baloon.scale_x + 1
 				self.baloon.scale = (scale, scale)
 
@@ -78,5 +80,5 @@ class Stage1(C64):
 			if frame > key_int:
 				line_number = int(lines[key][0])
 				y = self.line_to_coord(line_number)
-				arcade.draw_text(lines[key][1], self.left, y
-			                 , color=lblue, font_size=self.font_size, anchor_x="left", font_name="C64 Pro Mono")
+				arcade.Text(text=lines[key][1], x=self.left, y=y, color=lblue, font_size=self.font_size
+				            , anchor_x="left", font_name="C64 Pro Mono").draw()

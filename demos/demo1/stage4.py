@@ -4,11 +4,12 @@ import arcade
 from arcade import Sprite
 
 from demos.demo1 import Constants
-from demos.demo1.stage3 import Stage3
+from demos.demo1.base import Demo1Base
+from demos.demo1.stage3allwhite import Stage3
 from lib.c64 import C64
 
 
-class Stage4(C64):
+class Stage4(Demo1Base):
 	START_FRAME = Stage3.START_FRAME + 130
 
 	def __init__(self):

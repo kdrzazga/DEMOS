@@ -1,5 +1,5 @@
 import arcade
-from arcade import Rect
+from arcade import Rect, Text
 from arcade.types import Color
 
 from demos.demo1 import Constants
@@ -25,19 +25,21 @@ class C64:
 		lblue = Color.from_hex_string(Constants.LIGHT_BLUE)
 
 		self.draw_background()
+
 		y = self.line_to_coord(2)
+		Text(text="**** COMMODORE 64 BASIC V2 ****", x=self.header_x, y=y, color=lblue,
+		            font_size=self.font_size, anchor_x="center", font_name="C64 Pro Mono").draw()
 
-		arcade.draw_text("**** COMMODORE 64 BASIC V2 ****", self.header_x, y
-		                 , color=lblue, font_size=self.font_size, anchor_x="center", font_name="C64 Pro Mono")
 		y = self.line_to_coord(4)
-		arcade.draw_text(" 64K RAM SYSTEM  38911 BASIC BYTES FREE ", self.header_x, y
-		                 , color=lblue, font_size=self.font_size, anchor_x="center", font_name="C64 Pro Mono")
-		y = self.line_to_coord(6)
-		arcade.draw_text("READY.", self.left, y
-		                 , color=lblue, font_size=self.font_size, anchor_x="left", font_name="C64 Pro Mono")
+		Text(text=" 64K RAM SYSTEM  38911 BASIC BYTES FREE ", x=self.header_x, y=y, color=lblue,
+		     font_size=self.font_size, anchor_x="center", font_name="C64 Pro Mono").draw()
 
-	def draw_background(self):
-		blue = Color.from_hex_string(Constants.BLUE)
+		y = self.line_to_coord(6)
+		Text(text="READY.", x=self.left, y=y, color=lblue, font_size=self.font_size, anchor_x="left"
+		     , font_name="C64 Pro Mono").draw()
+
+	def draw_background(self, color=Constants.BLUE):
+		blue = Color.from_hex_string(color)
 		r = self.create_bkg_rect()
 		arcade.draw_rect_filled(r, color=blue)
 
@@ -49,3 +51,11 @@ class C64:
 
 	def line_to_coord(self, line_number) -> int:
 		return self.top - line_number * self.font_size*1.5
+
+	def fullscreen(self):
+		self.left = 0
+		self.bottom = 0.1*Constants.HEIGHT
+		self.width = Constants.WIDTH
+		self.height = 2*Constants.HEIGHT
+		self.right = self.left + self.width
+		self.top = self.bottom + self.height

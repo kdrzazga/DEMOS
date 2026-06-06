@@ -1,48 +1,41 @@
 import arcade
-from arcade import Rect
-from arcade.types import Color
 
 from demos.demo1 import Constants
-from demos.demo1.ghost import Ghost
-from demos.demo1.handfloppy import Hand
+from demos.demo1.base import Demo1Base
 from demos.demo1.stage5 import Stage5
-from lib.c64 import C64
 
 
-class Stage6(C64):
+class Stage6(Demo1Base):
+
 	START_FRAME = Stage5.START_FRAME + 130
 
 	def __init__(self):
 		super().__init__()
-		self.hand = Hand()
-		self.pinky = Ghost('pinky')
-		self.inky = Ghost('inky')
-		self.blinky = Ghost('blinky')
-		self.clyde = Ghost('clyde')
+		path = Constants.RES_PATH + "shining-ka/"
+		self.shining1 = arcade.load_texture(path + "ka1.png")
+		self.shining2 = arcade.load_texture(path + "ka2.png")
+		self.shining3 = arcade.load_texture(path + "ka3.png")
+		self.shining4 = arcade.load_texture(path + "ka4.png")
+		self.shining5 = arcade.load_texture(path + "ka5.png")
+		self.shining6 = arcade.load_texture(path + "ka6.png")
 
 	def on_draw(self, frame):
-		super().draw_background()
 		relative_frame = frame - Stage6.START_FRAME
-		self.hand.draw(relative_frame)
-		self.draw_cover()
+		r = self.create_bkg_rect()
+		interval = 3
+		last = 6 * interval
 
-		if relative_frame > 250:
-			for ghost in (self.pinky, self.inky, self.blinky, self.clyde):
-				ghost.draw()
+		relative_frame = relative_frame % last
 
-	def on_update(self, frame):
-		self.hand.update(frame - Stage6.START_FRAME)
-		if self.hand.floppy.center_y < Constants.HEIGHT//2:
-			self.hand.move_up()
-		else:
-			self.hand.move_down()
-
-		for ghost in (self.pinky, self.inky, self.blinky, self.clyde):
-			ghost.move()
-
-	def draw_cover(self):
-		y = 0.1 * Constants.HEIGHT
-		height = 0.05 * Constants.HEIGHT
-		lb = Color.from_hex_string(Constants.LIGHT_BLUE)
-		r = Rect(0, Constants.WIDTH, 0, Constants.HEIGHT, Constants.WIDTH, y, Constants.WIDTH // 2, height)
-		arcade.draw_rect_filled(r, color=lb)
+		if relative_frame < interval:
+			arcade.draw_texture_rect(self.shining1, rect=r)
+		elif relative_frame < 2*interval:
+			arcade.draw_texture_rect(self.shining2, rect=r)
+		elif relative_frame < 3*interval:
+			arcade.draw_texture_rect(self.shining3, rect=r)
+		elif relative_frame < 4*interval:
+			arcade.draw_texture_rect(self.shining4, rect=r)
+		elif relative_frame < 5*interval:
+			arcade.draw_texture_rect(self.shining5, rect=r)
+		elif relative_frame < 6*interval:
+			arcade.draw_texture_rect(self.shining6, rect=r)

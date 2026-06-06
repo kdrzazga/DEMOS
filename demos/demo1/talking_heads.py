@@ -6,7 +6,7 @@ from demos.demo1 import Constants
 
 class TalkingHead:
 
-	def __init__(self, spritesheet_path, width=288, height=333, chin_y=480):
+	def __init__(self, spritesheet_path, width=288, height=333, chin_y=480, ear=False):
 		spritesheet = arcade.load_texture(spritesheet_path)
 
 		texture_face1 = spritesheet.crop(0, 0, width, height)
@@ -17,9 +17,6 @@ class TalkingHead:
 		texture_chin2 = spritesheet.crop(width, height, width, chin_y - height)
 		texture_chin3 = spritesheet.crop(2*width, height, width, chin_y - height)
 
-		chin_y = 600
-		print((0, chin_y - height, width, chin_y))
-		print(spritesheet.height, spritesheet.width)
 		texture_chin4 = spritesheet.crop(0, 480, width, 120)
 		texture_chin5 = spritesheet.crop(width, 480, width, 120)
 		texture_chin6 = spritesheet.crop(2*width, 480, width, 120)

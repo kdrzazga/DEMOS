@@ -5,7 +5,7 @@ from arcade import Sprite
 
 from demos.demo1 import Constants
 from demos.demo1.base import Demo1Base
-from demos.demo1.stage3 import Stage3
+from demos.demo1.stage3allwhite import Stage3
 from lib.c64 import C64
 
 

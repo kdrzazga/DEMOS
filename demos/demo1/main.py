@@ -5,11 +5,12 @@ from demos.demo1 import Constants
 from demos.demo1.intro import Intro
 from demos.demo1.outro import Outro
 from demos.demo1.stage1 import Stage1
+from demos.demo1.stage10 import Stage10
 from demos.demo1.stage2 import Stage2
-from demos.demo1.stage3 import Stage3
+from demos.demo1.stage3allwhite import Stage3
 from demos.demo1.stage4 import Stage4
 from demos.demo1.stage5 import Stage5
-from demos.demo1.stage7 import Stage7
+from demos.demo1.stage7pacman import Stage7
 from demos.demo1.stage6 import Stage6
 from demos.demo1.stage8unshaved1 import Stage8
 from demos.demo1.stage9 import Stage9
@@ -29,6 +30,7 @@ class Demo1(arcade.Window):
         self.stage6 = Stage6()
         self.stage7 = Stage7()
         self.stage8 = Stage8()
+        self.stage9 = Stage9()
         self.outro = Outro()
         # arcade.set_background_color(arcade.color.WHITE)
 
@@ -45,6 +47,8 @@ class Demo1(arcade.Window):
             self.stage7.on_update(self.frame, Stage7)
         elif Stage8.START_FRAME < self.frame < Stage9.START_FRAME:
             self.stage8.on_update(self.frame, Stage8)
+        elif Stage9.START_FRAME < self.frame < Stage10.START_FRAME:
+            self.stage9.on_update(self.frame, Stage9)
         elif self.frame >= Outro.START_FRAME:
             self.outro.on_update(delta_time)
 
@@ -71,6 +75,8 @@ class Demo1(arcade.Window):
             self.stage7.on_draw(self.frame)
         elif self.frame < Stage9.START_FRAME:
             self.stage8.on_draw(self.frame)
+        elif self.frame < Stage10.START_FRAME:
+            self.stage9.on_draw(self.frame)
 
         else:
             self.outro.on_draw()

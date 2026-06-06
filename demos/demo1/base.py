@@ -17,3 +17,16 @@ class Demo1Base(C64):
 		lb = Color.from_hex_string(color)
 		r = Rect(0, Constants.WIDTH, 0, Constants.HEIGHT, Constants.WIDTH, y, Constants.WIDTH // 2, height)
 		arcade.draw_rect_filled(r, color=lb)
+
+	def clear_screen(self, color):
+		arcade.set_background_color(color)
+		bottom = self.left
+		width = Constants.WIDTH
+		height = Constants.HEIGHT
+		right = self.left + width
+		top = bottom + height
+
+		x = self.left + width // 2
+		y = bottom + height // 2
+		r = Rect(self.left, right, bottom, top, width, height, x, y)
+		arcade.draw_rect_filled(r, color=color)

@@ -23,11 +23,11 @@ class Stage10(Stage8):
 
 	def on_update(self, frame, klass):
 		if frame == Stage10.START_FRAME + 1:
-			print(self.__class__.__name__ +  " New stage", Globals.get_duration(), "[frame", str(frame) + "]")
+			print(self.__class__.__name__, Globals.get_duration(), "[frame", str(frame) + "]")
 
 	def on_draw(self, frame):
 		super().clear_screen(BLACK)
-		relative_frame = frame - Stage9.START_FRAME
+		relative_frame = frame - Stage10.START_FRAME
 		self.head.draw(0.2*Constants.WIDTH)
 
 		if relative_frame < self.speech_end_frame:
@@ -36,4 +36,4 @@ class Stage10(Stage8):
 			print("THE SECOND PART, AMIGA, COMES FROM COMMODORE´S RANGE OF 16 AND 32 BIT COMPUTERS,",
 			      "MANUFACTURED BETWEEN 1985 AND 2004.")
 			self.speech.play(loop=False)
-		#print(relative_frame)
+		print(relative_frame)

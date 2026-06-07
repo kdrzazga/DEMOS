@@ -22,7 +22,7 @@ class Stage7(Demo1Base):
 
 		self.bkg_color = Constants.BLUE
 		self.poke53280 = self.create_poke_sprite(str(53280))
-		self.poke53281 = self.create_poke_sprite(str(53280))
+		self.poke53281 = self.create_poke_sprite(str(53281))
 
 	def create_poke_sprite(self, cell):
 		poke = Sprite(Constants.RES_PATH + cell + ".png")

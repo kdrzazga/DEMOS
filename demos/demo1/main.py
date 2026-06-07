@@ -1,11 +1,11 @@
+import pyautogui
 import arcade
+
 from arcade.types import Color
 
 from demos.demo1 import Constants
 from demos.demo1.intro import Intro
-from demos.demo1.outro import Outro
 from demos.demo1.stage1 import Stage1
-from demos.demo1.stage10 import Stage10
 from demos.demo1.stage2 import Stage2
 from demos.demo1.stage3allwhite import Stage3
 from demos.demo1.stage4 import Stage4
@@ -14,6 +14,8 @@ from demos.demo1.stage7pacman import Stage7
 from demos.demo1.stage6 import Stage6
 from demos.demo1.stage8unshaved1 import Stage8
 from demos.demo1.stage9 import Stage9
+from demos.demo1.stage10 import Stage10
+from demos.demo1.outro import Outro
 
 
 class Demo1(arcade.Window):
@@ -32,11 +34,13 @@ class Demo1(arcade.Window):
         self.stage8 = Stage8()
         self.stage9 = Stage9()
         self.outro = Outro()
+        width, height = pyautogui.size()
+        pyautogui.moveTo(width - 1, height - 1)
+
         # arcade.set_background_color(arcade.color.WHITE)
 
     def on_update(self, delta_time):
         self.frame += 1
-
         # print(self.frame, end=' ')
 
         if self.frame < Stage1.START_FRAME:

@@ -2,8 +2,8 @@ import arcade
 from arcade.color import BLACK
 
 from demos.demo1 import Globals, Constants
-from demos.demo1.stage8unshaved1 import Stage8
-from demos.demo1.stage9 import Stage9
+from demos.demo1.stage8dialog1 import Stage8
+from demos.demo1.stage9dialog2 import Stage9
 from demos.demo1.talking_heads import TalkingHead
 
 

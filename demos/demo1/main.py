@@ -16,9 +16,9 @@ from demos.demo1.stage4 import Stage4
 from demos.demo1.stage5 import Stage5
 from demos.demo1.stage7pacman import Stage7
 from demos.demo1.stage6 import Stage6
-from demos.demo1.stage8unshaved1 import Stage8
-from demos.demo1.stage9 import Stage9
-from demos.demo1.stage10 import Stage10
+from demos.demo1.stage8dialog1 import Stage8
+from demos.demo1.stage9dialog2 import Stage9
+from demos.demo1.stage10dialog3 import Stage10
 from demos.demo1.outro import Outro
 
 
@@ -26,7 +26,7 @@ class Demo1(arcade.Window):
     def __init__(self):
         super().__init__(Constants.WIDTH, Constants.HEIGHT, "Demo 1", fullscreen=False)
 
-        self.frame = 1 * Stage8.START_FRAME
+        self.frame = 0 * Stage8.START_FRAME
         self.intro = Intro()
         self.stage1 = Stage1()
         self.stage2 = Stage2()
@@ -104,6 +104,8 @@ class Demo1(arcade.Window):
             self.stage9.on_draw(self.frame)
         elif self.frame < Stage11.START_FRAME:
             self.stage10.on_draw(self.frame)
+        elif self.frame < Stage12.START_FRAME:
+            self.stage11.on_draw(self.frame)
 
         else:
             self.outro.on_draw()

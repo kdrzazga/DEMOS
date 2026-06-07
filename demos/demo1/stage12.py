@@ -4,7 +4,7 @@ from demos.demo1.stage11 import Stage11
 
 
 class Stage12(Demo1Base):
-	START_FRAME = Stage11.START_FRAME + 400
+	START_FRAME = Stage11.START_FRAME + 800
 
 	def on_update(self, frame, klass):
 		if frame == Stage12.START_FRAME + 1:

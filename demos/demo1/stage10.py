@@ -16,7 +16,7 @@ class Stage10(Stage8):
 		self.head = unshaved2
 		self.left = 0.8*Constants.WIDTH
 		self.start_frame = Stage9.START_FRAME
-		self.bubble = self.create_bubble("bubble1.png",3* Constants.WIDTH // 4)
+		self.bubble = self.create_bubble("bubble3.png",3* Constants.WIDTH // 4)
 
 		self.speech = arcade.load_sound(Constants.RES_PATH + "talking-heads/speech3.wav")
 		self.speech_end_frame = 830

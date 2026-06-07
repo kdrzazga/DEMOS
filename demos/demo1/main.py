@@ -1,3 +1,5 @@
+import math
+
 import pyautogui
 import arcade
 
@@ -58,15 +60,19 @@ class Demo1(arcade.Window):
         elif Stage7.START_FRAME < self.frame < Stage8.START_FRAME:
             self.stage7.on_update(self.frame, Stage7)
         elif Stage8.START_FRAME < self.frame < Stage9.START_FRAME:
-            self.player.volume = 0.13
             self.stage8.on_update(self.frame, Stage8)
+            if self.player is not None:
+                vol = self.player.volume - 0.01
+                self.player.volume = max(0.13, vol)
         elif Stage9.START_FRAME < self.frame < Stage10.START_FRAME:
             self.stage9.on_update(self.frame, Stage9)
         elif Stage10.START_FRAME < self.frame < Stage11.START_FRAME:
             self.stage10.on_update(self.frame, Stage10)
         elif Stage11.START_FRAME < self.frame < Stage12.START_FRAME:
-            self.player.volume = 1
             self.stage10.on_update(self.frame, Stage10)
+            if self.player is not None:
+                vol = self.player.volume + 0.01
+                self.player.volume = min(1.0, vol)
         elif self.frame >= Outro.START_FRAME:
             self.outro.on_update(delta_time)
 

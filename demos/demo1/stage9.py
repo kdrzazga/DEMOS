@@ -16,7 +16,8 @@ class Stage9(Stage8):
 		self.head = unshaved2
 		self.left = 0.8*Constants.WIDTH
 		self.start_frame = Stage9.START_FRAME
-		self.bubble = self.create_bubble("bubble1.png", Constants.WIDTH // 4)
+		self.bubble1 = self.create_bubble("bubble2-1.png", 0.33* Constants.WIDTH, y=Constants.HEIGHT*0.6)
+		self.bubble2 = self.create_bubble("bubble2-2.png", 0.33* Constants.WIDTH, y=Constants.HEIGHT*0.6)
 
 		self.speech = arcade.load_sound(Constants.RES_PATH + "talking-heads/speech2.wav")
 		self.speech_end_frame = 830
@@ -27,13 +28,15 @@ class Stage9(Stage8):
 		self.head.draw(0.56*Constants.WIDTH)
 
 		if relative_frame < self.speech_end_frame:
-			arcade.draw_sprite(self.bubble)
+			bubble = self.bubble1 if relative_frame < 380 else self.bubble2
+			arcade.draw_sprite(bubble)
+
 		if relative_frame == 1:
 			print("8 BIT COMMODORE MACHINES WERE POPULARLY KNOWN IN POLAND BY THE AFFECTIONATE NAME OF “KOMODA”,"
 			      "A WORD ALSO USED TO DESIGNATE A CERTAIN PIECE OF FURNITURE WHICH EVENTUALLY BECAME THE "
 			      "FIRST HALF OF THE MAGAZINE NAME.")
 			self.speech.play(loop=False)
-		#print(relative_frame)
+		print(relative_frame)
 
 
 class TalkingHeadEars(TalkingHead):

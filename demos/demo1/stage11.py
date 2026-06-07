@@ -8,4 +8,4 @@ class Stage11(Demo1Base):
 
 	def on_update(self, frame, klass):
 		if frame == Stage11.START_FRAME + 1:
-			print(self.__class__.__name__ +  " New stage", Globals.get_duration(), "[frame", str(frame) + "]")
+			print(self.__class__.__name__ + " ", Globals.get_duration(), "[frame", str(frame) + "]")

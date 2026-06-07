@@ -23,7 +23,7 @@ class Demo1(arcade.Window):
     def __init__(self):
         super().__init__(Constants.WIDTH, Constants.HEIGHT, "Demo 1", fullscreen=False)
 
-        self.frame = 0 * Stage8.START_FRAME
+        self.frame = 1 * Stage8.START_FRAME
         self.intro = Intro()
         self.stage1 = Stage1()
         self.stage2 = Stage2()
@@ -35,6 +35,7 @@ class Demo1(arcade.Window):
         self.stage8 = Stage8()
         self.stage9 = Stage9()
         self.stage10 = Stage10()
+        self.stage11 = Stage11()
         self.outro = Outro()
         width, height = pyautogui.size()
         pyautogui.moveTo(width - 1, height - 1)
@@ -85,6 +86,8 @@ class Demo1(arcade.Window):
             self.stage8.on_draw(self.frame)
         elif self.frame < Stage10.START_FRAME:
             self.stage9.on_draw(self.frame)
+        elif self.frame < Stage11.START_FRAME:
+            self.stage10.on_draw(self.frame)
 
         else:
             self.outro.on_draw()

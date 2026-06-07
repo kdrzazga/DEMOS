@@ -2,7 +2,7 @@ import arcade
 from arcade import Sprite
 from arcade.color import BLACK
 
-from demos.demo1 import Constants
+from demos.demo1 import Constants, Globals
 from demos.demo1.base import Demo1Base
 from demos.demo1.ghost import Ghost
 from demos.demo1.handfloppy import Hand
@@ -64,7 +64,8 @@ class Stage7(Demo1Base):
 				arcade.draw_sprite(self.poke53280)
 
 	def on_update(self, frame, klass):
-		super().on_update(frame, klass)
+		if frame == Stage7.START_FRAME + 1:
+			print(self.__class__.__name__ + " ", Globals.get_duration(), "[frame", str(frame) + "]")
 		relative_frame = frame - Stage7.START_FRAME
 		self.hand.update(relative_frame)
 		if self.hand.floppy.center_y < Constants.HEIGHT//2:

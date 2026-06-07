@@ -1,12 +1,12 @@
 import arcade
-from arcade import Rect, Sprite
+from arcade import Sprite
 
 from demos.demo1 import Constants
 
 
 class TalkingHead:
 
-	def __init__(self, spritesheet_path, width=288, height=333, chin_y=480, ear=False):
+	def __init__(self, spritesheet_path, width=288, height=333, chin_y=480):
 		spritesheet = arcade.load_texture(spritesheet_path)
 
 		texture_face1 = spritesheet.crop(0, 0, width, height)
@@ -59,3 +59,6 @@ class TalkingHead:
 			self.current_chin = self.chin4
 		elif cycle_position == 0:
 			self.current_chin = self.chin5
+
+	def smile(self):
+		self.current_chin = self.chin6

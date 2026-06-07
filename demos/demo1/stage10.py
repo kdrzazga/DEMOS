@@ -12,7 +12,7 @@ class Stage10(Stage8):
 
 	def __init__(self):
 		super().__init__()
-		shaved = TalkingHead(Constants.RES_PATH + "talking-heads/shaved.png", width=310, height=333, chin_y=480)
+		shaved = TalkingHead(Constants.RES_PATH + "talking-heads/shaved.png", width=311, height=333, chin_y=480)
 		self.head = shaved
 		self.left = 0.8*Constants.WIDTH
 		self.start_frame = Stage10.START_FRAME

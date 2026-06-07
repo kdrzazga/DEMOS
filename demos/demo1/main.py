@@ -6,6 +6,7 @@ from arcade.types import Color
 from demos.demo1 import Constants
 from demos.demo1.intro import Intro
 from demos.demo1.stage1 import Stage1
+from demos.demo1.stage11 import Stage11
 from demos.demo1.stage2 import Stage2
 from demos.demo1.stage3allwhite import Stage3
 from demos.demo1.stage4 import Stage4
@@ -33,6 +34,7 @@ class Demo1(arcade.Window):
         self.stage7 = Stage7()
         self.stage8 = Stage8()
         self.stage9 = Stage9()
+        self.stage10 = Stage10()
         self.outro = Outro()
         width, height = pyautogui.size()
         pyautogui.moveTo(width - 1, height - 1)
@@ -53,6 +55,8 @@ class Demo1(arcade.Window):
             self.stage8.on_update(self.frame, Stage8)
         elif Stage9.START_FRAME < self.frame < Stage10.START_FRAME:
             self.stage9.on_update(self.frame, Stage9)
+        elif Stage10.START_FRAME < self.frame < Stage11.START_FRAME:
+            self.stage10.on_update(self.frame, Stage10)
         elif self.frame >= Outro.START_FRAME:
             self.outro.on_update(delta_time)
 

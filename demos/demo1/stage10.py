@@ -36,4 +36,4 @@ class Stage10(Stage8):
 			print("THE SECOND PART, AMIGA, COMES FROM COMMODORE´S RANGE OF 16 AND 32 BIT COMPUTERS,",
 			      "MANUFACTURED BETWEEN 1985 AND 2004.")
 			self.speech.play(loop=False)
-		print(relative_frame)
+		#print(relative_frame)

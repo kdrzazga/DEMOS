@@ -36,7 +36,7 @@ class Stage9(Stage8):
 			      "A WORD ALSO USED TO DESIGNATE A CERTAIN PIECE OF FURNITURE WHICH EVENTUALLY BECAME THE "
 			      "FIRST HALF OF THE MAGAZINE NAME.")
 			self.speech.play(loop=False)
-		print(relative_frame)
+		#print(relative_frame)
 
 
 class TalkingHeadEars(TalkingHead):

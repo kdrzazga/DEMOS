@@ -39,6 +39,7 @@ class Demo1(arcade.Window):
         self.stage9 = Stage9()
         self.stage10 = Stage10()
         self.stage11 = Stage11()
+        self.stage12 = Stage12()
         self.outro = Outro()
 
         self.sound = arcade.load_sound(Constants.RES_PATH + "civ3modernMarkCromer.mp3")
@@ -69,7 +70,7 @@ class Demo1(arcade.Window):
         elif Stage10.START_FRAME < self.frame < Stage11.START_FRAME:
             self.stage10.on_update(self.frame, Stage10)
         elif Stage11.START_FRAME < self.frame < Stage12.START_FRAME:
-            self.stage10.on_update(self.frame, Stage10)
+            self.stage11.on_update(self.frame, Stage11)
             if self.player is not None:
                 vol = self.player.volume + 0.01
                 self.player.volume = min(1.0, vol)

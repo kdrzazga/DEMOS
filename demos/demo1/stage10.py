@@ -12,18 +12,23 @@ class Stage10(Stage8):
 
 	def __init__(self):
 		super().__init__()
-		unshaved2 = TalkingHead(Constants.RES_PATH + "talking-heads/unshaved1.png")
-		self.head = unshaved2
+		shaved = TalkingHead(Constants.RES_PATH + "talking-heads/shaved.png", width=310, height=333, chin_y=480)
+		self.head = shaved
 		self.left = 0.8*Constants.WIDTH
-		self.start_frame = Stage9.START_FRAME
-		self.bubble = self.create_bubble("bubble3.png",3* Constants.WIDTH // 4)
+		self.start_frame = Stage10.START_FRAME
+		self.bubble = self.create_bubble("bubble3.png", 2* Constants.WIDTH // 3, 0.7*Constants.HEIGHT)
 
 		self.speech = arcade.load_sound(Constants.RES_PATH + "talking-heads/speech3.wav")
 		self.speech_end_frame = 830
 
 	def on_update(self, frame, klass):
 		if frame == Stage10.START_FRAME + 1:
-			print(self.__class__.__name__, Globals.get_duration(), "[frame", str(frame) + "]")
+			print(self.__class__.__name__ + " ", Globals.get_duration(), "[frame", str(frame) + "]")
+		relative_frame = frame - self.start_frame
+		if relative_frame < self.speech_end_frame:
+			self.head.talk(relative_frame)
+		else:
+			self.head.smile()
 
 	def on_draw(self, frame):
 		super().clear_screen(BLACK)

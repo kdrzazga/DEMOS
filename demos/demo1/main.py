@@ -26,7 +26,7 @@ class Demo1(arcade.Window):
     def __init__(self):
         super().__init__(Constants.WIDTH, Constants.HEIGHT, "Demo 1", fullscreen=False)
 
-        self.frame = 0 * Stage8.START_FRAME
+        self.frame = 1 * Stage8.START_FRAME
         self.intro = Intro()
         self.stage1 = Stage1()
         self.stage2 = Stage2()

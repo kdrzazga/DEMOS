@@ -42,7 +42,7 @@ class Stage8(Demo1Base):
 		else:
 			self.head.smile()
 
-	def create_bubble(self, relative_path, x, y=Constants.HEIGHT//2) -> Sprite:
+	def create_bubble(self, relative_path, x, y=0.6*Constants.HEIGHT) -> Sprite:
 		bubble = Sprite(Constants.RES_PATH + "talking-heads/" + relative_path)
 		bubble.scale = (0.5, 0.5)
 		bubble.center_y = y

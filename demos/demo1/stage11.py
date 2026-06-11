@@ -15,7 +15,16 @@ class Stage11(Demo1Base):
 		lblue = Color.from_hex_string(Constants.LIGHT_BLUE)
 		self.tunnel = TunnelEffect(210, Constants.WIDTH, Constants.HEIGHT, lblue)
 		self.start_tunnel_frame = 55
-		self.base_y = Constants.WIDTH // 2
+		self.base_y = Constants.WIDTH // 2 - 12
+		self.X = Constants.WIDTH//4
+		self.meet_the_team = Text(
+			"MEET THE TEAM:",
+			x=self.X,
+			y=Constants.WIDTH //2,
+			font_name="C64 Pro Mono",
+			font_size=12,
+			color=Color.from_hex_string(Constants.CYAN)
+		)
 
 	def on_update(self, frame, klass):
 		relative_frame = frame - Stage11.START_FRAME
@@ -38,8 +47,6 @@ class Stage11(Demo1Base):
 		if relative_frame > self.start_tunnel_frame:
 			self.tunnel.draw()
 
-		X = Constants.WIDTH // 4
-
 		crew = [
 			("KOMEK", self.base_y),
 			("TOMXX", self.base_y - 24),
@@ -48,27 +55,31 @@ class Stage11(Demo1Base):
 			("VOID", self.base_y - 96),
 			("KD", self.base_y - 120),
 			("PHOWIEC", self.base_y - 144),
-			("ARI", self.base_y - 168)
+			("TECT", self.base_y - 168)
 		]
 
 		size = (relative_frame - self.start_tunnel_frame) // 30
 		size = min(len(crew), size)
 
 		texts = []
+		if relative_frame < self.start_tunnel_frame:
+			texts.append(self.meet_the_team)
 
 		intensity = min(255, relative_frame - self.start_tunnel_frame)
 		for i in range(size):
 			t = Text(
 				crew[i][0],
-				x=X,
+				x=self.X,
 				y=crew[i][1],
 				font_name="C64 Pro Mono",
 				font_size=12,
-				color=(intensity, 125, intensity)
+				color=(intensity, 255, intensity)
 			)
 			texts.append(t)
 			if intensity == 255:
 				self.base_y -= 1.5
+
+
 
 		for t in texts:
 			t.draw()

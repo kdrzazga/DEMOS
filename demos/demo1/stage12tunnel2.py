@@ -1,12 +1,14 @@
 import math
 
 import arcade
-from arcade.color import BLACK
+from arcade import Rect, Sprite
+from arcade.color import BLACK, WHITE
 from arcade.types import Color
 
 from demos.demo1 import Globals, Constants
 from demos.demo1.base import Demo1Base
 from demos.demo1.stage11 import Stage11
+from lib.tunnel import IsometricSineTunnel
 
 
 class Stage12(Demo1Base):
@@ -24,12 +26,18 @@ class Stage12(Demo1Base):
 		self.speed = 160
 		self.horizon_x = self.width * 0.01
 
+		self.ground = Sprite("demos/demo1/resources/ik/ground.png", center_x=Constants.WIDTH//2, center_y=-205
+		                     ,scale=1.33)
+
 	def on_update(self, frame, klass):
 		if frame == Stage12.START_FRAME + 1:
 			print(self.__class__.__name__ + " ", Globals.get_duration(), "[frame", str(frame) + "]")
 
 		for sine in self.kurwes:
 			sine.update(0.16, self.speed)
+
+		if frame - Stage12.START_FRAME > 40:
+			self.ground.center_y = min(102.0, self.ground.center_y + 3)
 
 	def on_draw(self, frame):
 		super().clear_screen(BLACK)
@@ -41,34 +49,22 @@ class Stage12(Demo1Base):
 				frequency=self.frequency,
 				horizon_x=self.horizon_x
 			)
+		self.blink_write(0.9*Constants.HEIGHT - 4*12, "READY.", start_frame=Stage12.START_FRAME, frame=frame)
+		self.blink_cursor(frame)
 
+		arcade.draw_sprite(self.ground)
 
-class IsometricSineTunnel:
-
-	def __init__(self, color: arcade.color.Color, angle_deg=66):
-		self.angle_deg = angle_deg
-		self.phase = 0
-		self.color = color
-
-	def update(self, delta_time, speed=2):
-		self.phase += speed * delta_time
-
-	def draw(self, surface_width, surface_height, amplitude, frequency, horizon_x):
-		points = []
-		angle_rad = math.radians(self.angle_deg)
-
-		for y in range(0, surface_height, 2):
-			sine_value = amplitude * math.sin(frequency * (y + self.phase))
-			# Convert to isometric projection with x as the sine value
-			iso_x, iso_y = self.iso_transform(sine_value + horizon_x, y, angle_rad, surface_width, surface_height)
-			points.append((iso_x, iso_y))
-
-		arcade.draw_lines(points, self.color, 1)
-
-	def iso_transform(self, x, y, angle_rad, surface_width, surface_height):
-		iso_x = x - y * math.cos(angle_rad)
-		iso_y = y * math.sin(angle_rad)
-
-		iso_x += surface_width / 4
-		iso_y += surface_height / 4
-		return iso_x, iso_y
+	def blink_cursor(self, frame):
+		delta = frame % 36
+		if delta > 18:
+			r = Rect(
+				x=0.1 * Constants.WIDTH + 9,
+				left=0.1 * Constants.WIDTH,
+				y=0.9 * Constants.HEIGHT - 4 * 14,
+				right=0.9 * Constants.HEIGHT - 12,
+				width=14,
+				height=14,
+				top=0,
+				bottom=0
+			)
+			arcade.draw_rect_filled(r, color=WHITE)

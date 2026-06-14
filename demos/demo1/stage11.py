@@ -79,8 +79,6 @@ class Stage11(Demo1Base):
 			if intensity == 255:
 				self.base_y -= 1.5
 
-
-
 		for t in texts:
 			t.draw()
 

@@ -9,7 +9,8 @@ from demos.demo1 import Constants
 from demos.demo1.intro import Intro
 from demos.demo1.stage1 import Stage1
 from demos.demo1.stage11 import Stage11
-from demos.demo1.stage12 import Stage12
+from demos.demo1.stage12tunnel2 import Stage12
+from demos.demo1.stage13 import Stage13
 from demos.demo1.stage2 import Stage2
 from demos.demo1.stage3allwhite import Stage3
 from demos.demo1.stage4 import Stage4
@@ -40,6 +41,7 @@ class Demo1(arcade.Window):
         self.stage10 = Stage10()
         self.stage11 = Stage11()
         self.stage12 = Stage12()
+        self.stage13 = Stage13()
         self.outro = Outro()
 
         self.sound = arcade.load_sound(Constants.RES_PATH + "civ3modernMarkCromer.mp3")
@@ -74,6 +76,8 @@ class Demo1(arcade.Window):
             if self.player is not None:
                 vol = self.player.volume + 0.01
                 self.player.volume = min(1.0, vol)
+        elif Stage12.START_FRAME < self.frame < Stage13.START_FRAME:
+            self.stage12.on_update(self.frame,Stage12)
         elif self.frame >= Outro.START_FRAME:
             self.outro.on_update(delta_time)
 
@@ -106,6 +110,8 @@ class Demo1(arcade.Window):
             self.stage10.on_draw(self.frame)
         elif self.frame < Stage12.START_FRAME:
             self.stage11.on_draw(self.frame)
+        elif self.frame < Stage13.START_FRAME:
+            self.stage12.on_draw(self.frame)
 
         else:
             self.outro.on_draw()

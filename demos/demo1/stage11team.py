@@ -33,9 +33,11 @@ class Stage11(Demo1Base):
 
 		if relative_frame > self.start_tunnel_frame:
 			self.tunnel.update()
-			for i in range(30):
+			for i in range(15):
 				self.tunnel.new_dot(i/10)
-			if relative_frame > 99 and relative_frame % 35 ==0:
+			if relative_frame > 111 and relative_frame % 35 == 0:
+				self.tunnel.dot_size += 1
+			if relative_frame > 260:
 				self.tunnel.dot_size += 1
 		# print(relative_frame)
 

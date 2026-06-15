@@ -35,6 +35,8 @@ class Stage12(Demo1Base):
 		                     ,scale=2.5)
 		self.grandpa = Sprite("demos/demo1/resources/ik/ik-grandpa.png", center_x=Constants.WIDTH * 0.6, center_y=-205
 		                     ,scale=0.6)
+		self.tori = Sprite("demos/demo1/resources/ik/tori.png", center_x=Constants.WIDTH * 0.25, center_y=305
+		                     ,scale=2.5)
 
 		self.balls = [Ball() for _ in range(20)]
 
@@ -68,6 +70,8 @@ class Stage12(Demo1Base):
 
 	def on_draw(self, frame):
 		super().clear_screen(self.bkg_color)
+		relative_frame = frame - Stage12.START_FRAME
+
 		for sine in self.kurwes:
 			sine.draw(
 				surface_width=Constants.WIDTH * 2,
@@ -79,10 +83,13 @@ class Stage12(Demo1Base):
 		self.blink_write(0.9*Constants.HEIGHT - 4*12, "READY.", start_frame=Stage12.START_FRAME, frame=frame)
 		self.blink_cursor(frame)
 
-		for sprite in ( self.grandpa, self.ground, self.tree):
+		for sprite in (self.grandpa, self.ground, self.tree):
 			arcade.draw_sprite(sprite)
 
-		if frame - Stage12.START_FRAME > 150:
+		if relative_frame > 150:
+			arcade.draw_sprite(self.tori)
+
+		if relative_frame > 150:
 			self.speed += 1
 			# print(len(self.balls))
 			for ball in self.balls:

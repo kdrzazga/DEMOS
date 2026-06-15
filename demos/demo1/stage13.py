@@ -1,6 +1,6 @@
 from demos.demo1 import Globals
 from demos.demo1.base import Demo1Base
-from demos.demo1.stage12tunnel2 import Stage12
+from demos.demo1.stage12ikplus import Stage12
 
 
 class Stage13(Demo1Base):

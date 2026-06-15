@@ -51,14 +51,16 @@ class Stage11(Demo1Base):
 			("KOMEK", self.base_y),
 			("TOMXX", self.base_y - 24),
 			("LEON", self.base_y - 48),
-			("PIANA", self.base_y - 72),
+			("TECT", self.base_y - 72),
 			("VOID", self.base_y - 96),
 			("KD", self.base_y - 120),
 			("PHOWIEC", self.base_y - 144),
-			("TECT", self.base_y - 168)
+			("PIANA", self.base_y - 168),
+			("DON RAFITO", self.base_y - 192),
+			("ARI", self.base_y - 216)
 		]
 
-		size = (relative_frame - self.start_tunnel_frame) // 30
+		size = (relative_frame - self.start_tunnel_frame) // 17
 		size = min(len(crew), size)
 
 		texts = []

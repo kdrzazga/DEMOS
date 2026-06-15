@@ -39,15 +39,17 @@ class Demo1Base(C64):
 		if relative_frame < 0:
 			return
 
-		if relative_frame < 5:
+		interval = 3
+
+		if relative_frame < interval:
 			color = BLACK
-		elif relative_frame < 10:
+		elif relative_frame < 2*interval:
 			color = WHITE
-		elif relative_frame < 15:
+		elif relative_frame < 3*interval:
 			color = AQUA
-		elif relative_frame < 20:
+		elif relative_frame < 4*interval:
 			color = YELLOW
-		elif relative_frame < 25:
+		elif relative_frame < 5*interval:
 			color = PINK
 		else:
 			color = WHITE

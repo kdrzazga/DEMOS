@@ -19,12 +19,8 @@ class Stage3(Demo1Base):
 		self.text = arcade.Text(text="PROUDLY PRESENTS", x=-100, y=Constants.HEIGHT//2, color=BLACK,
 			font_size=self.font_size, font_name="C64 Pro Mono", anchor_x="left")
 		arcade.set_background_color(arcade.color.WHITE)
-		self.sound = arcade.load_sound(Constants.RES_PATH + "civ3modernMarkCromer.mp3")
-		self.player = None
 
 	def on_draw(self, frame):
-		if frame == Stage3.START_FRAME:
-			self.player = self.sound.play()
 		self.clear_background()
 		self.text.draw()
 		r = Rect(0, Constants.WIDTH, 0, Constants.HEIGHT, Constants.WIDTH, Constants.HEIGHT, Constants.WIDTH//2, Constants.HEIGHT//2)

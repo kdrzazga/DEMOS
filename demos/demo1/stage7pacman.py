@@ -1,7 +1,8 @@
 import arcade
 from arcade import Sprite
+from arcade.color import BLACK
 
-from demos.demo1 import Constants
+from demos.demo1 import Constants, Globals
 from demos.demo1.base import Demo1Base
 from demos.demo1.ghost import Ghost
 from demos.demo1.handfloppy import Hand
@@ -21,7 +22,7 @@ class Stage7(Demo1Base):
 
 		self.bkg_color = Constants.BLUE
 		self.poke53280 = self.create_poke_sprite(str(53280))
-		self.poke53281 = self.create_poke_sprite(str(53280))
+		self.poke53281 = self.create_poke_sprite(str(53281))
 
 	def create_poke_sprite(self, cell):
 		poke = Sprite(Constants.RES_PATH + cell + ".png")
@@ -37,16 +38,14 @@ class Stage7(Demo1Base):
 			self.bkg_color = Constants.BLACK
 			self.draw_cover(Constants.BLACK)
 
-		if relative_frame == 444 + 100:
-			self.fullscreen()
-			r = self.create_bkg_rect()
-			arcade.draw_rect_filled(rect=r, color=(0, 0, 0))
-			self.draw_cover(Constants.BLACK)
+		if relative_frame > 444 + 100:
+			self.clear_screen(BLACK)
 		else:
 			super().draw_background(self.bkg_color)
 
 		self.hand.draw(relative_frame)
-		self.draw_cover()
+		if relative_frame < 444 + 100:
+			self.draw_cover()
 
 		if relative_frame > 250:
 			for ghost in (self.pinky, self.inky, self.blinky, self.clyde):
@@ -65,7 +64,8 @@ class Stage7(Demo1Base):
 				arcade.draw_sprite(self.poke53280)
 
 	def on_update(self, frame, klass):
-		super().on_update(frame, klass)
+		if frame == Stage7.START_FRAME + 1:
+			print(self.__class__.__name__ + " ", Globals.get_duration(), "[frame", str(frame) + "]")
 		relative_frame = frame - Stage7.START_FRAME
 		self.hand.update(relative_frame)
 		if self.hand.floppy.center_y < Constants.HEIGHT//2:

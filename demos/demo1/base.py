@@ -1,6 +1,8 @@
 import arcade
 from arcade import Rect
 from arcade.types import Color
+from arcade import Text
+from arcade.color import BLACK, WHITE, AQUA, YELLOW, PINK
 
 from demos.demo1 import Globals, Constants
 from lib.c64 import C64
@@ -20,13 +22,37 @@ class Demo1Base(C64):
 
 	def clear_screen(self, color):
 		arcade.set_background_color(color)
-		bottom = self.left
+		bottom = 0
 		width = Constants.WIDTH
 		height = Constants.HEIGHT
-		right = self.left + width
+		right = width
 		top = bottom + height
 
-		x = self.left + width // 2
+		x = width // 2
 		y = bottom + height // 2
-		r = Rect(self.left, right, bottom, top, width, height, x, y)
+		r = Rect(0, right, bottom, top, width, height, x, y)
 		arcade.draw_rect_filled(r, color=color)
+
+	def blink_write(self, y: int, text: str, start_frame: int, frame: int):
+
+		relative_frame = frame - start_frame
+		if relative_frame < 0:
+			return
+
+		interval = 3
+
+		if relative_frame < interval:
+			color = BLACK
+		elif relative_frame < 2*interval:
+			color = WHITE
+		elif relative_frame < 3*interval:
+			color = AQUA
+		elif relative_frame < 4*interval:
+			color = YELLOW
+		elif relative_frame < 5*interval:
+			color = PINK
+		else:
+			color = WHITE
+
+		Text(text=text, x=0.1 * Constants.WIDTH, y=y, color=color, font_size=self.font_size
+		     , anchor_x="left", font_name="C64 Pro Mono").draw()

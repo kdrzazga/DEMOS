@@ -1,4 +1,5 @@
 import arcade
+from arcade import Rect
 
 from demos.demo1 import Constants
 from demos.demo1.base import Demo1Base
@@ -21,7 +22,7 @@ class Stage6(Demo1Base):
 
 	def on_draw(self, frame):
 		relative_frame = frame - Stage6.START_FRAME
-		r = self.create_bkg_rect()
+		r = Rect(0,0, 0,Constants.HEIGHT, Constants.WIDTH, Constants.HEIGHT, Constants.WIDTH//2, Constants.HEIGHT//2)
 		interval = 3
 		last = 6 * interval
 

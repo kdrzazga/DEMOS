@@ -77,7 +77,7 @@ class Demo1(arcade.Window):
         elif Stage12.START_FRAME < self.frame < Stage13.START_FRAME:
             self.stage12.on_update(self.frame,Stage12)
         elif self.frame >= Outro.START_FRAME:
-            self.outro.on_update(delta_time)
+            self.outro.on_update(self.frame, delta_time)
 
     def on_draw(self):
         lblue = Color.from_hex_string(Constants.LIGHT_BLUE)

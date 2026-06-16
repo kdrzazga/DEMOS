@@ -8,6 +8,7 @@ from arcade.types import Color
 from demos.demo1 import Globals, Constants
 from demos.demo1.base import Demo1Base
 from demos.demo1.stage11team import Stage11
+from lib.animated_sprite import AnimatedSprite
 from lib.tunnel import IsometricSineTunnel
 
 
@@ -37,10 +38,15 @@ class Stage12(Demo1Base):
 		                     ,scale=0.6)
 		self.tori = Sprite("demos/demo1/resources/ik/tori.png", center_x=Constants.WIDTH * 0.25, center_y=305
 		                     ,scale=2.5)
+		self.left_flying_kick = AnimatedSprite("demos/demo1/resources/ik/lfkick.png"
+		                                       , position_x=Constants.WIDTH*1.3, position_y=200
+		                                       ,frame_width=60, frame_height=40, frame_delay=0.1, num_frames=3)
+		self.left_flying_kick.sprite.scale = (2.5, 2.5)
 
 		self.balls = [Ball() for _ in range(20)]
 
 	def on_update(self, frame, klass):
+		self.left_flying_kick.update(0.16)
 		realtive_frame = frame - Stage12.START_FRAME
 		if realtive_frame == 1:
 			print(self.__class__.__name__ + " ", Globals.get_duration(), "[frame", str(frame) + "]")
@@ -67,6 +73,7 @@ class Stage12(Demo1Base):
 				elif realtive_frame > 150:
 					self.speed += 1
 					self.grandpa.center_y = min(330.0, self.grandpa.center_y + 3)
+					self.left_flying_kick.sprite.center_x -= 33
 
 	def on_draw(self, frame):
 		super().clear_screen(self.bkg_color)
@@ -88,6 +95,7 @@ class Stage12(Demo1Base):
 
 		if relative_frame > 150:
 			arcade.draw_sprite(self.tori)
+			arcade.draw_sprite(self.left_flying_kick.sprite)
 
 		if relative_frame > 150:
 			self.speed += 1

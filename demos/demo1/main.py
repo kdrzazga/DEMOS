@@ -25,7 +25,7 @@ class Demo1(arcade.Window):
     def __init__(self):
         super().__init__(Constants.WIDTH, Constants.HEIGHT, "Demo 1", fullscreen=False)
 
-        self.frame = 1 * Stage11.START_FRAME
+        self.frame = 0 * Stage11.START_FRAME
         self.intro = Intro()
         self.stage1 = Stage1()
         self.stage2 = Stage2()
@@ -48,11 +48,8 @@ class Demo1(arcade.Window):
         width, height = pyautogui.size()
         pyautogui.moveTo(width - 1, height - 1)
 
-        # arcade.set_background_color(arcade.color.WHITE)
-
     def on_update(self, delta_time):
         self.frame += 1
-        # print(self.frame, end=' ')
 
         if self.frame < Stage1.START_FRAME:
             self.intro.on_update(self.frame)

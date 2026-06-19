@@ -2,7 +2,7 @@ import math
 
 import arcade
 from arcade import Rect, Sprite
-from arcade.color import WHITE
+from arcade.color import WHITE, BLACK
 from arcade.types import Color
 
 from demos.demo1 import Globals, Constants
@@ -43,6 +43,9 @@ class Stage12(Demo1Base):
 		                                       ,frame_width=60, frame_height=40, frame_delay=0.1, num_frames=3)
 		self.left_flying_kick.sprite.scale = (2.5, 2.5)
 
+		self.diskette = Sprite("demos/demo1/resources/ik/disketteSmall.png", center_x=Constants.WIDTH // 2
+		                       , center_y=Constants.HEIGHT//2)
+
 		self.balls = [Ball() for _ in range(20)]
 
 	def on_update(self, frame, klass):
@@ -76,6 +79,21 @@ class Stage12(Demo1Base):
 					self.left_flying_kick.sprite.center_x -= 33
 
 	def on_draw(self, frame):
+		relative_frame = frame - Stage12.START_FRAME
+
+		diskette_show_base = 120
+		if (diskette_show_base < relative_frame < diskette_show_base+15
+			or diskette_show_base + 30 < relative_frame < diskette_show_base + 25
+			or diskette_show_base + 48 < relative_frame < diskette_show_base + 54):
+			self.draw_diskette()
+		else:
+			self.standard_draw(frame)
+
+	def draw_diskette(self):
+		super().clear_screen(BLACK)
+		arcade.draw_sprite(self.diskette)
+
+	def standard_draw(self, frame):
 		super().clear_screen(self.bkg_color)
 		relative_frame = frame - Stage12.START_FRAME
 

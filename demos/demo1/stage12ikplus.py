@@ -25,13 +25,12 @@ class Stage12(Demo1Base):
 			sine = IsometricSineTunnel(Color(255, g, b), angle_deg=int(370 * i / 255))
 			self.kurwes.append(sine)
 
-		self.grandpa_spoken = False
-		self.speech = arcade.load_sound("demos/demo1/resources/ik/ka-games/published-games.mp3")
-
 		self.amplitude = 15
 		self.frequency = 0.05
 		self.speed = 160
 		self.horizon_x = self.width * 0.01
+
+		self.grandpa_speech = GameListSpeech()
 
 		self.ground = Sprite("demos/demo1/resources/ik/ground.png", center_x=Constants.WIDTH//2, center_y=-205
 		                     ,scale=1.33)
@@ -81,11 +80,8 @@ class Stage12(Demo1Base):
 					self.grandpa.center_y = min(330.0, self.grandpa.center_y + 3)
 					self.left_flying_kick.sprite.center_x -= 33
 
-				if self.grandpa.center_y == 330 and not self.grandpa_spoken:
-					self.speech.play(loop=False)
-					self.grandpa_spoken = True
-					print("KOMODA AND AMIGA PLUS ALSO RELEASED A COUPLE GAMES: GRAVITY DUCK, FIZZ,RISE OF BABILON"
-					      ", DEATH FLOOD, FARMIGA AND SANTASTIC.")
+				if self.grandpa.center_y == 330:
+					self.grandpa_speech.play()
 
 	def on_draw(self, frame):
 		relative_frame = frame - Stage12.START_FRAME
@@ -97,6 +93,9 @@ class Stage12(Demo1Base):
 			self.draw_diskette()
 		else:
 			self.standard_draw(frame)
+
+		if self.grandpa.center_y == 330:
+			self.grandpa_speech.draw(relative_frame)
 
 	def draw_diskette(self):
 		super().clear_screen(BLACK)
@@ -152,11 +151,11 @@ class Stage12(Demo1Base):
 class Ball:
 
 	COUNT = 0
+	GROUND_ZERO = 0.1 * Constants.HEIGHT
+	SIZE = 15
 
 	def __init__(self):
 		Ball.COUNT += 1
-		Ball.SIZE = 15
-		Ball.GROUND_ZERO = 0.1 * Constants.HEIGHT
 
 		colors = (Constants.BLACK, Constants.CYAN, Constants.WHITE, Constants.YELLOW, Constants.GREEN, Constants.LIGHT_BLUE)
 		self.color = Color.from_hex_string(colors[Ball.COUNT % len(colors)])
@@ -172,8 +171,54 @@ class Ball:
 		self.y = Ball.GROUND_ZERO + self.magnitude * abs(math.sin(self.x * 3.141 / (Constants.HEIGHT // 2)))
 		self.x += self.speed
 
-		if self.x > 1.2 *Constants.WIDTH:
+		if self.x > 1.2 * Constants.WIDTH:
 			self.x = - Ball.COUNT * Ball.SIZE
 
 	def draw(self):
 		arcade.draw_circle_filled(self.x, self.y, Ball.SIZE, self.color)
+
+
+class GameListSpeech:
+
+	def __init__(self):
+		self.speech = arcade.load_sound(Constants.RES_PATH + "/ik/ka-games/published-games.mp3")
+		self.spoken = False
+
+		y = 290
+		self.gravity_duck = Sprite(Constants.RES_PATH + "/ik/ka-games/gravity-duck.png", center_x=Constants.WIDTH * 0.25, center_y=y)
+		self.fizz = Sprite(Constants.RES_PATH + "/ik/ka-games/fizz.png", center_x=Constants.WIDTH * 0.25, center_y=y)
+		self.rise = Sprite(Constants.RES_PATH + "/ik/ka-games/riseofbab.png", center_x=Constants.WIDTH * 0.25, center_y=y)
+		self.flood = Sprite(Constants.RES_PATH + "/ik/ka-games/deathflood.png", center_x=Constants.WIDTH * 0.25, center_y=y)
+		self.santa = Sprite(Constants.RES_PATH + "/ik/ka-games/santastic.png", center_x=Constants.WIDTH * 0.25, center_y=y)
+
+		for spr in (self.gravity_duck, self.fizz, self.rise, self.flood, self.santa):
+			spr.scale = (0.15, 0.15)
+
+	def play(self):
+		if not self.spoken:
+			self.speech.play()
+			self.spoken = True
+			print("KOMODA AND AMIGA PLUS ALSO RELEASED A COUPLE GAMES: GRAVITY DUCK, FIZZ,RISE OF BABILON"
+		      ", DEATH FLOOD, FARMIGA AND SANTASTIC.")
+
+	def draw(self, frame):
+		print(frame)
+		if frame > 380:
+			arcade.draw_sprite(self.gravity_duck)
+		if frame > 400:
+			arcade.draw_sprite(self.fizz)
+			self.move(self.gravity_duck)
+		if frame > 445:
+			arcade.draw_sprite(self.rise)
+			self.move(self.fizz)
+		if frame > 459:
+			arcade.draw_sprite(self.flood)
+			self.move(self.rise)
+		if frame > 468:
+			arcade.draw_sprite(self.santa)
+			self.move(self.flood)
+		if frame > 468 + 9:
+			self.move(self.santa)
+
+	def move(self, sprite: Sprite):
+		sprite.center_x += 8.75

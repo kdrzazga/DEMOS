@@ -5,10 +5,10 @@ import arcade
 from arcade import Rect
 
 from demos.demo1 import Constants, Globals
-from lib.c64 import C64
+from demos.demo1.base import Demo1Base
 
 
-class Outro(C64):
+class Outro(Demo1Base):
 
 	START_FRAME = math.inf
 	pass

@@ -9,6 +9,7 @@ from demos.demo1.stage1 import Stage1
 from demos.demo1.stage11team import Stage11
 from demos.demo1.stage12ikplus import Stage12
 from demos.demo1.stage13 import Stage13
+from demos.demo1.stage14 import Stage14
 from demos.demo1.stage2 import Stage2
 from demos.demo1.stage3allwhite import Stage3
 from demos.demo1.stage4 import Stage4
@@ -25,7 +26,7 @@ class Demo1(arcade.Window):
     def __init__(self):
         super().__init__(Constants.WIDTH, Constants.HEIGHT, "Demo 1", fullscreen=False)
 
-        self.frame = 0 * Stage11.START_FRAME
+        self.frame = 0 * Stage12.START_FRAME
         self.intro = Intro()
         self.stage1 = Stage1()
         self.stage2 = Stage2()
@@ -72,7 +73,9 @@ class Demo1(arcade.Window):
                 vol = self.player.volume + 0.01
                 self.player.volume = min(1.0, vol)
         elif Stage12.START_FRAME < self.frame < Stage13.START_FRAME:
-            self.stage12.on_update(self.frame,Stage12)
+            self.stage12.on_update(self.frame, Stage12)
+        elif Stage13.START_FRAME < self.frame < Stage14.START_FRAME:
+            self.stage12.on_update(self.frame, Stage13)
         elif self.frame >= Outro.START_FRAME:
             self.outro.on_update(self.frame, delta_time)
 

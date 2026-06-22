@@ -189,9 +189,10 @@ class GameListSpeech:
 		self.fizz = Sprite(Constants.RES_PATH + "/ik/ka-games/fizz.png", center_x=Constants.WIDTH * 0.25, center_y=y)
 		self.rise = Sprite(Constants.RES_PATH + "/ik/ka-games/riseofbab.png", center_x=Constants.WIDTH * 0.25, center_y=y)
 		self.flood = Sprite(Constants.RES_PATH + "/ik/ka-games/deathflood.png", center_x=Constants.WIDTH * 0.25, center_y=y)
+		self.farm = Sprite(Constants.RES_PATH + "/ik/ka-games/farmiga.png", center_x=Constants.WIDTH * 0.25, center_y=y)
 		self.santa = Sprite(Constants.RES_PATH + "/ik/ka-games/santastic.png", center_x=Constants.WIDTH * 0.25, center_y=y)
 
-		for spr in (self.gravity_duck, self.fizz, self.rise, self.flood, self.santa):
+		for spr in (self.gravity_duck, self.fizz, self.rise, self.flood, self.farm, self.santa):
 			spr.scale = (0.15, 0.15)
 
 	def play(self):
@@ -202,7 +203,7 @@ class GameListSpeech:
 		      ", DEATH FLOOD, FARMIGA AND SANTASTIC.")
 
 	def draw(self, frame):
-		print(frame)
+		#print(frame, end='\t')
 		if frame > 380:
 			arcade.draw_sprite(self.gravity_duck)
 		if frame > 400:
@@ -215,10 +216,14 @@ class GameListSpeech:
 			arcade.draw_sprite(self.flood)
 			self.move(self.rise)
 		if frame > 468:
-			arcade.draw_sprite(self.santa)
+			arcade.draw_sprite(self.farm)
 			self.move(self.flood)
 		if frame > 468 + 9:
+			arcade.draw_sprite(self.santa)
+			self.move(self.farm)
+		if frame > 468 + 18:
 			self.move(self.santa)
 
 	def move(self, sprite: Sprite):
 		sprite.center_x += 8.75
+		sprite.center_y -= 0.3*math.log10(sprite.center_x)

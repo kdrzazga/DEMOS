@@ -7,7 +7,7 @@ from demos.demo1 import Constants
 
 class C64:
 
-	def __init__(self, screen_width=Constants.WIDTH, screen_height=Constants.HEIGHT):
+	def __init__(self, screen_width, screen_height):
 		arcade.load_font("lib/resources/C64_Pro_Mono-STYLE.ttf")
 		self.top = 0
 		self.font_size = 12

@@ -25,6 +25,9 @@ class Stage12(Demo1Base):
 			sine = IsometricSineTunnel(Color(255, g, b), angle_deg=int(370 * i / 255))
 			self.kurwes.append(sine)
 
+		self.grandpa_spoken = False
+		self.speech = arcade.load_sound("demos/demo1/resources/ik/ka-games/published-games.mp3")
+
 		self.amplitude = 15
 		self.frequency = 0.05
 		self.speed = 160
@@ -78,13 +81,19 @@ class Stage12(Demo1Base):
 					self.grandpa.center_y = min(330.0, self.grandpa.center_y + 3)
 					self.left_flying_kick.sprite.center_x -= 33
 
+				if self.grandpa.center_y == 330 and not self.grandpa_spoken:
+					self.speech.play(loop=False)
+					self.grandpa_spoken = True
+					print("KOMODA AND AMIGA PLUS ALSO RELEASED A COUPLE GAMES: GRAVITY DUCK, FIZZ,RISE OF BABILON"
+					      ", DEATH FLOOD, FARMIGA AND SANTASTIC.")
+
 	def on_draw(self, frame):
 		relative_frame = frame - Stage12.START_FRAME
 
-		diskette_show_base = 120
+		diskette_show_base = 97
 		if (diskette_show_base < relative_frame < diskette_show_base+15
-			or diskette_show_base + 30 < relative_frame < diskette_show_base + 25
-			or diskette_show_base + 48 < relative_frame < diskette_show_base + 54):
+			or diskette_show_base + 20 < relative_frame < diskette_show_base + 35
+			or diskette_show_base + 40 < relative_frame < diskette_show_base + 60):
 			self.draw_diskette()
 		else:
 			self.standard_draw(frame)

@@ -7,8 +7,9 @@ from demos.demo1 import Constants
 from demos.demo1.intro import Intro
 from demos.demo1.stage1 import Stage1
 from demos.demo1.stage11team import Stage11
-from demos.demo1.stage12tunnel2 import Stage12
+from demos.demo1.stage12ikplus import Stage12
 from demos.demo1.stage13 import Stage13
+from demos.demo1.stage14 import Stage14
 from demos.demo1.stage2 import Stage2
 from demos.demo1.stage3allwhite import Stage3
 from demos.demo1.stage4 import Stage4
@@ -48,11 +49,8 @@ class Demo1(arcade.Window):
         width, height = pyautogui.size()
         pyautogui.moveTo(width - 1, height - 1)
 
-        # arcade.set_background_color(arcade.color.WHITE)
-
     def on_update(self, delta_time):
         self.frame += 1
-        # print(self.frame, end=' ')
 
         if self.frame < Stage1.START_FRAME:
             self.intro.on_update(self.frame)
@@ -75,9 +73,11 @@ class Demo1(arcade.Window):
                 vol = self.player.volume + 0.01
                 self.player.volume = min(1.0, vol)
         elif Stage12.START_FRAME < self.frame < Stage13.START_FRAME:
-            self.stage12.on_update(self.frame,Stage12)
+            self.stage12.on_update(self.frame, Stage12)
+        elif Stage13.START_FRAME < self.frame < Stage14.START_FRAME:
+            self.stage12.on_update(self.frame, Stage13)
         elif self.frame >= Outro.START_FRAME:
-            self.outro.on_update(delta_time)
+            self.outro.on_update(self.frame, delta_time)
 
     def on_draw(self):
         lblue = Color.from_hex_string(Constants.LIGHT_BLUE)

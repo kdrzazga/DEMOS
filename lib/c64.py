@@ -7,19 +7,22 @@ from demos.demo1 import Constants
 
 class C64:
 
-	def __init__(self):
+	def __init__(self, screen_width, screen_height):
 		arcade.load_font("lib/resources/C64_Pro_Mono-STYLE.ttf")
 		self.top = 0
 		self.font_size = 12
+		self.screen_width = screen_width
+		self.screen_height = screen_height
 
-		self.header_x = 0.5 * Constants.WIDTH
+		self.header_x = 0.5 * screen_width
 
-		self.left = 0.1 * Constants.WIDTH
-		self.bottom = 0.1 * Constants.HEIGHT
-		self.width = 0.8 * Constants.WIDTH
-		self.height = 0.8 * Constants.HEIGHT
+		self.left = 0.1 * screen_width
+		self.bottom = 0.1 * screen_height
+		self.width = 0.8 * screen_width
+		self.height = 0.8 * screen_height
 		self.right = self.left + self.width
 		self.top = self.bottom + self.height
+		self.header1 = ""
 
 	def on_draw(self, frame):
 		lblue = Color.from_hex_string(Constants.LIGHT_BLUE)
@@ -54,8 +57,8 @@ class C64:
 
 	def fullscreen(self):
 		self.left = 0
-		self.bottom = 0.1*Constants.HEIGHT
-		self.width = Constants.WIDTH
-		self.height = 2*Constants.HEIGHT
+		self.bottom = 0.1*self.screen_height
+		self.width = self.screen_width
+		self.height = 2*self.screen_height
 		self.right = self.left + self.width
 		self.top = self.bottom + self.height

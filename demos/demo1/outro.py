@@ -4,11 +4,11 @@ import arcade
 #import cv2
 from arcade import Rect
 
-from demos.demo1 import Constants
-from lib.c64 import C64
+from demos.demo1 import Constants, Globals
+from demos.demo1.base import Demo1Base
 
 
-class Outro(C64):
+class Outro(Demo1Base):
 
 	START_FRAME = math.inf
 	pass
@@ -40,7 +40,12 @@ class Outro(C64):
 				rect=r
 			)
 
-	def on_update(self, delta_time):
+	def on_update(self, frame, delta_time):
+
+		relative_frame = frame - Outro.START_FRAME
+		if relative_frame == 1:
+			print(self.__class__.__name__ + " ", Globals.get_duration(), "[frame", str(frame) + "]")
+
 		ret, frame = self.video_capture.read()
 		if ret:
 			self.frame = frame

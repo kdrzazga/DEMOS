@@ -1,15 +1,15 @@
 import math
 import random
+
 import arcade
 from arcade import Text
-
 from arcade.types import Color
 
 from demos.demo1 import Constants
-from lib.c64 import C64
+from demos.demo1.base import Demo1Base
 
 
-class Intro(C64):
+class Intro(Demo1Base):
 
 	def __init__(self):
 		super().__init__()
@@ -50,5 +50,3 @@ class Intro(C64):
 				y = self.line_to_coord(line_number)
 				Text(text=lines[key][1], x=self.left, y=y, color=lblue, font_size=self.font_size, anchor_x="left"
 				     , font_name="C64 Pro Mono").draw()
-
-

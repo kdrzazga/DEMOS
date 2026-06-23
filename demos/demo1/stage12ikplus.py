@@ -184,6 +184,8 @@ class GameListSpeech:
 		self.speech = arcade.load_sound(Constants.RES_PATH + "/ik/ka-games/published-games.mp3")
 		self.spoken = False
 
+		self.magnitude = 65.5
+
 		y = 290
 		self.gravity_duck = Sprite(Constants.RES_PATH + "/ik/ka-games/gravity-duck.png", center_x=Constants.WIDTH * 0.25, center_y=y)
 		self.fizz = Sprite(Constants.RES_PATH + "/ik/ka-games/fizz.png", center_x=Constants.WIDTH * 0.25, center_y=y)
@@ -203,16 +205,16 @@ class GameListSpeech:
 		      ", DEATH FLOOD, FARMIGA AND SANTASTIC.")
 
 	def draw(self, frame):
-		#print(frame, end='\t')
+		print(frame)
 		if frame > 380:
 			arcade.draw_sprite(self.gravity_duck)
 		if frame > 400:
 			arcade.draw_sprite(self.fizz)
 			self.move(self.gravity_duck)
-		if frame > 445:
+		if frame > 430:
 			arcade.draw_sprite(self.rise)
 			self.move(self.fizz)
-		if frame > 459:
+		if frame > 453:
 			arcade.draw_sprite(self.flood)
 			self.move(self.rise)
 		if frame > 468:
@@ -225,5 +227,6 @@ class GameListSpeech:
 			self.move(self.santa)
 
 	def move(self, sprite: Sprite):
-		sprite.center_x += 8.75
-		sprite.center_y -= 0.3*math.log10(sprite.center_x)
+		sprite.center_x += 22.75
+		y = sprite.center_y - 0.6*math.log2(sprite.center_x)
+		sprite.center_y = max(y, Ball.GROUND_ZERO + self.magnitude)

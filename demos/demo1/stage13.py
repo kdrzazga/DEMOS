@@ -1,6 +1,6 @@
 import math
-
 import arcade
+
 from arcade import Rect
 from arcade.types import Color
 
@@ -38,6 +38,8 @@ class Stage13(Demo1Base):
 			r = Rect(self.left, Constants.WIDTH, self.bottom, self.top, Constants.WIDTH, height, x, y)
 			arcade.draw_rect_filled(r, color=Color.from_hex_string(self.font_color))
 
+		self.blink_cursor(relative_frame)
+
 	def change_color(self, amplitude=127.5, offset=127.5):
 		r = int(amplitude * math.sin(self.t) + offset)
 		g = int(amplitude * math.sin(self.t + 2 * math.pi / 3) + offset)
@@ -46,3 +48,18 @@ class Stage13(Demo1Base):
 		g = max(0, min(255, g))
 		b = max(0, min(255, b))
 		self.font_color = f"{r:02x}{g:02x}{b:02x}"
+
+	def blink_cursor(self, frame):
+		delta = frame % 84
+		if delta > 84/2:
+			r = Rect(
+				x=0.1 * Constants.WIDTH + 9,
+				left=0.1 * Constants.WIDTH,
+				y=0.9 * Constants.HEIGHT - 8 * 14 - 7,
+				right=0.9 * Constants.HEIGHT - 12,
+				width=16,
+				height=16,
+				top=0,
+				bottom=0
+			)
+			arcade.draw_rect_filled(r, color=Color.from_hex_string(self.font_color))

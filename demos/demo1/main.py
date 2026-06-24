@@ -26,7 +26,7 @@ class Demo1(arcade.Window):
     def __init__(self):
         super().__init__(Constants.WIDTH, Constants.HEIGHT, "Demo 1", fullscreen=False)
 
-        self.frame = 0 * Stage12.START_FRAME
+        self.frame = 0 * Stage13.START_FRAME
         self.intro = Intro()
         self.stage1 = Stage1()
         self.stage2 = Stage2()
@@ -75,7 +75,7 @@ class Demo1(arcade.Window):
         elif Stage12.START_FRAME < self.frame < Stage13.START_FRAME:
             self.stage12.on_update(self.frame, Stage12)
         elif Stage13.START_FRAME < self.frame < Stage14.START_FRAME:
-            self.stage12.on_update(self.frame, Stage13)
+            self.stage13.on_update(self.frame, Stage13)
         elif self.frame >= Outro.START_FRAME:
             self.outro.on_update(self.frame, delta_time)
 
@@ -110,6 +110,8 @@ class Demo1(arcade.Window):
             self.stage11.on_draw(self.frame)
         elif self.frame < Stage13.START_FRAME:
             self.stage12.on_draw(self.frame)
+        elif self.frame < Stage14.START_FRAME:
+            self.stage13.on_draw(self.frame)
 
         else:
             self.outro.on_draw()

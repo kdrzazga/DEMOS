@@ -25,9 +25,13 @@ class C64:
 		self.header1 = ""
 
 	def on_draw(self, frame):
-		lblue = Color.from_hex_string(Constants.LIGHT_BLUE)
+		self.on_draw2(frame, Constants.LIGHT_BLUE, Constants.BLUE)
 
-		self.draw_background()
+	def on_draw2(self, frame, color: str, bg_color: str):
+		#print(color)
+		lblue = Color.from_hex_string(color)
+
+		self.draw_background(bg_color)
 
 		y = self.line_to_coord(2)
 		Text(text="**** COMMODORE 64 BASIC V2 ****", x=self.header_x, y=y, color=lblue,

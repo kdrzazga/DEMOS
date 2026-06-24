@@ -18,11 +18,14 @@ class Demo1Base(C64):
 			print("New stage", Globals.get_duration(), "[frame", str(frame) + "]")
 
 	def draw_cover(self, color=Constants.LIGHT_BLUE):
+		lb = Color.from_hex_string(color)
+		self.draw_cover_arcade_color(lb)
+
+	def draw_cover_arcade_color(self, color):
 		y = 0.1 * Constants.HEIGHT
 		height = 0.05 * Constants.HEIGHT
-		lb = Color.from_hex_string(color)
 		r = Rect(0, Constants.WIDTH, 0, Constants.HEIGHT, Constants.WIDTH, y, Constants.WIDTH // 2, height)
-		arcade.draw_rect_filled(r, color=lb)
+		arcade.draw_rect_filled(r, color=color)
 
 	def clear_screen(self, color):
 		arcade.set_background_color(color)

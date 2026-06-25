@@ -13,6 +13,8 @@ class Stage13(Demo1Base):
 	START_FRAME = Stage12.START_FRAME + 600
 
 	GAP_START = 150
+	GAP_END = GAP_START + 450
+	GAP_END2 = GAP_END + 150
 	SCROLL_START = GAP_START + 80
 
 	def __init__(self):
@@ -39,17 +41,24 @@ class Stage13(Demo1Base):
 
 		relative_frame = frame - Stage13.START_FRAME
 
-		if relative_frame > Stage13.GAP_START:
+		if Stage13.GAP_START < relative_frame < Stage13.GAP_END:
 			height = min(relative_frame-150, 150)
-			x = 0 + self.width // 2
-			y = Constants.HEIGHT // 2
-			r = Rect(self.left, Constants.WIDTH, self.bottom, self.top, Constants.WIDTH, height, x, y)
-			arcade.draw_rect_filled(r, color=Color.from_hex_string(self.font_color))
+			self.draw_gap(height)
+		elif Stage13.GAP_END < relative_frame < Stage13.GAP_END2:
+			height = min(relative_frame - Stage13.GAP_END - 150, 150)
+			#print(relative_frame)
+			self.draw_gap(height)
 
 		if relative_frame > Stage13.SCROLL_START:
 			self.scroll.draw()
 
 		self.blink_cursor(relative_frame)
+
+	def draw_gap(self, height):
+		x = 0 + self.width // 2
+		y = Constants.HEIGHT // 2
+		r = Rect(self.left, Constants.WIDTH, self.bottom, self.top, Constants.WIDTH, height, x, y)
+		arcade.draw_rect_filled(r, color=Color.from_hex_string(self.font_color))
 
 	def change_color(self, amplitude=127.5, offset=127.5):
 		r = int(amplitude * math.sin(self.t) + offset)
@@ -83,20 +92,20 @@ class Scroll:
 	def __init__(self):
 		scroll_pic = arcade.load_texture(Constants.RES_PATH + "scroll.png")
 
-		word_positions = (0, 344, 438, 716, 982, 1128, 1534, 1757, 1808, 2068, 2242, 2427, 2618, 2787, 3161, 3373)
+		word_positions = (0, 344, 438, 716, 982, 1128, 1534, 1757, 1808, 2068, 2242, 2427, 2618, 2787, 2946, 3161, 3373)
 		self.words = []
 
 		for i in range(len(word_positions) - 1):
 			width = word_positions[i+1] - word_positions[i]
 			word = scroll_pic.crop(word_positions[i], 0, width, scroll_pic.height)
-			sprite = Sprite(word, center_x=word_positions[i] + Constants.WIDTH + word.width//2, center_y=Constants.HEIGHT // 2 )
+			sprite = Sprite(word, center_x=word_positions[i] + Constants.WIDTH + word.width//2, center_y=Constants.HEIGHT // 2)
 			self.words.append(sprite)
 
 	def move(self):
 		for sprite in self.words:
 			sprite.center_x -= Scroll.SPEED
 			sprite.center_y = Constants.HEIGHT // 2 + 20 * math.cos(sprite.center_x / 140 * math.pi)
-			print(sprite.center_x)
+			#print(sprite.center_x)
 
 	def draw(self):
 		for sprite in self.words:

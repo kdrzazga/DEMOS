@@ -69,6 +69,7 @@ class Stage13(Demo1Base):
 		b = max(0, min(255, b))
 		self.font_color = f"{r:02x}{g:02x}{b:02x}"
 
+	#TODO duplicate, covers method from C64 class
 	def blink_cursor(self, frame):
 		delta = frame % 84
 		if delta > 84/2:

@@ -126,7 +126,7 @@ class Stage12(Demo1Base):
 				horizon_x=self.horizon_x
 			)
 		self.blink_write(0.9*Constants.HEIGHT - 4*12, "READY.", start_frame=Stage12.START_FRAME, frame=frame)
-		self.blink_cursor(frame)
+		self.blink_cursor(frame, color=WHITE)
 
 		for sprite in (self.grandpa, self.ground, self.tree):
 			arcade.draw_sprite(sprite)
@@ -144,20 +144,7 @@ class Stage12(Demo1Base):
 				# print(ball.x, ball.y, end=' | ')
 				# print()
 
-	def blink_cursor(self, frame):
-		delta = frame % 36
-		if delta > 18:
-			r = Rect(
-				x=0.1 * Constants.WIDTH + 9,
-				left=0.1 * Constants.WIDTH,
-				y=0.9 * Constants.HEIGHT - 4 * 14,
-				right=0.9 * Constants.HEIGHT - 12,
-				width=14,
-				height=14,
-				top=0,
-				bottom=0
-			)
-			arcade.draw_rect_filled(r, color=WHITE)
+
 
 
 class Ball:

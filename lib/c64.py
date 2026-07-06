@@ -66,3 +66,21 @@ class C64:
 		self.height = 2*self.screen_height
 		self.right = self.left + self.width
 		self.top = self.bottom + self.height
+
+	def blink_cursor(self, frame, color, x=0, y=4*14):
+
+		size = 14
+		x1 = 0.1 * Constants.WIDTH + x*size
+		delta = frame % 36
+		if delta > 18:
+			r = Rect(
+				x=x1+9,
+				left=x1,
+				y=0.9 * Constants.HEIGHT - y,
+				right=0.9 * Constants.HEIGHT - 12,
+				width=size,
+				height=size,
+				top=0,
+				bottom=0
+			)
+			arcade.draw_rect_filled(r, color)

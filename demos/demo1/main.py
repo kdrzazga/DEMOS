@@ -114,7 +114,7 @@ class Demo1(arcade.Window):
             self.stage13.on_draw(self.frame)
 
         else:
-            self.outro.on_draw()
+            self.outro.on_draw(self.frame)
 
         if self.frame == Stage3.START_FRAME:
             self.player = self.sound.play()

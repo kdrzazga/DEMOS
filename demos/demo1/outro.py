@@ -3,6 +3,7 @@ import math
 import arcade
 #import cv2
 from arcade import Rect
+from arcade.types import Color
 
 from demos.demo1 import Constants, Globals
 from demos.demo1.base import Demo1Base
@@ -19,10 +20,12 @@ class Outro(Demo1Base):
 		self.video_capture = None #cv2.VideoCapture('resources/TramielHaHa.mp4')
 		self.frame = None
 
-	def on_draw(self):
-		super().on_draw(self.frame)
-		pass
-		if self.frame is not None:
+	def on_draw(self, frame):
+		super().on_draw(frame)
+		lb = Color.from_hex_string(Constants.LIGHT_BLUE)
+		self.blink_cursor(frame, color=lb, y=9*12+7)
+		return
+		if frame is not None:
 			# Convert BGR to RGB
 			rgb_frame = None#cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
 			height, width, _ = rgb_frame.shape

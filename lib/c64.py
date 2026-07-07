@@ -67,19 +67,19 @@ class C64:
 		self.right = self.left + self.width
 		self.top = self.bottom + self.height
 
-	def blink_cursor(self, frame, color, x=0, y=4*14):
+	def blink_cursor(self, frame, color, x=0, y=4*14, delay=84):
 
 		size = 14
 		x1 = 0.1 * Constants.WIDTH + x*size
-		delta = frame % 36
-		if delta > 18:
+		delta = frame % delay
+		if delta > delay/2:
 			r = Rect(
 				x=x1+9,
 				left=x1,
 				y=0.9 * Constants.HEIGHT - y,
 				right=0.9 * Constants.HEIGHT - 12,
 				width=size,
-				height=size,
+				height=size+1,
 				top=0,
 				bottom=0
 			)

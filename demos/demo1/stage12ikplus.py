@@ -126,7 +126,7 @@ class Stage12(Demo1Base):
 				horizon_x=self.horizon_x
 			)
 		self.blink_write(0.9*Constants.HEIGHT - 4*12, "READY.", start_frame=Stage12.START_FRAME, frame=frame)
-		self.blink_cursor(frame, color=WHITE)
+		self.blink_cursor(frame, color=WHITE, delay=36)
 
 		for sprite in (self.grandpa, self.ground, self.tree):
 			arcade.draw_sprite(sprite)

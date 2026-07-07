@@ -52,7 +52,8 @@ class Stage13(Demo1Base):
 		if relative_frame > Stage13.SCROLL_START:
 			self.scroll.draw()
 
-		self.blink_cursor(relative_frame)
+		c = Color.from_hex_string(self.font_color)
+		self.blink_cursor(frame, color=c, x=0, y=9 * 14 - 7)
 
 	def draw_gap(self, height):
 		x = 0 + self.width // 2
@@ -68,22 +69,6 @@ class Stage13(Demo1Base):
 		g = max(0, min(255, g))
 		b = max(0, min(255, b))
 		self.font_color = f"{r:02x}{g:02x}{b:02x}"
-
-	#TODO duplicate, covers method from C64 class
-	def blink_cursor(self, frame):
-		delta = frame % 84
-		if delta > 84/2:
-			r = Rect(
-				x=0.1 * Constants.WIDTH + 9,
-				left=0.1 * Constants.WIDTH,
-				y=0.9 * Constants.HEIGHT - 8 * 14 - 7,
-				right=0.9 * Constants.HEIGHT - 12,
-				width=16,
-				height=16,
-				top=0,
-				bottom=0
-			)
-			arcade.draw_rect_filled(r, color=Color.from_hex_string(self.font_color))
 
 
 class Scroll:

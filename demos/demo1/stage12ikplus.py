@@ -1,7 +1,7 @@
 import math
 
 import arcade
-from arcade import Rect, Sprite
+from arcade import Rect, Sprite, Text
 from arcade.color import WHITE, BLACK
 from arcade.types import Color
 
@@ -30,7 +30,7 @@ class Stage12(Demo1Base):
 		self.speed = 160
 		self.horizon_x = self.width * 0.01
 
-		self.grandpa_speech = GameListSpeech()
+		self.grandpa_speech = GameListSpeech(self.width, self.height)
 
 		self.ground = Sprite("demos/demo1/resources/ik/ground.png", center_x=Constants.WIDTH//2, center_y=-205
 		                     ,scale=1.33)
@@ -97,6 +97,18 @@ class Stage12(Demo1Base):
 		if self.grandpa.center_y == 330:
 			self.grandpa_speech.draw(relative_frame)
 
+		if relative_frame > 520:
+			self.fullscreen()
+			rect = self.create_bkg_rect()
+			frames_since_521 = relative_frame - 520
+			even_frames_passed = frames_since_521*3.6
+			transparency = min(255, even_frames_passed)
+
+			color = (0, 0, 0, transparency)
+			arcade.draw_rect_filled(rect, color=color)
+			self.draw_cover_arcade_color(color)
+
+
 	def draw_diskette(self):
 		super().clear_screen(BLACK)
 		arcade.draw_sprite(self.diskette)
@@ -114,7 +126,7 @@ class Stage12(Demo1Base):
 				horizon_x=self.horizon_x
 			)
 		self.blink_write(0.9*Constants.HEIGHT - 4*12, "READY.", start_frame=Stage12.START_FRAME, frame=frame)
-		self.blink_cursor(frame)
+		self.blink_cursor(frame, color=WHITE, delay=36)
 
 		for sprite in (self.grandpa, self.ground, self.tree):
 			arcade.draw_sprite(sprite)
@@ -132,20 +144,7 @@ class Stage12(Demo1Base):
 				# print(ball.x, ball.y, end=' | ')
 				# print()
 
-	def blink_cursor(self, frame):
-		delta = frame % 36
-		if delta > 18:
-			r = Rect(
-				x=0.1 * Constants.WIDTH + 9,
-				left=0.1 * Constants.WIDTH,
-				y=0.9 * Constants.HEIGHT - 4 * 14,
-				right=0.9 * Constants.HEIGHT - 12,
-				width=14,
-				height=14,
-				top=0,
-				bottom=0
-			)
-			arcade.draw_rect_filled(r, color=WHITE)
+
 
 
 class Ball:
@@ -180,7 +179,9 @@ class Ball:
 
 class GameListSpeech:
 
-	def __init__(self):
+	def __init__(self, screen_width, screen_height):
+		self.screen_width = screen_width
+		self.scroll_position = screen_height + 40
 		self.speech = arcade.load_sound(Constants.RES_PATH + "/ik/ka-games/published-games.mp3")
 		self.spoken = False
 
@@ -201,13 +202,18 @@ class GameListSpeech:
 		if not self.spoken:
 			self.speech.play()
 			self.spoken = True
-			print("KOMODA AND AMIGA PLUS ALSO RELEASED A COUPLE GAMES: GRAVITY DUCK, FIZZ,RISE OF BABILON"
+			print("KOMODA AND AMIGA PLUS ALSO RELEASED A COUPLE GAMES: GRAVITY DUCK, FIZZ,RISE OF BABYLON"
 		      ", DEATH FLOOD, FARMIGA AND SANTASTIC.")
 
 	def draw(self, frame):
-		print(frame)
+		#print(frame)
+
+		games_list = "GRAVITY DUCK     FIZZ    RISE OF BABYLON     DEATH FLOOD     FARMIGA      SANTASTIC"
+
 		if frame > 380:
 			arcade.draw_sprite(self.gravity_duck)
+			games = Text(games_list, self.screen_width + 13*(380 - frame), 20, font_size=12, font_name="C64 Pro Mono")
+			games.draw()
 		if frame > 400:
 			arcade.draw_sprite(self.fizz)
 			self.move(self.gravity_duck)

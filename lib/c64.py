@@ -25,9 +25,13 @@ class C64:
 		self.header1 = ""
 
 	def on_draw(self, frame):
-		lblue = Color.from_hex_string(Constants.LIGHT_BLUE)
+		self.on_draw2(frame, Constants.LIGHT_BLUE, Constants.BLUE)
 
-		self.draw_background()
+	def on_draw2(self, frame, color: str, bg_color: str):
+		#print(color)
+		lblue = Color.from_hex_string(color)
+
+		self.draw_background(bg_color)
 
 		y = self.line_to_coord(2)
 		Text(text="**** COMMODORE 64 BASIC V2 ****", x=self.header_x, y=y, color=lblue,
@@ -62,3 +66,21 @@ class C64:
 		self.height = 2*self.screen_height
 		self.right = self.left + self.width
 		self.top = self.bottom + self.height
+
+	def blink_cursor(self, frame, color, x=0, y=4*14, delay=84):
+
+		size = 14
+		x1 = 0.1 * Constants.WIDTH + x*size
+		delta = frame % delay
+		if delta > delay/2:
+			r = Rect(
+				x=x1+9,
+				left=x1,
+				y=0.9 * Constants.HEIGHT - y,
+				right=0.9 * Constants.HEIGHT - 12,
+				width=size,
+				height=size+1,
+				top=0,
+				bottom=0
+			)
+			arcade.draw_rect_filled(r, color)

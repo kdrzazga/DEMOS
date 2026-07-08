@@ -40,23 +40,8 @@ class Outro(Demo1Base):
 		self.type_with_cursor(c, cursor_x, cursor_y, relative_frame, text_color, text_struct)
 
 		if frame > Outro.DIMINISH_PHASE_FRAME:
-			rect = self.create_bkg_rect()
-			frames_since_diminish = frame - Outro.DIMINISH_PHASE_FRAME
-			even_frames_passed = frames_since_diminish * 3.6
-			transparency = min(255, even_frames_passed)
-
-			color = (96, 96, 192, transparency)
-			arcade.draw_rect_filled(rect, color=color)
-			#self.draw_cover_arcade_color(color)
-
-			if frame > Outro.DIMINISH_PHASE_FRAME + 240:
-				print()
-				print(self.texts[0][0])
-				print(self.texts[1][0])
-				print()
-				print("Bye !")
-				print(Globals.get_duration())
-				arcade.exit()
+			self.darken(frame)
+			self.conditional_quit(frame)
 
 		return
 		if frame is not None:
@@ -76,6 +61,25 @@ class Outro(Demo1Base):
 				texture=arcade.Texture(image=rgb_frame),
 				rect=r
 			)
+
+	def darken(self, frame):
+		rect = self.create_bkg_rect()
+		frames_since_diminish = frame - Outro.DIMINISH_PHASE_FRAME
+		even_frames_passed = frames_since_diminish * 3.6
+		transparency = min(255, even_frames_passed)
+		color = (96, 96, 192, transparency)
+		arcade.draw_rect_filled(rect, color=color)
+		# self.draw_cover_arcade_color(color)
+
+	def conditional_quit(self, frame):
+		if frame > Outro.DIMINISH_PHASE_FRAME + 240:
+			print()
+			print(self.texts[0][0])
+			print(self.texts[1][0])
+			print()
+			print("Bye !")
+			print(Globals.get_duration())
+			arcade.exit()
 
 	def on_update(self, frame, delta_time):
 

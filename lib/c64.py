@@ -67,7 +67,7 @@ class C64:
 		self.right = self.left + self.width
 		self.top = self.bottom + self.height
 
-	def blink_cursor(self, frame, color, x=0, y=4*14, delay=84):
+	def blink_cursor(self, frame, color: Color, x=0, y=4*14, delay=84):
 
 		size = 14
 		x1 = 0.1 * Constants.WIDTH + x*size
@@ -85,10 +85,10 @@ class C64:
 			)
 			arcade.draw_rect_filled(r, color)
 
-	def type_with_cursor(self, c, cursor_x, cursor_y, relative_frame, text_color, text_struct):
+	def type_with_cursor(self, c: Color, cursor_x, cursor_y, relative_frame, text_color_hex: str, text_struct):
 		for t in text_struct:
 			if relative_frame > t[1]:
-				c = Color.from_hex_string(text_color)
+				c = Color.from_hex_string(text_color_hex)
 				x = Constants.WIDTH * 0.1
 				y = t[2] * 12 + 5
 				Text(text=t[0], x=x, y=Constants.HEIGHT * 0.9 - y - 2, color=c, font_size=self.font_size, anchor_x="left"

@@ -12,7 +12,7 @@ from demos.demo1.stage14 import Stage14
 
 class Outro(Demo1Base):
 
-	START_FRAME = Stage14.START_FRAME + 40
+	START_FRAME = Stage14.START_FRAME + 10
 	DIMINISH_PHASE_FRAME = START_FRAME + 555
 	pass
 

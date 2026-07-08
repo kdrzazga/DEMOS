@@ -53,7 +53,10 @@ class Stage13(Demo1Base):
 			self.scroll.draw()
 
 		c = Color.from_hex_string(self.font_color)
-		self.blink_cursor(frame, color=c, x=0, y=9 * 14 - 7)
+		if relative_frame < Stage13.GAP_END2:
+			self.blink_cursor(frame, color=c, x=0, y=9 * 14 - 7)
+		else:
+			self.type(frame - Stage13.START_FRAME - Stage13.GAP_END2)
 
 	def draw_gap(self, height):
 		x = 0 + self.width // 2
@@ -70,6 +73,27 @@ class Stage13(Demo1Base):
 		b = max(0, min(255, b))
 		self.font_color = f"{r:02x}{g:02x}{b:02x}"
 
+	def type(self, frame):
+
+		print('f=',frame)
+		initial = 0 # Stage13.GAP_END2
+		text_struct = (("SHORT HISTORY:", initial, 11, 2.5)
+		              , ("C&Afan magazine: Dec 2007 - Feb 2013", initial + 100, 14, 5)
+		              , ("May 2010 - KOMODA founded by Komek", initial + 200, 17, 5)
+		              , ("Oct 1, 2014 Komek & friends start K&A+", initial + 300, 20, 5.6)
+		              , ("Aug 15, 2015 - Ramos dies :(", initial + 400, 23, 5.6)
+		              , ("Dec 20, 2015 - Game LAZIK released", initial + 500, 26, 5.6)
+		              , ("Apr 25, 2016 - Game SLAVIA 2 released", initial + 600, 29, 5.6)
+		              , ("Dec 22, 2015 - Intro MEET THE TEAM", initial + 700, 32, 5.6)
+		              , ("Apr 6, 2019 - K&A+ party ?SYNTAX ERROR", initial + 800, 35, 5.6)
+		              , ("Feb 28, 2026 - K&A+ party Pixelove Ole", initial + 900, 38, 5.6)
+		               )
+
+		cursor_x = 0
+		cursor_y = 9*12+7
+
+		arcade_color = Color.from_hex_string(self.font_color)
+		self.type_with_cursor(arcade_color, cursor_x, cursor_y, frame, self.font_color, text_struct)
 
 class Scroll:
 

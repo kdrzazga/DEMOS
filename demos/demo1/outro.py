@@ -2,16 +2,18 @@ import math
 
 import arcade
 #import cv2
-from arcade import Rect
+from arcade import Rect, Text
 from arcade.types import Color
 
 from demos.demo1 import Constants, Globals
 from demos.demo1.base import Demo1Base
+from demos.demo1.stage14 import Stage14
 
 
 class Outro(Demo1Base):
 
-	START_FRAME = math.inf
+	START_FRAME = Stage14.START_FRAME + 440
+	DIMINISH_PHASE_FRAME = START_FRAME + 600
 	pass
 
 	def __init__(self):
@@ -19,11 +21,48 @@ class Outro(Demo1Base):
 
 		self.video_capture = None #cv2.VideoCapture('resources/TramielHaHa.mp4')
 		self.frame = None
+		self.cursor_x = 0
+		self.cursor_y = 9*12+7
+		self.texts = (("THANKS FOR WATCHING", 200, 11, 2.5)
+		              , ("PLEASE VISIT WWW.KA-PLUS.PL", 300, 14, 3.5)
+		              , ("CODE & GFX: KD", 350, 17, 2.5)
+		              , ("MSX: MARK CROMER", 400, 20, 2.1))
 
 	def on_draw(self, frame):
 		super().on_draw(frame)
+		relative_frame = frame - Outro.START_FRAME
 		lb = Color.from_hex_string(Constants.LIGHT_BLUE)
-		self.blink_cursor(frame, color=lb, y=9*12+7)
+		self.blink_cursor(frame, lb, self.cursor_x, self.cursor_y)
+
+		for t in self.texts:
+			if relative_frame > t[1]:
+				c = Color.from_hex_string(Constants.WHITE)
+				x = Constants.WIDTH*0.1
+				y = t[2]*12+5
+				Text(text=t[0], x=x, y=Constants.HEIGHT*0.9 - y - 2, color=c, font_size=self.font_size, anchor_x="left"
+				     , anchor_y="center", font_name="C64 Pro Mono").draw()
+				self.cursor_y = y
+				self.cursor_x = len(t[0]) + t[3]
+
+		if frame > Outro.DIMINISH_PHASE_FRAME:
+			rect = self.create_bkg_rect()
+			frames_since_diminish = frame - Outro.DIMINISH_PHASE_FRAME
+			even_frames_passed = frames_since_diminish * 3.6
+			transparency = min(255, even_frames_passed)
+
+			color = (96, 96, 192, transparency)
+			arcade.draw_rect_filled(rect, color=color)
+			#self.draw_cover_arcade_color(color)
+
+			if frame > Outro.DIMINISH_PHASE_FRAME + 240:
+				print()
+				print(self.texts[0][0])
+				print(self.texts[1][0])
+				print()
+				print("Bye !")
+				print(Globals.get_duration())
+				arcade.exit()
+
 		return
 		if frame is not None:
 			# Convert BGR to RGB
@@ -49,6 +88,7 @@ class Outro(Demo1Base):
 		if relative_frame == 1:
 			print(self.__class__.__name__ + " ", Globals.get_duration(), "[frame", str(frame) + "]")
 
+		return
 		ret, frame = self.video_capture.read()
 		if ret:
 			self.frame = frame

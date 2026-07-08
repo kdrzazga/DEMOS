@@ -26,7 +26,7 @@ class Demo1(arcade.Window):
     def __init__(self):
         super().__init__(Constants.WIDTH, Constants.HEIGHT, "Demo 1", fullscreen=False)
 
-        self.frame = 0 * Stage13.START_FRAME
+        self.frame = 0 * Outro.START_FRAME
         self.intro = Intro()
         self.stage1 = Stage1()
         self.stage2 = Stage2()
@@ -78,6 +78,10 @@ class Demo1(arcade.Window):
             self.stage13.on_update(self.frame, Stage13)
         elif self.frame >= Outro.START_FRAME:
             self.outro.on_update(self.frame, delta_time)
+
+        if self.frame > Outro.DIMINISH_PHASE_FRAME - 50 and self.player is not None:
+            vol = self.player.volume - 0.005
+            self.player.volume = max(0.0, vol)
 
     def on_draw(self):
         lblue = Color.from_hex_string(Constants.LIGHT_BLUE)

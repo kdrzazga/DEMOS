@@ -24,7 +24,7 @@ from demos.demo1.outro import Outro
 
 class Demo1(arcade.Window):
     def __init__(self):
-        super().__init__(Constants.WIDTH, Constants.HEIGHT, "Demo 1", fullscreen=False)
+        super().__init__(Constants.WIDTH, Constants.HEIGHT, "Komoda & Amiga +", fullscreen=False)
 
         self.frame = 0 * Stage13.START_FRAME
         self.intro = Intro()

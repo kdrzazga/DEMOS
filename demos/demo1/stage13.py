@@ -75,7 +75,7 @@ class Stage13(Demo1Base):
 
 	def type(self, frame):
 
-		print('f=',frame)
+		# print('f=',frame)
 		initial = 0 # Stage13.GAP_END2
 		text_struct = (("SHORT HISTORY:", initial, 11, 2.5)
 		              , ("C&Afan magazine: Dec 2007 - Feb 2013", initial + 100, 14, 5)

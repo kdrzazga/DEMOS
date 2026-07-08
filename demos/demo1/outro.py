@@ -21,8 +21,6 @@ class Outro(Demo1Base):
 
 		self.video_capture = None #cv2.VideoCapture('resources/TramielHaHa.mp4')
 		self.frame = None
-		self.cursor_x = 0
-		self.cursor_y = 9*12+7
 		self.texts = (("THANKS FOR WATCHING", 200, 11, 2.5)
 		              , ("PLEASE VISIT WWW.KA-PLUS.PL", 300, 14, 3.5)
 		              , ("CODE & GFX: KD", 350, 17, 2.5)
@@ -31,18 +29,24 @@ class Outro(Demo1Base):
 	def on_draw(self, frame):
 		super().on_draw(frame)
 		relative_frame = frame - Outro.START_FRAME
-		lb = Color.from_hex_string(Constants.LIGHT_BLUE)
-		self.blink_cursor(frame, lb, self.cursor_x, self.cursor_y)
+		c = Color.from_hex_string(Constants.LIGHT_BLUE)
 
-		for t in self.texts:
+		cursor_x = 0
+		cursor_y = 9*12+7
+
+		text_color = Constants.WHITE
+		text_struct = self.texts
+		for t in text_struct:
 			if relative_frame > t[1]:
-				c = Color.from_hex_string(Constants.WHITE)
+				c = Color.from_hex_string(text_color)
 				x = Constants.WIDTH*0.1
 				y = t[2]*12+5
 				Text(text=t[0], x=x, y=Constants.HEIGHT*0.9 - y - 2, color=c, font_size=self.font_size, anchor_x="left"
 				     , anchor_y="center", font_name="C64 Pro Mono").draw()
-				self.cursor_y = y
-				self.cursor_x = len(t[0]) + t[3]
+				cursor_y = y
+				cursor_x = len(t[0]) + t[3]
+
+		self.blink_cursor(relative_frame, c, cursor_x, cursor_y)
 
 		if frame > Outro.DIMINISH_PHASE_FRAME:
 			rect = self.create_bkg_rect()

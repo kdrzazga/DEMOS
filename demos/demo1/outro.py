@@ -13,7 +13,7 @@ from demos.demo1.stage14 import Stage14
 class Outro(Demo1Base):
 
 	START_FRAME = Stage14.START_FRAME + 440
-	DIMINISH_PHASE_FRAME = START_FRAME + 600
+	DIMINISH_PHASE_FRAME = START_FRAME + 555
 	pass
 
 	def __init__(self):
@@ -21,10 +21,11 @@ class Outro(Demo1Base):
 
 		self.video_capture = None #cv2.VideoCapture('resources/TramielHaHa.mp4')
 		self.frame = None
-		self.texts = (("THANKS FOR WATCHING", 200, 11, 2.5)
-		              , ("PLEASE VISIT WWW.KA-PLUS.PL", 300, 14, 3.5)
-		              , ("CODE & GFX: KD", 350, 17, 2.5)
-		              , ("MSX: MARK CROMER", 400, 20, 2.1))
+		initial = 44
+		self.texts = (("THANKS FOR WATCHING", initial, 11, 2.5)
+		              , ("PLEASE VISIT WWW.KA-PLUS.PL", initial+100, 14, 3.5)
+		              , ("CODE & GFX: KD", initial + 150, 17, 2.5)
+		              , ("MSX: MARK CROMER", initial + 200, 20, 2.1))
 
 	def on_draw(self, frame):
 		super().on_draw(frame)
@@ -36,17 +37,7 @@ class Outro(Demo1Base):
 
 		text_color = Constants.WHITE
 		text_struct = self.texts
-		for t in text_struct:
-			if relative_frame > t[1]:
-				c = Color.from_hex_string(text_color)
-				x = Constants.WIDTH*0.1
-				y = t[2]*12+5
-				Text(text=t[0], x=x, y=Constants.HEIGHT*0.9 - y - 2, color=c, font_size=self.font_size, anchor_x="left"
-				     , anchor_y="center", font_name="C64 Pro Mono").draw()
-				cursor_y = y
-				cursor_x = len(t[0]) + t[3]
-
-		self.blink_cursor(relative_frame, c, cursor_x, cursor_y)
+		self.type_with_cursor(c, cursor_x, cursor_y, relative_frame, text_color, text_struct)
 
 		if frame > Outro.DIMINISH_PHASE_FRAME:
 			rect = self.create_bkg_rect()

@@ -84,3 +84,15 @@ class C64:
 				bottom=0
 			)
 			arcade.draw_rect_filled(r, color)
+
+	def type_with_cursor(self, c, cursor_x, cursor_y, relative_frame, text_color, text_struct):
+		for t in text_struct:
+			if relative_frame > t[1]:
+				c = Color.from_hex_string(text_color)
+				x = Constants.WIDTH * 0.1
+				y = t[2] * 12 + 5
+				Text(text=t[0], x=x, y=Constants.HEIGHT * 0.9 - y - 2, color=c, font_size=self.font_size, anchor_x="left"
+				     , anchor_y="center", font_name="C64 Pro Mono").draw()
+				cursor_y = y
+				cursor_x = len(t[0]) + t[3]
+		self.blink_cursor(relative_frame, c, cursor_x, cursor_y)

@@ -15,7 +15,7 @@ from demos.demo1.stage3allwhite import Stage3
 from demos.demo1.stage4 import Stage4
 from demos.demo1.stage5 import Stage5
 from demos.demo1.stage7pacman import Stage7
-from demos.demo1.stage6 import Stage6
+from demos.demo1.stage6shining import Stage6
 from demos.demo1.stage8dialog1 import Stage8
 from demos.demo1.stage9dialog2 import Stage9
 from demos.demo1.stage10dialog3 import Stage10

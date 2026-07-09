@@ -6,7 +6,7 @@ from demos.demo1 import Constants, Globals
 from demos.demo1.base import Demo1Base
 from demos.demo1.ghost import Ghost
 from demos.demo1.handfloppy import Hand
-from demos.demo1.stage6 import Stage6
+from demos.demo1.stage6shining import Stage6
 
 
 class Stage7(Demo1Base):

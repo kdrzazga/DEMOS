@@ -1,7 +1,7 @@
 import arcade
 
-from demos.demo2 import Constants
-from demos.demo2.intro import Intro
+from demos.pc45 import Constants
+from demos.pc45.intro import Intro
 
 
 class Demo2(arcade.Window):

@@ -123,7 +123,8 @@ class Stage12(Demo1Base):
 				surface_height=Constants.HEIGHT * 2 - 0 * 200,
 				amplitude=self.amplitude,
 				frequency=self.frequency,
-				horizon_x=self.horizon_x
+				horizon_x=self.horizon_x,
+				min_y=2.05*self.ground.center_y
 			)
 		self.blink_write(0.9*Constants.HEIGHT - 4*12, "READY.", start_frame=Stage12.START_FRAME, frame=frame)
 		self.blink_cursor(frame, color=WHITE, delay=36)

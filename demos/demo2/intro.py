@@ -13,7 +13,8 @@ class Intro:
 		self.beep_typer = Typer(0, Constants.HEIGHT - font_size, font_name+".ttf", font_name, font_size, WHITE)
 
 	def on_update(self, frame):
-		pass
+		return
 
 	def on_draw(self, frame):
-		self.beep_typer.type("Enter today's date: (m-d-y): 8-15-81")
+		if frame % 10 > 5:
+			r = Rect()

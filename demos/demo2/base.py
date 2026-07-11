@@ -1,2 +1,7 @@
 class Demo2Base:
-	pass
+
+	def __init__(self):
+		self.frame = 0
+
+	def on_update(self):
+		pass

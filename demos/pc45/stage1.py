@@ -16,8 +16,8 @@ class Stage1(Pc45Demo):
 	def __init__(self):
 		super().__init__()
 
-	def on_update(self, frame, klass):
+	def on_update(self, frame:int, klass):
 		pass
 
-	def on_draw(self, frame):
+	def on_draw(self, frame:int):
 		pass

@@ -34,8 +34,8 @@ class Pc45Demo:
 		return
 
 	@classmethod
-	def blink_cursor(cls, frame, color: Color, x=0, y=12, delay=84):
-		print(frame)
+	def blink_cursor(cls, frame:int, color: Color, x=0, y=12, delay=84):
+		#print(frame)
 		size = 14
 		x1 = x
 		delta = frame % delay

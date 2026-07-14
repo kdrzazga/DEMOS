@@ -53,7 +53,10 @@ class Stage13(Demo1Base):
 			self.scroll.draw()
 
 		c = Color.from_hex_string(self.font_color)
-		self.blink_cursor(frame, color=c, x=0, y=9 * 14 - 7)
+		if relative_frame < Stage13.GAP_END2:
+			self.blink_cursor(frame, color=c, x=0, y=9 * 14 - 7)
+		else:
+			self.type(frame - Stage13.START_FRAME - Stage13.GAP_END2)
 
 	def draw_gap(self, height):
 		x = 0 + self.width // 2
@@ -70,6 +73,47 @@ class Stage13(Demo1Base):
 		b = max(0, min(255, b))
 		self.font_color = f"{r:02x}{g:02x}{b:02x}"
 
+	def type(self, frame):
+
+		# print('f=',frame)
+		initial = 0 # Stage13.GAP_END2
+		shift1 = 10
+		shift2 = shift1 + 20
+		text_struct = (("SHORT HISTORY:", initial, 11, 2.5)
+		              , ("Dec 2007", initial + 100, 14, 5)
+		              , ("Dec 2007 to Feb 2013", initial + 100 + shift1, 14, 5)
+		              , ("Dec 2007 to Feb 2013 - C&Afan magazine", initial + 100 + shift2, 14, 5)
+		              , ("May 2010", initial + 200, 17, 5)
+		              , ("May 2010 - KOMODA", initial + 200 + shift1, 17, 5)
+		              , ("May 2010 - KOMODA founded by Komek", initial + 200 + shift2, 17, 5)
+		              , ("Oct 1, 2014", initial + 300, 20, 5.6)
+		              , ("Oct 1, 2014 - Komek & friends", initial + 300 + shift1, 20, 5.6)
+		              , ("Oct 1, 2014 - Komek & friends start K&A+", initial + 300 + shift2, 20, 5.6)
+		              , ("Aug 15, 2015", initial + 400, 23, 5.6)
+		              , ("Aug 15, 2015 - Ramos", initial + 400 + shift1, 23, 5.6)
+		              , ("Aug 15, 2015 - Ramos dies :(", initial + 400 + shift2, 23, 5.6)
+		              , ("Dec 20, 2015", initial + 500, 26, 5.6)
+		              , ("Dec 20, 2015 - Game LAZIK", initial + 500 + shift1, 26, 5.6)
+		              , ("Dec 20, 2015 - Game LAZIK released", initial + 500 + shift2, 26, 5.6)
+		              , ("Dec 22, 2015", initial + 600, 29, 5.6)
+		              , ("Dec 22, 2015 - Intro", initial + 600 + shift1, 29, 5.6)
+		              , ("Dec 22, 2015 - Intro MEET THE TEAM", initial + 600 + shift2, 29, 5.6)
+		              , ("Apr 25, 2016", initial + 700, 32, 5.6)
+		              , ("Apr 25, 2016 - Game SLAVIA 2", initial + 700 + shift1, 32, 5.6)
+		              , ("Apr 25, 2016 - Game SLAVIA 2 released", initial + 700 + shift2, 32, 5.6)
+		              , ("Apr 6, 2019", initial + 800, 35, 5.6)
+		              , ("Apr 6, 2019 - K&A+ party", initial + 800 + shift1, 35, 5.6)
+		              , ("Apr 6, 2019 - K&A+ party ?SYNTAX ERROR", initial + 800 + shift2, 35, 5.6)
+		              , ("Feb 28, 2026", initial + 900, 38, 5.6)
+		              , ("Feb 28, 2026 - K&A+ party", initial + 900 + shift1, 38, 5.6)
+		              , ("Feb 28, 2026 - K&A+ party Pixelove Ole", initial + 900 + shift2, 38, 5.6)
+		               )
+
+		cursor_x = 0
+		cursor_y = 9*12+7
+
+		arcade_color = Color.from_hex_string(self.font_color)
+		self.type_with_cursor(arcade_color, cursor_x, cursor_y, frame, self.font_color, text_struct)
 
 class Scroll:
 

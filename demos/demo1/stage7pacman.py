@@ -6,7 +6,7 @@ from demos.demo1 import Constants, Globals
 from demos.demo1.base import Demo1Base
 from demos.demo1.ghost import Ghost
 from demos.demo1.handfloppy import Hand
-from demos.demo1.stage6 import Stage6
+from demos.demo1.stage6shining import Stage6
 
 
 class Stage7(Demo1Base):
@@ -51,17 +51,21 @@ class Stage7(Demo1Base):
 			for ghost in (self.pinky, self.inky, self.blinky, self.clyde):
 				ghost.draw()
 
-			increment = 0.004
-			if 333 < relative_frame < 333 + 1/increment:
-				scale_x = self.poke53281.scale_x + increment
-				self.poke53281.scale = (scale_x, scale_x)
-				self.poke53281.center_y += 1.5
-				arcade.draw_sprite(self.poke53281)
-			if 444 < relative_frame < 444 + 1/increment:
-				scale_x = self.poke53280.scale_x + increment
-				self.poke53280.scale = (scale_x, scale_x)
-				self.poke53280.center_y -= 1.5
-				arcade.draw_sprite(self.poke53280)
+			self.conditional_pokes(relative_frame)
+
+	def conditional_pokes(self, relative_frame):
+		increment = 0.004
+		if 333 < relative_frame < 333 + 1 / increment:
+			scale_x = self.poke53281.scale_x + increment
+			self.poke53281.scale = (scale_x, scale_x)
+			self.poke53281.center_y += 1.5
+			arcade.draw_sprite(self.poke53281)
+
+		if 444 < relative_frame < 444 + 1 / increment:
+			scale_x = self.poke53280.scale_x + increment
+			self.poke53280.scale = (scale_x, scale_x)
+			self.poke53280.center_y -= 1.5
+			arcade.draw_sprite(self.poke53280)
 
 	def on_update(self, frame, klass):
 		if frame == Stage7.START_FRAME + 1:

@@ -1,7 +1,7 @@
 import arcade
 
-from demos.demo2 import Constants
-from demos.demo2.intro import Intro
+from demos.pc45 import Constants
+from demos.pc45.intro import Intro
 
 
 class Demo2(arcade.Window):
@@ -10,6 +10,8 @@ class Demo2(arcade.Window):
 
         self.frame = 0 #* Stage13.START_FRAME
         self.intro = Intro()
+        sound = arcade.load_sound(Constants.RES_PATH + "pc-boot.mp3")
+        sound.play(loop=False)
 
     def on_update(self, delta_time):
         self.frame += 1

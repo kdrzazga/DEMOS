@@ -1,18 +1,20 @@
 import arcade
 
 from demos.demo1.main import Demo1
-from demos.demo2.main import Demo2
+from demos.pc45.main import Demo2
 
 
-def demo1():
+def kna_demo():
     Demo1()
     arcade.run()
 
 
-def demo2():
+def pc45_demo():
     Demo2()
     arcade.run()
+    arcade.Sprite()
 
 
 if __name__ == "__main__":
-    demo1()
+    #pc45_demo()
+    kna_demo()

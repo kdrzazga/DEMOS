@@ -20,23 +20,28 @@ class Stage6(Demo1Base):
 		self.shining5 = arcade.load_texture(path + "ka5.png")
 		self.shining6 = arcade.load_texture(path + "ka6.png")
 
+		self.twenty_six = arcade.load_texture(path + "26issues.png")
+
 	def on_draw(self, frame):
 		relative_frame = frame - Stage6.START_FRAME
 		r = Rect(0,0, 0,Constants.HEIGHT, Constants.WIDTH, Constants.HEIGHT, Constants.WIDTH//2, Constants.HEIGHT//2)
 		interval = 3
 		last = 6 * interval
 
-		relative_frame = relative_frame % last
+		relative_frame_new = relative_frame % last
 
-		if relative_frame < interval:
+		if relative_frame_new < interval:
 			arcade.draw_texture_rect(self.shining1, rect=r)
-		elif relative_frame < 2*interval:
+		elif relative_frame_new < 2*interval:
 			arcade.draw_texture_rect(self.shining2, rect=r)
-		elif relative_frame < 3*interval:
+		elif relative_frame_new < 3*interval:
 			arcade.draw_texture_rect(self.shining3, rect=r)
-		elif relative_frame < 4*interval:
+		elif relative_frame_new < 4*interval:
 			arcade.draw_texture_rect(self.shining4, rect=r)
-		elif relative_frame < 5*interval:
+		elif relative_frame_new < 5*interval:
 			arcade.draw_texture_rect(self.shining5, rect=r)
-		elif relative_frame < 6*interval:
+		elif relative_frame_new < 6*interval:
 			arcade.draw_texture_rect(self.shining6, rect=r)
+
+		if 20 < relative_frame < 50 or 120 < relative_frame < 150 or relative_frame > 190:
+			arcade.draw_texture_rect(self.twenty_six, rect=r)

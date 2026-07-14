@@ -2,16 +2,18 @@ import math
 
 import arcade
 #import cv2
-from arcade import Rect
+from arcade import Rect, Text
 from arcade.types import Color
 
 from demos.demo1 import Constants, Globals
 from demos.demo1.base import Demo1Base
+from demos.demo1.stage14 import Stage14
 
 
 class Outro(Demo1Base):
 
-	START_FRAME = math.inf
+	START_FRAME = Stage14.START_FRAME + 10
+	DIMINISH_PHASE_FRAME = START_FRAME + 555
 	pass
 
 	def __init__(self):
@@ -19,11 +21,28 @@ class Outro(Demo1Base):
 
 		self.video_capture = None #cv2.VideoCapture('resources/TramielHaHa.mp4')
 		self.frame = None
+		initial = 44
+		self.texts = (("THANKS FOR WATCHING", initial, 11, 2.5)
+		              , ("PLEASE VISIT WWW.KA-PLUS.PL", initial+100, 14, 3.5)
+		              , ("CODE & GFX: KD", initial + 150, 17, 2.5)
+		              , ("MSX: MARK CROMER", initial + 200, 20, 2.1))
 
 	def on_draw(self, frame):
 		super().on_draw(frame)
-		lb = Color.from_hex_string(Constants.LIGHT_BLUE)
-		self.blink_cursor(frame, color=lb, y=9*12+7)
+		relative_frame = frame - Outro.START_FRAME
+		c = Color.from_hex_string(Constants.LIGHT_BLUE)
+
+		cursor_x = 0
+		cursor_y = 9*12+7
+
+		text_color = Constants.WHITE
+		text_struct = self.texts
+		self.type_with_cursor(c, cursor_x, cursor_y, relative_frame, text_color, text_struct)
+
+		if frame > Outro.DIMINISH_PHASE_FRAME:
+			self.darken(frame)
+			self.conditional_quit(frame)
+
 		return
 		if frame is not None:
 			# Convert BGR to RGB
@@ -43,12 +62,32 @@ class Outro(Demo1Base):
 				rect=r
 			)
 
+	def darken(self, frame):
+		rect = self.create_bkg_rect()
+		frames_since_diminish = frame - Outro.DIMINISH_PHASE_FRAME
+		even_frames_passed = frames_since_diminish * 3.6
+		transparency = min(255, even_frames_passed)
+		color = (96, 96, 192, transparency)
+		arcade.draw_rect_filled(rect, color=color)
+		# self.draw_cover_arcade_color(color)
+
+	def conditional_quit(self, frame):
+		if frame > Outro.DIMINISH_PHASE_FRAME + 240:
+			print()
+			print(self.texts[0][0])
+			print(self.texts[1][0])
+			print()
+			print("Bye !")
+			print(Globals.get_duration())
+			arcade.exit()
+
 	def on_update(self, frame, delta_time):
 
 		relative_frame = frame - Outro.START_FRAME
 		if relative_frame == 1:
 			print(self.__class__.__name__ + " ", Globals.get_duration(), "[frame", str(frame) + "]")
 
+		return
 		ret, frame = self.video_capture.read()
 		if ret:
 			self.frame = frame

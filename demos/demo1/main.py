@@ -15,7 +15,7 @@ from demos.demo1.stage3allwhite import Stage3
 from demos.demo1.stage4 import Stage4
 from demos.demo1.stage5 import Stage5
 from demos.demo1.stage7pacman import Stage7
-from demos.demo1.stage6 import Stage6
+from demos.demo1.stage6shining import Stage6
 from demos.demo1.stage8dialog1 import Stage8
 from demos.demo1.stage9dialog2 import Stage9
 from demos.demo1.stage10dialog3 import Stage10
@@ -24,9 +24,9 @@ from demos.demo1.outro import Outro
 
 class Demo1(arcade.Window):
     def __init__(self):
-        super().__init__(Constants.WIDTH, Constants.HEIGHT, "Demo 1", fullscreen=False)
+        super().__init__(Constants.WIDTH, Constants.HEIGHT, "Komoda & Amiga +", fullscreen=False)
 
-        self.frame = 0 * Stage13.START_FRAME
+        self.frame = 0 * Stage4.START_FRAME
         self.intro = Intro()
         self.stage1 = Stage1()
         self.stage2 = Stage2()
@@ -78,6 +78,10 @@ class Demo1(arcade.Window):
             self.stage13.on_update(self.frame, Stage13)
         elif self.frame >= Outro.START_FRAME:
             self.outro.on_update(self.frame, delta_time)
+
+        if self.frame > Outro.DIMINISH_PHASE_FRAME - 50 and self.player is not None:
+            vol = self.player.volume - 0.005
+            self.player.volume = max(0.0, vol)
 
     def on_draw(self):
         lblue = Color.from_hex_string(Constants.LIGHT_BLUE)

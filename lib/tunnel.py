@@ -75,7 +75,7 @@ class IsometricSineTunnel:
     def update(self, delta_time, speed=2):
         self.phase += speed * delta_time
 
-    def draw(self, surface_width, surface_height, amplitude, frequency, horizon_x):
+    def draw(self, surface_width, surface_height, amplitude, frequency, horizon_x, min_y):
         points = []
         angle_rad = math.radians(self.angle_deg)
 
@@ -83,7 +83,8 @@ class IsometricSineTunnel:
             sine_value = amplitude * math.sin(frequency * (y + self.phase))
             # Convert to isometric projection with x as the sine value
             iso_x, iso_y = self.iso_transform(sine_value + horizon_x, y, angle_rad, surface_width, surface_height)
-            points.append((iso_x, iso_y))
+            if iso_y > min_y:
+                points.append((iso_x, iso_y))
 
         arcade.draw_lines(points, self.color, 1)
 

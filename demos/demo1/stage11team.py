@@ -15,7 +15,7 @@ class Stage11(Demo1Base):
 		lblue = Color.from_hex_string(Constants.LIGHT_BLUE)
 		self.tunnel = TunnelEffect(210, Constants.WIDTH, Constants.HEIGHT, lblue)
 		self.start_tunnel_frame = 55
-		self.base_y = Constants.WIDTH // 2 - 12
+		self.base_y = 26*14
 		self.X = Constants.WIDTH//4
 		self.meet_the_team = Text(
 			"MEET THE TEAM:",
@@ -51,15 +51,15 @@ class Stage11(Demo1Base):
 
 		crew = [
 			("KOMEK", self.base_y),
-			("TOMXX", self.base_y - 24),
-			("LEON", self.base_y - 48),
-			("TECT", self.base_y - 72),
-			("VOID", self.base_y - 96),
-			("KD", self.base_y - 120),
-			("PHOWIEC", self.base_y - 144),
-			("PIANA", self.base_y - 168),
-			("DON RAFITO", self.base_y - 192),
-			("ARI", self.base_y - 216)
+			("TOMXX", self.base_y - 2*14),
+			("LEON", self.base_y - 4*14),
+			("TECT", self.base_y - 6*14),
+			("VOID", self.base_y - 8*14),
+			("KD", self.base_y - 10*14),
+			("PHOWIEC", self.base_y - 12*14),
+			("PIANA", self.base_y - 14*14),
+			("DON RAFITO", self.base_y - 16*14),
+			("ARI", self.base_y - 18*14)
 		]
 
 		size = (relative_frame - self.start_tunnel_frame) // 17
@@ -70,6 +70,9 @@ class Stage11(Demo1Base):
 			texts.append(self.meet_the_team)
 
 		intensity = min(255, relative_frame - self.start_tunnel_frame)
+		if intensity < 0:
+			intensity = 0
+		c = (intensity, 255, intensity)
 		for i in range(size):
 			t = Text(
 				crew[i][0],
@@ -77,7 +80,9 @@ class Stage11(Demo1Base):
 				y=crew[i][1],
 				font_name="C64 Pro Mono",
 				font_size=12,
-				color=(intensity, 255, intensity)
+				color=c,
+				anchor_x="left",
+				anchor_y="center"
 			)
 			texts.append(t)
 			if intensity == 255:
@@ -85,6 +90,12 @@ class Stage11(Demo1Base):
 
 		for t in texts:
 			t.draw()
+
+		if len(texts) > 1: # skip'meet the team' text
+			x = (self.X + len(texts[-1].text) * 14 - 4*14) // 14
+			y = 0.9 * Constants.HEIGHT - texts[-1].y -2
+			if y > 0:
+				self.blink_cursor(relative_frame, c, x, y, 20)
 
 		if intensity == 255:
 			self.draw_cover()

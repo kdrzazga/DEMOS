@@ -15,9 +15,9 @@ class Noise:
     BACKGROUND = (0, 0, 0)
     REVERSE_RATIO = 0.6
 
-    def __init__(self, width, height):
+    def __init__(self, width, height, char_size=CHAR_SIZE):
         pygame.font.init()
-        self.font = pygame.font.Font(Noise.FONT_PATH, Noise.CHAR_SIZE)
+        self.font = pygame.font.Font(Noise.FONT_PATH, char_size)
         self.cell_width, self.cell_height = self.font.size("W")
         self.columns = width // self.cell_width + 1
         self.rows = height // self.cell_height + 1

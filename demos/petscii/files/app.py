@@ -47,7 +47,7 @@ class App:
     WIDTH = 1150
     HEIGHT = 700
     FPS = 25
-    NOISE_SECONDS = 6
+    NOISE_SECONDS = 40
 
     SCENE_NOISE = 0
     SCENE_CUBE = 1
@@ -69,7 +69,7 @@ class App:
         self.noise = Noise(App.WIDTH, App.HEIGHT)
         self.texture = glGenTextures(1)
 
-        self.logo = KnaLogo()
+        self.logo = KnaLogo(char_size=16)
 
     def run(self):
         while self.running:
@@ -104,9 +104,10 @@ class App:
 
     def draw_noise(self):
         self.noise.render(self.surface)
-        if self.frame > 60:
+        if self.frame > 10:
             print(self.frame)
-            self.logo.render(self.surface, transparent_space=True)
+            self.logo.render_from_corners(self.surface, transparent_space=True)
+            #self.logo.render(self.surface, transparent_space=True)
         self.draw_surface(self.surface)
 
     def draw_surface(self, surface):

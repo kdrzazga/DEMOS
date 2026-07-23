@@ -148,6 +148,8 @@ class App:
             self.logo.render_from_corners(self.surface, transparent_space=True)
 
     def compose_second_surface(self):
-        """Boiling noise with the DJ Space Thunder logo revealed on top."""
+        """Boiling noise with the DJ Space Thunder logo revealed against the right edge."""
         self.noise.render(self.surface2)
-        self.c64.render_from_corners(self.surface2, transparent_space=True)
+        logo_width, _ = self.c64.size()
+        origin = (App.WIDTH - logo_width, 0)
+        self.c64.render_from_corners(self.surface2, transparent_space=True, origin=origin)

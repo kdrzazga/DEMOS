@@ -79,7 +79,7 @@ class PetsciiImage:
         cell_width, cell_height = self.font(char_size).size("W")
         return self.COLUMNS * cell_width, self.ROWS * cell_height
 
-    def render(self, surface, char_size=None, transparent_space=False):
+    def render(self, surface, char_size=None, transparent_space=False, origin=(0, 0)):
         char_size = self.char_size if char_size is None else char_size
         cell_size = self.font(char_size).size("W")
         if not transparent_space:
@@ -88,10 +88,10 @@ class PetsciiImage:
             for column in range(self.COLUMNS):
                 if transparent_space and self.is_blank(row, column):
                     continue
-                self.draw_cell(surface, char_size, cell_size, row, column)
+                self.draw_cell(surface, char_size, cell_size, row, column, origin)
 
     def render_from_corners(self, surface, char_size=None, transparent_space=False,
-                            speed=REVEAL_SPEED):
+                            speed=REVEAL_SPEED, origin=(0, 0)):
         """Reveal the image from the four corners, adding speed characters per call."""
         self.render_progress += speed
         char_size = self.char_size if char_size is None else char_size
@@ -102,7 +102,7 @@ class PetsciiImage:
             for row, column in self.cells_from_corner(corner):
                 if transparent_space and self.is_blank(row, column):
                     continue
-                self.draw_cell(surface, char_size, cell_size, row, column)
+                self.draw_cell(surface, char_size, cell_size, row, column, origin)
 
     def cells_from_corner(self, corner):
         """The cells revealed so far at one corner: everything up to its newest character."""
@@ -128,14 +128,15 @@ class PetsciiImage:
             self._corner_orders[corner] = order, character_cuts
         return self._corner_orders[corner]
 
-    def draw_cell(self, surface, char_size, cell_size, row, column):
+    def draw_cell(self, surface, char_size, cell_size, row, column, origin=(0, 0)):
         background = self.PALETTE[self.BACKGROUND_COLOR]
         foreground, cell_background = self.PALETTE[self.colors[row][column]], background
         if self.reversed[row][column]:
             foreground, cell_background = cell_background, foreground
         glyph = self.glyph(char_size, self.chars[row][column], foreground, cell_background)
         cell_width, cell_height = cell_size
-        surface.blit(glyph, (column * cell_width, row * cell_height))
+        origin_x, origin_y = origin
+        surface.blit(glyph, (origin_x + column * cell_width, origin_y + row * cell_height))
 
     def glyph(self, char_size, code, foreground, background):
         """A rendered character, built once and reused on later frames."""

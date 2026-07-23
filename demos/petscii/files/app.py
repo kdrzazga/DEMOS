@@ -37,6 +37,7 @@ from OpenGL.GL import (
 )
 from OpenGL.GLU import gluPerspective
 
+from demos.petscii.files.kna_logo import KnaLogo
 from demos.petscii.files.noise import Noise
 
 
@@ -67,6 +68,8 @@ class App:
         self.surface = pygame.Surface((App.WIDTH, App.HEIGHT))
         self.noise = Noise(App.WIDTH, App.HEIGHT)
         self.texture = glGenTextures(1)
+
+        self.logo = KnaLogo()
 
     def run(self):
         while self.running:
@@ -101,11 +104,14 @@ class App:
 
     def draw_noise(self):
         self.noise.render(self.surface)
+        if self.frame > 60:
+            print(self.frame)
+            self.logo.render(self.surface, transparent_space=True)
         self.draw_surface(self.surface)
 
     def draw_surface(self, surface):
         """Display a pygame surface as a full-screen quad (the 2D rendering path)."""
-        data = pygame.image.tobytes(surface, "RGBA", True)
+        data = pygame.image.tobytes(surface, "RGBA")
         glBindTexture(GL_TEXTURE_2D, self.texture)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)

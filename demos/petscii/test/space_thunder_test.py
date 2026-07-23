@@ -6,14 +6,14 @@ import pygame
 _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 sys.path.insert(0, _ROOT)
 
-from demos.petscii.files.kna_logo import KnaLogo
+from demos.petscii.files.dj_space_thunder import DjSpaceThunder
 
 
 def main():
     pygame.init()
-    image = KnaLogo(12)
+    image = DjSpaceThunder(12)
     screen = pygame.display.set_mode(image.size())
-    pygame.display.set_caption("K&A PLUS logo")
+    pygame.display.set_caption("DJ SPACE THUNDER logo")
     clock = pygame.time.Clock()
 
     image.render(screen)

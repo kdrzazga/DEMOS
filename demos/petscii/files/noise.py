@@ -1,15 +1,13 @@
-import os
 import random
 
 import pygame
 
-_REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+from demos.petscii.files.globals import Constants
 
 
 class Noise:
     """A full-screen mesh of random PETSCII characters recreating the C64 noise effect."""
 
-    FONT_PATH = os.path.join(_REPO_ROOT, "lib", "resources", "C64_Pro_Mono-STYLE.ttf")
     CHAR_SIZE = 16
     FOREGROUND = (200, 200, 200)
     BACKGROUND = (0, 0, 0)
@@ -17,7 +15,7 @@ class Noise:
 
     def __init__(self, width, height, char_size=CHAR_SIZE):
         pygame.font.init()
-        self.font = pygame.font.Font(Noise.FONT_PATH, char_size)
+        self.font = pygame.font.Font(Constants.FONT_PATH, char_size)
         self.cell_width, self.cell_height = self.font.size("W")
         self.columns = width // self.cell_width + 1
         self.rows = height // self.cell_height + 1

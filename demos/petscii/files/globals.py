@@ -9,6 +9,15 @@ class Constants:
     HEIGHT = 700
     FPS = 25
 
+    HEADER = "**** COMMODORE 64 BASIC V2 ****"
+    HEADER2 = " 64K RAM SYSTEM  38911 BASIC BYTES FREE "
+    HEADER3 = "READY."
+
+    # the 3D view everything is drawn in
+    FOV = 45
+    CAMERA_Z = -3.0
+    HALF_WIDTH = 2.0
+
     COLUMNS = 40
     ROWS = 25
     FONT_BASE = 0xE000

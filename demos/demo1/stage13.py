@@ -65,13 +65,17 @@ class Stage13(Demo1Base):
 		arcade.draw_rect_filled(r, color=Color.from_hex_string(self.font_color))
 
 	def change_color(self, amplitude=127.5, offset=127.5):
-		r = int(amplitude * math.sin(self.t) + offset)
-		g = int(amplitude * math.sin(self.t + 2 * math.pi / 3) + offset)
-		b = int(amplitude * math.sin(self.t + 4 * math.pi / 3) + offset)
+		b, g, r = self.change_color_rgb(self.t, amplitude, offset)
+		self.font_color = f"{r:02x}{g:02x}{b:02x}"
+
+	def change_color_rgb(self, t, amplitude, offset):
+		r = int(amplitude * math.sin(t) + offset)
+		g = int(amplitude * math.sin(t + 2 * math.pi / 3) + offset)
+		b = int(amplitude * math.sin(t + 4 * math.pi / 3) + offset)
 		r = max(0, min(255, r))
 		g = max(0, min(255, g))
 		b = max(0, min(255, b))
-		self.font_color = f"{r:02x}{g:02x}{b:02x}"
+		return b, g, r
 
 	def type(self, frame):
 

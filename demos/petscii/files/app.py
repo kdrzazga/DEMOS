@@ -10,6 +10,7 @@ from OpenGL.GL import (
     glEnable,
 )
 
+from demos.petscii.files.c64_screen import C64Screen
 from demos.petscii.files.dj_space_thunder import DjSpaceThunder
 from demos.petscii.files.globals import Constants
 from demos.petscii.files.kna_logo import KnaLogo
@@ -20,7 +21,7 @@ from demos.petscii.files.tilt_screen import TiltScreen
 class App:
     """PETSCII demo: two noise screens that each tilt away to opposite edges."""
 
-    NOISE_SECONDS = 14
+    NOISE_SECONDS = 8
     SECOND_NOISE_SECONDS = 3
     TILT_SECONDS = 3
     SHRINK_SECONDS = 3
@@ -58,6 +59,7 @@ class App:
         self.c64 = DjSpaceThunder(char_size=16)
         self.tiltLeft = TiltScreen(Constants.WIDTH, Constants.HEIGHT)
         self.tiltRight = TiltScreen(Constants.WIDTH, Constants.HEIGHT)
+        self.c64_screen = C64Screen()
 
     def run(self):
         while self.running:
@@ -112,6 +114,7 @@ class App:
                 self.set_scene(App.SCENE_SHRINK2)
         elif self.scene == App.SCENE_SHRINK2:
             self.tiltRight.shrink(self.scene_progress(App.SHRINK_SECONDS))
+            self.c64_screen.update(self.scene_frame)
 
     def scene_progress(self, seconds):
         """How far the current scene has run, as a 0..1 fraction of seconds."""
@@ -123,6 +126,8 @@ class App:
         if self.scene >= App.SCENE_NOISE2:
             glClear(GL_DEPTH_BUFFER_BIT)  # let the second screen cover the first
             self.draw_second_screen()
+        if self.scene >= App.SCENE_SHRINK2:
+            self.c64_screen.render(self.frame)
 
     def draw_first_screen(self):
         self.compose_first_surface()

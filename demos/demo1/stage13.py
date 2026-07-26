@@ -1,4 +1,6 @@
 import math
+import os
+
 import arcade
 
 from arcade import Rect, Sprite
@@ -16,6 +18,7 @@ class Stage13(Demo1Base):
 	GAP_END = GAP_START + 450
 	GAP_END2 = GAP_END + 150
 	SCROLL_START = GAP_START + 80
+	PHOTO_FRAMES = 337  # frames each meet-team photo stays on screen (4 x 337 ~= 1349)
 
 	def __init__(self):
 		super().__init__()
@@ -23,6 +26,7 @@ class Stage13(Demo1Base):
 		self.bg_color = "000000"
 		self.t = 0
 		self.scroll = Scroll()
+		self.photos = self.load_photos()
 
 	def on_update(self, frame, klass):
 		relative_frame = - Stage13.START_FRAME + frame
@@ -56,7 +60,10 @@ class Stage13(Demo1Base):
 		if relative_frame < Stage13.GAP_END2:
 			self.blink_cursor(frame, color=c, x=0, y=9 * 14 - 7)
 		else:
-			self.type(frame - Stage13.START_FRAME - Stage13.GAP_END2)
+			f = frame - Stage13.START_FRAME - Stage13.GAP_END2
+			self.background_photo(f)
+			self.draw_header(self.font_color)  # re-type the C64 header on top of the photo
+			self.type(f)
 
 	def draw_gap(self, height):
 		x = 0 + self.width // 2
@@ -87,12 +94,15 @@ class Stage13(Demo1Base):
 		              , ("Dec 2007", initial + 100, 14, 5)
 		              , ("Dec 2007 to Feb 2013", initial + 100 + shift1, 14, 5)
 		              , ("Dec 2007 to Feb 2013 - C&Afan magazine", initial + 100 + shift2, 14, 5)
+
 		              , ("May 2010", initial + 200, 17, 5)
 		              , ("May 2010 - KOMODA", initial + 200 + shift1, 17, 5)
 		              , ("May 2010 - KOMODA founded by Komek", initial + 200 + shift2, 17, 5)
+
 		              , ("Oct 1, 2014", initial + 300, 20, 5.6)
 		              , ("Oct 1, 2014 - Komek & friends", initial + 300 + shift1, 20, 5.6)
 		              , ("Oct 1, 2014 - Komek & friends start K&A+", initial + 300 + shift2, 20, 5.6)
+
 		              , ("Apr 4, 2015", initial + 400, 23, 5.6)
 		              , ("Apr 4, 2015 - First K&A+ issue", initial + 400 + shift1, 23, 5.6)
 		              , ("Apr 4, 2015 - First K&A+ issue (Polish)", initial + 400 + shift2, 23, 5.6)
@@ -147,6 +157,38 @@ class Stage13(Demo1Base):
 			self.type_with_cursor(arcade_color, cursor_x, cursor_y, frame, self.font_color, text_struct)
 		else:
 			self.type_with_cursor(arcade_color, cursor_x, cursor_y, frame, self.font_color, text_struct2)
+
+	def load_photos(self):
+		r = self.create_bkg_rect()
+		folder = Constants.RES_PATH + "meet-team/"
+		names = sorted(name for name in os.listdir(folder)
+		               if name.lower().endswith((".jpg", ".jpeg", ".png")))
+		photos = []
+		for name in names:
+			photos.append(Sprite(arcade.load_texture(folder + name), center_x=r.x, center_y=r.y))
+		return photos
+
+	def background_photo(self, f):
+		if not self.photos:
+			return
+		index = min(f // Stage13.PHOTO_FRAMES, len(self.photos) - 1)
+		sprite = self.photos[index]
+		sprite.alpha = self.photo_alpha(f % Stage13.PHOTO_FRAMES)
+		arcade.draw_sprite(sprite)
+
+	def photo_alpha(self, local):
+		# Fade each photo in then out over its PHOTO_FRAMES window: fully
+		# transparent at the start, ~70% opaque (30% transparency) at the midpoint
+		# (337 // 2 = 168), then back to transparent -- a soft backdrop for the
+		# captions drawn on top.
+		half = Stage13.PHOTO_FRAMES // 2
+		peak = 0.70  # 30% transparency == 70% opacity
+		if local <= half:
+			opacity = peak * local / half
+		else:
+			opacity = peak * (Stage13.PHOTO_FRAMES - local) / (Stage13.PHOTO_FRAMES - half)
+		return int(opacity * 255)
+
 
 
 class Scroll:

@@ -27,13 +27,6 @@ class Stage11(Demo1Base):
 			color=Color.from_hex_string(Constants.CYAN)
 		)
 
-		akm_texture = arcade.load_texture(Constants.RES_PATH + "akm.png")
-		self.akm = arcade.Sprite(
-			akm_texture,
-			center_x=Constants.WIDTH // 2,
-			center_y=Constants.HEIGHT // 2
-		)
-		self.akm.alpha = 128  # 50% transparency (128 / 255)
 
 	def on_update(self, frame, klass):
 		relative_frame = frame - Stage11.START_FRAME
@@ -71,7 +64,7 @@ class Stage11(Demo1Base):
 			texts.append(self.meet_the_team)
 		else:
 			if self.start_tunnel_frame + 100 < relative_frame < self.start_tunnel_frame + 422:
-				arcade.draw_sprite(self.akm)
+				pass#arcade.draw_sprite(self.akm)
 
 		intensity = min(255, (relative_frame - self.start_tunnel_frame) // 3)
 		if intensity < 0:

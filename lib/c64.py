@@ -28,10 +28,11 @@ class C64:
 		self.on_draw2(frame, Constants.LIGHT_BLUE, Constants.BLUE)
 
 	def on_draw2(self, frame, color: str, bg_color: str):
-		#print(color)
-		lblue = Color.from_hex_string(color)
-
 		self.draw_background(bg_color)
+		self.draw_header(color)
+
+	def draw_header(self, color: str):
+		lblue = Color.from_hex_string(color)
 
 		y = self.line_to_coord(2)
 		Text(text="**** COMMODORE 64 BASIC V2 ****", x=self.header_x, y=y, color=lblue,

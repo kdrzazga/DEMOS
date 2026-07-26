@@ -10,7 +10,9 @@ from OpenGL.GL import (
     glEnable,
 )
 
+from demos.petscii.files.c64_screen import C64Screen
 from demos.petscii.files.dj_space_thunder import DjSpaceThunder
+from demos.petscii.files.globals import Constants
 from demos.petscii.files.kna_logo import KnaLogo
 from demos.petscii.files.noise import Noise
 from demos.petscii.files.tilt_screen import TiltScreen
@@ -19,11 +21,7 @@ from demos.petscii.files.tilt_screen import TiltScreen
 class App:
     """PETSCII demo: two noise screens that each tilt away to opposite edges."""
 
-    WIDTH = 1150
-    HEIGHT = 700
-    FPS = 25
-
-    NOISE_SECONDS = 14
+    NOISE_SECONDS = 8
     SECOND_NOISE_SECONDS = 3
     TILT_SECONDS = 3
     SHRINK_SECONDS = 3
@@ -42,7 +40,7 @@ class App:
 
     def __init__(self):
         pygame.init()
-        pygame.display.set_mode((App.WIDTH, App.HEIGHT), DOUBLEBUF | OPENGL)
+        pygame.display.set_mode((Constants.WIDTH, Constants.HEIGHT), DOUBLEBUF | OPENGL)
         pygame.display.set_caption("PETSCII")
         self.clock = pygame.time.Clock()
         self.running = True
@@ -54,13 +52,14 @@ class App:
         glEnable(GL_TEXTURE_2D)
         glEnable(GL_DEPTH_TEST)
 
-        self.surface = pygame.Surface((App.WIDTH, App.HEIGHT))
-        self.surface2 = pygame.Surface((App.WIDTH, App.HEIGHT))
-        self.noise = Noise(App.WIDTH, App.HEIGHT)
+        self.surface = pygame.Surface((Constants.WIDTH, Constants.HEIGHT))
+        self.surface2 = pygame.Surface((Constants.WIDTH, Constants.HEIGHT))
+        self.noise = Noise(Constants.WIDTH, Constants.HEIGHT)
         self.logo = KnaLogo(char_size=16)
         self.c64 = DjSpaceThunder(char_size=16)
-        self.tiltLeft = TiltScreen(App.WIDTH, App.HEIGHT)
-        self.tiltRight = TiltScreen(App.WIDTH, App.HEIGHT)
+        self.tiltLeft = TiltScreen(Constants.WIDTH, Constants.HEIGHT)
+        self.tiltRight = TiltScreen(Constants.WIDTH, Constants.HEIGHT)
+        self.c64_screen = C64Screen()
 
     def run(self):
         while self.running:
@@ -68,7 +67,7 @@ class App:
             self.update()
             self.draw()
             pygame.display.flip()
-            self.clock.tick(App.FPS)
+            self.clock.tick(Constants.FPS)
         pygame.quit()
 
     def handle_events(self):
@@ -93,32 +92,33 @@ class App:
         self.frame += 1
         self.scene_frame += 1
         if self.scene == App.SCENE_NOISE:
-            if self.scene_frame > App.FPS * App.NOISE_SECONDS:
+            if self.scene_frame > Constants.FPS * App.NOISE_SECONDS:
                 self.set_scene(App.SCENE_TILT)
         elif self.scene == App.SCENE_TILT:
             self.tiltLeft.tilt(self.scene_progress(App.TILT_SECONDS))
-            if self.scene_frame > App.FPS * App.TILT_SECONDS:
+            if self.scene_frame > Constants.FPS * App.TILT_SECONDS:
                 self.set_scene(App.SCENE_SHRINK)
         elif self.scene == App.SCENE_SHRINK:
             self.tiltLeft.shrink(self.scene_progress(App.SHRINK_SECONDS))
-            if self.scene_frame > App.FPS * App.SHRINK_SECONDS:
+            if self.scene_frame > Constants.FPS * App.SHRINK_SECONDS:
                 self.set_scene(App.SCENE_PAUSE)
         elif self.scene == App.SCENE_PAUSE:
-            if self.scene_frame > App.FPS * App.PAUSE_SECONDS:
+            if self.scene_frame > Constants.FPS * App.PAUSE_SECONDS:
                 self.set_scene(App.SCENE_NOISE2)
         elif self.scene == App.SCENE_NOISE2:
-            if self.scene_frame > App.FPS * App.SECOND_NOISE_SECONDS:
+            if self.scene_frame > Constants.FPS * App.SECOND_NOISE_SECONDS:
                 self.set_scene(App.SCENE_TILT2)
         elif self.scene == App.SCENE_TILT2:
             self.tiltRight.tilt(self.scene_progress(App.TILT_SECONDS))
-            if self.scene_frame > App.FPS * App.TILT_SECONDS:
+            if self.scene_frame > Constants.FPS * App.TILT_SECONDS:
                 self.set_scene(App.SCENE_SHRINK2)
         elif self.scene == App.SCENE_SHRINK2:
             self.tiltRight.shrink(self.scene_progress(App.SHRINK_SECONDS))
+            self.c64_screen.update(self.scene_frame)
 
     def scene_progress(self, seconds):
         """How far the current scene has run, as a 0..1 fraction of seconds."""
-        return self.scene_frame / (App.FPS * seconds)
+        return self.scene_frame / (Constants.FPS * seconds)
 
     def draw(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -126,6 +126,8 @@ class App:
         if self.scene >= App.SCENE_NOISE2:
             glClear(GL_DEPTH_BUFFER_BIT)  # let the second screen cover the first
             self.draw_second_screen()
+        if self.scene >= App.SCENE_SHRINK2:
+            self.c64_screen.render(self.frame)
 
     def draw_first_screen(self):
         self.compose_first_surface()
@@ -151,5 +153,5 @@ class App:
         """Boiling noise with the DJ Space Thunder logo revealed against the right edge."""
         self.noise.render(self.surface2)
         logo_width, _ = self.c64.size()
-        origin = (App.WIDTH - logo_width, 0)
+        origin = (Constants.WIDTH - logo_width, 0)
         self.c64.render_from_corners(self.surface2, transparent_space=True, origin=origin)

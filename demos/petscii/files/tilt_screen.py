@@ -31,6 +31,8 @@ from OpenGL.GL import (
 )
 from OpenGL.GLU import gluPerspective
 
+from demos.petscii.files.globals import Constants
+
 
 class TiltScreen:
     """Presents a pygame surface as an OpenGL quad, flat or with one edge tilted back.
@@ -43,7 +45,8 @@ class TiltScreen:
 
     TILT_DEPTH = -5.0
 
-    def __init__(self, width, height, half_width=2.0, camera_z=-3.0):
+    def __init__(self, width, height, half_width=Constants.HALF_WIDTH,
+                 camera_z=Constants.CAMERA_Z):
         self.width = width
         self.height = height
         self.half_width = half_width
@@ -134,7 +137,7 @@ class TiltScreen:
     def _begin_3d(self):
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-        gluPerspective(45, self.width / self.height, 0.1, 50.0)
+        gluPerspective(Constants.FOV, self.width / self.height, 0.1, 50.0)
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
         glTranslatef(0.0, 0.0, self.camera_z)

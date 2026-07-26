@@ -13,7 +13,7 @@ from lib.tunnel import IsometricSineTunnel
 
 
 class Stage12(Demo1Base):
-	START_FRAME = Stage11.START_FRAME + 350
+	START_FRAME = Stage11.START_FRAME + 725
 
 	def __init__(self):
 		super().__init__()

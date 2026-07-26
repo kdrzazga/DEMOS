@@ -44,6 +44,7 @@ class TunnelEffect:
         self.width = screen_width
         self.height = screen_height
         NUM_DOTS = 400
+        self.max_dots = NUM_DOTS
         self.dots = [Dot(screen_width, screen_height) for _ in range(NUM_DOTS)]
         self.dot_size = 1
         self.enlarge_time = time() + enlarge_delay
@@ -64,6 +65,12 @@ class TunnelEffect:
         dot = Dot(self.width, self.height)
         dot.speed = speed
         self.dots.append(dot)
+        # Keep the dot pool bounded. Dots already recycle themselves in
+        # update() (reset() when they reach the centre), so appending on every
+        # frame without a cap just makes each frame heavier to draw -- which is
+        # what made the animation gradually slow down toward the end.
+        if len(self.dots) > self.max_dots:
+            del self.dots[0]
 
 
 class IsometricSineTunnel:

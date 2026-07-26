@@ -93,31 +93,61 @@ class Stage13(Demo1Base):
 		              , ("Oct 1, 2014", initial + 300, 20, 5.6)
 		              , ("Oct 1, 2014 - Komek & friends", initial + 300 + shift1, 20, 5.6)
 		              , ("Oct 1, 2014 - Komek & friends start K&A+", initial + 300 + shift2, 20, 5.6)
-		              , ("Aug 15, 2015", initial + 400, 23, 5.6)
-		              , ("Aug 15, 2015 - RIP", initial + 400 + shift1, 23, 5.6)
-		              , ("Aug 15, 2015 - RIP Ramos :(", initial + 400 + shift2, 23, 5.6)
-		              , ("Dec 20, 2015", initial + 500, 26, 5.6)
-		              , ("Dec 20, 2015 - Game LAZIK", initial + 500 + shift1, 26, 5.6)
-		              , ("Dec 20, 2015 - Game LAZIK released", initial + 500 + shift2, 26, 5.6)
-		              , ("Dec 22, 2015", initial + 600, 29, 5.6)
-		              , ("Dec 22, 2015 - Intro", initial + 600 + shift1, 29, 5.6)
-		              , ("Dec 22, 2015 - Intro MEET THE TEAM", initial + 600 + shift2, 29, 5.6)
-		              , ("Apr 25, 2016", initial + 700, 32, 5.6)
-		              , ("Apr 25, 2016 - Game SLAVIA 2", initial + 700 + shift1, 32, 5.6)
-		              , ("Apr 25, 2016 - Game SLAVIA 2 released", initial + 700 + shift2, 32, 5.6)
-		              , ("Apr 6, 2019", initial + 800, 35, 5.6)
-		              , ("Apr 6, 2019 - K&A+ party", initial + 800 + shift1, 35, 5.6)
-		              , ("Apr 6, 2019 - K&A+ party ?SYNTAX ERROR", initial + 800 + shift2, 35, 5.6)
-		              , ("Feb 28, 2026", initial + 900, 38, 5.6)
-		              , ("Feb 28, 2026 - K&A+ party", initial + 900 + shift1, 38, 5.6)
-		              , ("Feb 28, 2026 - K&A+ party Pixelove Ole", initial + 900 + shift2, 38, 5.6)
+		              , ("Apr 4, 2015", initial + 400, 23, 5.6)
+		              , ("Apr 4, 2015 - First K&A+ issue", initial + 400 + shift1, 23, 5.6)
+		              , ("Apr 4, 2015 - First K&A+ issue (Polish)", initial + 400 + shift2, 23, 5.6)
+
+		              , ("Aug 15, 2015", initial + 500, 26, 5.6)
+		              , ("Aug 15, 2015 - RIP", initial + 500 + shift1, 26, 5.6)
+		              , ("Aug 15, 2015 - RIP Ramos :(", initial + 500 + shift2, 26, 5.6)
+
+		              , ("Dec 20, 2015", initial + 600, 29, 5.6)
+		              , ("Dec 20, 2015 - Game LAZIK", initial + 600 + shift1, 29, 5.6)
+		              , ("Dec 20, 2015 - Game LAZIK released", initial + 600 + shift2, 29, 5.6)
+
+		              , ("Dec 22, 2015", initial + 700, 32, 5.6)
+		              , ("Dec 22, 2015 - Intro", initial + 700 + shift1, 32, 5.6)
+		              , ("Dec 22, 2015 - Intro MEET THE TEAM", initial + 700 + shift2, 32, 5.6)
+
+		              , ("Apr 25, 2016", initial + 800, 35, 5.6)
+		              , ("Apr 25, 2016 - Game SLAVIA 2", initial + 800 + shift1, 35, 5.6)
+		              , ("Apr 25, 2016 - Game SLAVIA 2 released", initial + 800 + shift2, 35, 5.6)
+
+		              , ("Apr 6, 2019", initial + 900, 38, 5.6)
+		              , ("Apr 6, 2019 - K&A+ party", initial + 900 + shift1, 38, 5.6)
+		              , ("Apr 6, 2019 - K&A+ party ?SYNTAX ERROR", initial + 900 + shift2, 38, 5.6)
 		               )
+
+		text_struct2 = (
+					("Feb 21, 2020", initial + 1000, 11, 5.6)
+		              , ("Feb 21, 2020 - first GO8BG", initial + 1000 + shift1, 11, 5.6)
+		              , ("Feb 21, 2020 - first GO8BG disk released", initial + 1000 + shift2, 11, 5.6)
+
+		              , ("Jun 6, 2024", initial + 1100, 14, 5.6)
+		              , ("Jun 6, 2024 - first box game published:", initial + 1100 + shift1, 14, 5.6)
+		              , ("Jun 6, 2024 - first box game published: TONY", initial + 1100 + shift2, 14, 5.6)
+
+		              , ("Feb 28, 2026", initial + 1200, 17, 5.6)
+		              , ("Feb 28, 2026 - K&A+ party", initial + 1200 + shift1, 17, 5.6)
+		              , ("Feb 28, 2026 - K&A+ party Pixelove Ole", initial + 1200 + shift2, 17, 5.6)
+		                )
 
 		cursor_x = 0
 		cursor_y = 9*12+7
 
 		arcade_color = Color.from_hex_string(self.font_color)
-		self.type_with_cursor(arcade_color, cursor_x, cursor_y, frame, self.font_color, text_struct)
+
+		# text_struct2 reuses the same lines (11, 14, 17) as the top of
+		# text_struct, so both pages cannot be on screen at once. type_with_cursor
+		# keeps redrawing every past entry each frame, so we switch which page is
+		# drawn: page 1 types out first, then once page 2 is due the screen turns
+		# to it and text_struct2 types out fresh -- no overlay with page 1.
+		page2_start = initial + 1000  # frame of text_struct2's first entry
+		if frame < page2_start:
+			self.type_with_cursor(arcade_color, cursor_x, cursor_y, frame, self.font_color, text_struct)
+		else:
+			self.type_with_cursor(arcade_color, cursor_x, cursor_y, frame, self.font_color, text_struct2)
+
 
 class Scroll:
 

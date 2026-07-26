@@ -1,3 +1,4 @@
+import arcade
 from arcade import Text
 from arcade.types import Color
 
@@ -26,6 +27,14 @@ class Stage11(Demo1Base):
 			color=Color.from_hex_string(Constants.CYAN)
 		)
 
+		akm_texture = arcade.load_texture(Constants.RES_PATH + "akm.png")
+		self.akm = arcade.Sprite(
+			akm_texture,
+			center_x=Constants.WIDTH // 2,
+			center_y=Constants.HEIGHT // 2
+		)
+		self.akm.alpha = 128  # 50% transparency (128 / 255)
+
 	def on_update(self, frame, klass):
 		relative_frame = frame - Stage11.START_FRAME
 		if relative_frame == 1:
@@ -37,7 +46,9 @@ class Stage11(Demo1Base):
 				self.tunnel.new_dot(i/10)
 			if relative_frame > 111 and relative_frame % 80 == 0:
 				self.tunnel.dot_size += 1
-			if relative_frame > 360:
+			if relative_frame > 250 and relative_frame % 81 == 0:
+				self.tunnel.dot_size += 2
+			if relative_frame > 520:
 				self.tunnel.dot_size += 1
 		# print(relative_frame)
 
@@ -58,6 +69,9 @@ class Stage11(Demo1Base):
 		texts = []
 		if relative_frame < self.start_tunnel_frame:
 			texts.append(self.meet_the_team)
+		else:
+			if self.start_tunnel_frame + 100 < relative_frame < self.start_tunnel_frame + 422:
+				arcade.draw_sprite(self.akm)
 
 		intensity = min(255, (relative_frame - self.start_tunnel_frame) // 3)
 		if intensity < 0:
@@ -81,7 +95,7 @@ class Stage11(Demo1Base):
 				anchor_y="center"
 			)
 			texts.append(t)
-			if relative_frame>695:
+			if relative_frame > 695:
 				self.base_y -= 1.5
 
 		for t in texts:
@@ -96,9 +110,10 @@ class Stage11(Demo1Base):
 		if intensity == 255:
 			self.draw_cover()
 
+
 	def get_part_of_crew(self, rel_frame):
 		if rel_frame < 230:
-			team= [
+			team = [
 				("KOMEK", self.base_y),
 				("TOMXX", self.base_y - 2 * 14),
 				("LEON", self.base_y - 4 * 14),

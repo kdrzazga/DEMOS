@@ -1,6 +1,6 @@
 import arcade
 from arcade import Rect, Sprite
-from arcade.color import BLACK
+from arcade.color import BLACK, WHITE
 from arcade.types import Color
 
 from demos.demo1 import Constants, Globals, Tools
@@ -39,9 +39,13 @@ class Stage8(Demo1Base):
 
 	def column_name_header(self, relative_frame):
 		c = Color.from_hex_string(Tools.change_color(relative_frame // 6))
-		arcade.Text(text='"TALKING HEADS" COLUMN', x=Constants.WIDTH // 2, y=Constants.HEIGHT * 0.12,
-	            color=c, font_size=self.font_size - 1, anchor_x="center",
-	            font_name="C64 Pro Mono").draw()
+		Y1 = Constants.HEIGHT * 0.33
+		arcade.Text(text='"TALKING HEADS"', x=Constants.WIDTH // 2, y=Y1,
+		            color=c, font_size=self.font_size - 1, anchor_x="center",
+		            font_name="C64 Pro Mono").draw()
+		arcade.Text(text='IS ONE OF THE REGULAR COLUMNS IN K&A+ MAGAZINE', x=Constants.WIDTH // 2, y=Y1 - 2*self.font_size,
+		            color=WHITE, font_size=self.font_size - 1, anchor_x="center",
+		            font_name="C64 Pro Mono").draw()
 
 	def on_update(self, frame, klass):
 		if frame == Stage8.START_FRAME + 1:

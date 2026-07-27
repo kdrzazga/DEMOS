@@ -27,7 +27,7 @@ class Demo1(arcade.Window):
         super().__init__(Constants.WIDTH, Constants.HEIGHT, "Komoda & Amiga +", fullscreen=False)
 
         self.paused = triggered
-        self.frame = 0 * Stage13.START_FRAME
+        self.frame = 1 * Stage7.START_FRAME
         self.intro = Intro()
         if not self.paused:
             self.intro.play_music()

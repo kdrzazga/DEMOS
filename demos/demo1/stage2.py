@@ -26,23 +26,30 @@ class Stage2(Demo1Base):
 
 	def on_draw(self, frame):
 		super().on_draw(frame)
-		if frame == Stage2.START_FRAME + 1:
+		relative_frame = frame - Stage2.START_FRAME
+		if relative_frame ==  1:
 			self.sound.play(loop=False)
 
 		#print(frame, end=' ')
 		self.tramiels.update(0.16)
 		self.tramiels.draw()
 
-		if frame > Stage2.START_FRAME + 100:
+		intervals = ((100, 110), (120, 125))
+		if any(lo <= relative_frame <= hi for lo, hi in intervals):
+			first_word = "Computer"
+		else:
+			first_word = "Magazine"
+
+		if relative_frame > 100:
 			y = self.line_to_coord(24)
-			text1 = self.create_cyan_text("Computer for the MASSES,", y)
+			text1 = self.create_cyan_text(first_word + " for the MASSES,", y)
 			text1.draw()
 			self.trzmiel.draw()
 			self.trzmiel.sprite.center_x -=13
 			self.trzmiel.sprite.center_y = Constants.HEIGHT//2 + (Constants.HEIGHT*0.042
 				* math.sin(self.trzmiel.sprite.center_x * math.pi//83))
 
-		if frame > Stage2.START_FRAME + 140:
+		if relative_frame > 140:
 			y = self.line_to_coord(25)
 			text2 = self.create_cyan_text("not for the classes", y)
 			text2.draw()

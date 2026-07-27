@@ -6,7 +6,7 @@ import arcade
 from arcade import Rect, Sprite
 from arcade.types import Color
 
-from demos.demo1 import Globals, Constants
+from demos.demo1 import Globals, Constants, Tools
 from demos.demo1.base import Demo1Base
 from demos.demo1.stage12ikplus import Stage12
 
@@ -34,7 +34,7 @@ class Stage13(Demo1Base):
 			print(self.__class__.__name__ + " ", Globals.get_duration(), "[frame", str(frame) + "]")
 		else:
 			self.t += 0.05
-			self.change_color()
+			self.font_color = Tools.change_color(self.t)
 
 		if relative_frame > Stage13.SCROLL_START:
 			self.scroll.move()
@@ -70,19 +70,6 @@ class Stage13(Demo1Base):
 		y = Constants.HEIGHT // 2
 		r = Rect(self.left, Constants.WIDTH, self.bottom, self.top, Constants.WIDTH, height, x, y)
 		arcade.draw_rect_filled(r, color=Color.from_hex_string(self.font_color))
-
-	def change_color(self, amplitude=127.5, offset=127.5):
-		b, g, r = self.change_color_rgb(self.t, amplitude, offset)
-		self.font_color = f"{r:02x}{g:02x}{b:02x}"
-
-	def change_color_rgb(self, t, amplitude, offset):
-		r = int(amplitude * math.sin(t) + offset)
-		g = int(amplitude * math.sin(t + 2 * math.pi / 3) + offset)
-		b = int(amplitude * math.sin(t + 4 * math.pi / 3) + offset)
-		r = max(0, min(255, r))
-		g = max(0, min(255, g))
-		b = max(0, min(255, b))
-		return b, g, r
 
 	def type(self, frame):
 
@@ -134,8 +121,8 @@ class Stage13(Demo1Base):
 		              , ("Feb 21, 2020 - first GO8BG disk released", initial + 1000 + shift2, 11, 5.6)
 
 		              , ("Jun 6, 2024", initial + 1100, 14, 5.6)
-		              , ("Jun 6, 2024 - first box game published:", initial + 1100 + shift1, 14, 5.6)
-		              , ("Jun 6, 2024 - first box game published: TONY", initial + 1100 + shift2, 14, 5.6)
+		              , ("Jun 6, 2024 - first box game", initial + 1100 + shift1, 14, 5.6)
+		              , ("Jun 6, 2024 - first box game - TONY", initial + 1100 + shift2, 14, 5.6)
 
 		              , ("Feb 28, 2026", initial + 1200, 17, 5.6)
 		              , ("Feb 28, 2026 - K&A+ party", initial + 1200 + shift1, 17, 5.6)

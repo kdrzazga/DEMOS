@@ -33,9 +33,91 @@ try:
 except ModuleNotFoundError:
 	from demos.pc45.boot_surface import BootScreen   # when launched as a package from the root
 
-# resolve resources against the project root (DEMOS/) so the demo runs no matter
-# what the working directory is or how it is launched
 _ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+class AudioController:
+	"""Plays the boot soundtrack, fades it during the zoom-out, and cues HB.mp3 once."""
+
+	BOOT_TUNE = "pc-boot.mp3"
+	HB_TUNE = "HB.mp3"
+	DECAY = 0.99
+
+	def __init__(self, res_path):
+		self.res_path = res_path
+		self.volume = 1.0
+		self.hb_played = False
+
+	def start(self):
+		self.volume = 1.0
+		self.hb_played = False
+		try:
+			pygame.mixer.music.load(os.path.join(self.res_path, self.BOOT_TUNE))
+			pygame.mixer.music.set_volume(self.volume)
+			pygame.mixer.music.play()
+		except pygame.error as exc:
+			print("audio unavailable:", exc)
+
+	def update(self, fading, hb_cue):
+		if self.hb_played:
+			return
+		if hb_cue:
+			pygame.mixer.music.load(os.path.join(self.res_path, self.HB_TUNE))
+			pygame.mixer.music.set_volume(1.0)
+			pygame.mixer.music.play()
+			self.hb_played = True
+			return
+		if fading:
+			self.volume *= self.DECAY
+			pygame.mixer.music.set_volume(self.volume)
+
+
+class Camera:
+	"""Interpolates the view from framed-on-the-screen to the whole photo, with a gentle sway."""
+
+	SWAY_YAW = 9.0
+	SWAY_PITCH = 1.5
+	SWAY_SPEED = 0.6
+
+	def __init__(self, fov, pullback_start, pullback_frames, fps):
+		self.fov = fov
+		self.pullback_start = pullback_start
+		self.pullback_frames = pullback_frames
+		self.fps = fps
+		self.view0 = (0.0, 0.0, 1.0)
+		self.view1 = (0.0, 0.0, 1.0)
+
+	def set_views(self, c0, vh0, c1, vh1):
+		self.view0 = (c0[0], c0[1], vh0)
+		self.view1 = (c1[0], c1[1], vh1)
+
+	def _pose(self, frame):
+		if frame <= self.pullback_start:
+			t = 0.0
+		else:
+			t = min(1.0, (frame - self.pullback_start) / self.pullback_frames)
+		cx = self.view0[0] + (self.view1[0] - self.view0[0]) * t
+		cy = self.view0[1] + (self.view1[1] - self.view0[1]) * t
+		vh = self.view0[2] + (self.view1[2] - self.view0[2]) * t
+		dist = vh / math.tan(math.radians(self.fov / 2.0))
+		return cx, cy, dist
+
+	def _sway(self, frame):
+		if frame < self.pullback_start:
+			return 0.0, 0.0
+		st = (frame - self.pullback_start) / self.fps
+		yaw = self.SWAY_YAW * math.sin(st * self.SWAY_SPEED)
+		pitch = self.SWAY_PITCH * math.sin(st * self.SWAY_SPEED * 0.7)
+		return yaw, pitch
+
+	def apply(self, frame):
+		cx, cy, dist = self._pose(frame)
+		yaw, pitch = self._sway(frame)
+		glLoadIdentity()
+		glTranslatef(0.0, 0.0, -dist)
+		glRotatef(yaw, 0.0, 1.0, 0.0)
+		glRotatef(pitch, 1.0, 0.0, 0.0)
+		glTranslatef(-cx, -cy, 0.0)
 
 
 class GlDemo:
@@ -53,16 +135,9 @@ class GlDemo:
 	# PULLBACK_FRAMES zooms + pans out to frame the whole photo.
 	PULLBACK_FRAMES = 300                  # 5 s at 60 fps
 	COVER_OVERSCAN = 0.99                  # <1 zooms in a hair so no bezel peeks at the start
-	VOLUME_DECAY = 0.99                    # multiply music volume by this each frame while zooming out
-
-	# a few degrees of gentle sway that eases in as the zoom-out begins and then
-	# keeps going for the rest of the demo
-	SWAY_YAW = 9.0                         # degrees, horizontal
-	SWAY_PITCH = 1.5                       # degrees, vertical
-	SWAY_SPEED = 0.6                       # sine rate (per second); ~10 s period
 
 	DATE_ZOOM_FRAMES = 120
-	YEAR_STEP_FRAMES = 8
+	YEAR_STEP_FRAMES = 6
 	CAPTION_HALF_HEIGHT = 0.28
 	YEARS = list(range(81, 100)) + list(range(0, 27))
 
@@ -78,7 +153,10 @@ class GlDemo:
 		self.pc_tex = self._load_pc_texture()      # static: the IBM PC photo
 		self.caption_tex = self._make_texture()
 		self._setup_geometry()
-		self._start_audio()
+		self.camera = Camera(self.FOV, self.pullback_start, self.PULLBACK_FRAMES, self.boot.FPS)
+		self.camera.set_views(self.view_c0, self.vh0, self.view_c1, self.vh1)
+		self.audio = AudioController(self.RES_PATH)
+		self.audio.start()
 
 		self.clock = pygame.time.Clock()
 		self.frame = 0
@@ -147,6 +225,7 @@ class GlDemo:
 		self.pullback_start = self.boot.BOOT_START + self.boot.D_BANNER2 + 2 * self.boot.FPS
 		self.date_zoom_start = self.pullback_start + self.PULLBACK_FRAMES
 		self.year_start = self.date_zoom_start + self.DATE_ZOOM_FRAMES
+		self.year_end = self.year_start + (len(self.YEARS) - 1) * self.YEAR_STEP_FRAMES
 
 		date_x, date_y, date_w, date_h = self.boot.date_pixel_rect()
 
@@ -160,15 +239,6 @@ class GlDemo:
 		aspect0 = (self.date_rect0[1] - self.date_rect0[0]) / (self.date_rect0[3] - self.date_rect0[2])
 		cap_hw = self.CAPTION_HALF_HEIGHT * aspect0
 		self.date_rect1 = (-cap_hw, cap_hw, -self.CAPTION_HALF_HEIGHT, self.CAPTION_HALF_HEIGHT)
-
-	def _start_audio(self):
-		self.volume = 1.0
-		try:
-			pygame.mixer.music.load(os.path.join(self.RES_PATH, "pc-boot.mp3"))
-			pygame.mixer.music.set_volume(self.volume)
-			pygame.mixer.music.play()
-		except pygame.error as exc:
-			print("audio unavailable:", exc)
 
 	# --- per-frame ---------------------------------------------------------
 	def _process_events(self):
@@ -185,38 +255,13 @@ class GlDemo:
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data)
 
 	def _update_audio(self):
-		"""Once the zoom-out starts, fade the mp3 by 1% of its current level each frame."""
-		if self.frame >= self.pullback_start:
-			self.volume *= self.VOLUME_DECAY
-			pygame.mixer.music.set_volume(self.volume)
+		self.audio.update(self.frame >= self.pullback_start, self.frame >= self.year_start)
 
 	def _update_boot(self):
 		self.boot.date_on_screen = self.frame < self.date_zoom_start
 		if self.frame >= self.year_start:
 			i = min(len(self.YEARS) - 1, (self.frame - self.year_start) // self.YEAR_STEP_FRAMES)
 			self.boot.year = self.YEARS[i]
-
-	def _camera(self):
-		"""Interpolate the view from the screen sub-rect (t=0) to the whole photo (t=1)."""
-		if self.frame <= self.pullback_start:
-			t = 0.0
-		else:
-			t = min(1.0, (self.frame - self.pullback_start) / self.PULLBACK_FRAMES)
-		cx = self.view_c0[0] + (self.view_c1[0] - self.view_c0[0]) * t
-		cy = self.view_c0[1] + (self.view_c1[1] - self.view_c0[1]) * t
-		vh = self.vh0 + (self.vh1 - self.vh0) * t
-		dist = vh / math.tan(math.radians(self.FOV / 2.0))
-		return cx, cy, dist
-
-	def _sway(self):
-		"""A few degrees of gentle sway, growing from zero once the zoom-out begins
-		and continuing after it settles."""
-		if self.frame < self.pullback_start:
-			return 0.0, 0.0
-		st = (self.frame - self.pullback_start) / self.boot.FPS
-		yaw = self.SWAY_YAW * math.sin(st * self.SWAY_SPEED)
-		pitch = self.SWAY_PITCH * math.sin(st * self.SWAY_SPEED * 0.7)
-		return yaw, pitch
 
 	@staticmethod
 	def _draw_quad_rect(left, right, bottom, top):
@@ -229,14 +274,7 @@ class GlDemo:
 
 	def _draw_frame(self):
 		glClear(GL_COLOR_BUFFER_BIT)
-		glLoadIdentity()
-		cx, cy, dist = self._camera()
-		yaw, pitch = self._sway()
-		# pull back, then sway about the framed centre (cx, cy)
-		glTranslatef(0.0, 0.0, -dist)
-		glRotatef(yaw, 0.0, 1.0, 0.0)
-		glRotatef(pitch, 1.0, 0.0, 0.0)
-		glTranslatef(-cx, -cy, 0.0)
+		self.camera.apply(self.frame)
 		glColor3f(1.0, 1.0, 1.0)
 		# the IBM PC photo ...
 		glBindTexture(GL_TEXTURE_2D, self.pc_tex)

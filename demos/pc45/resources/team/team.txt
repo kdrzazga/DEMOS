@@ -1,0 +1,27 @@
+Bill Sydnes — hardware team lead
+Bill Sydnes came to the PC project from IBM's existing small-systems world: he had managed the IBM 5120 and worked on the System/23 Datamaster, IBM's earlier desktop business machines. Estridge picked him to lead the hardware engineering group — roughly a dozen engineers — that turned the concept into a working prototype on the famously tight one-year schedule. That Datamaster lineage mattered: its long, in-house development had been painful, and the lesson pushed the PC team toward an open design built from off-the-shelf components (an Intel 8088 CPU, standard chips, expansion slots) rather than custom IBM silicon. Sydnes's group is where that architecture was physically realized.
+
+Jack Sams — software procurement / the Microsoft connection
+Jack Sams was the IBM software manager whose job was to source the operating system and languages the machine would need. In mid-1980 he made the phone call that changed the industry: he approached Bill Gates and Microsoft. When IBM's parallel effort to license CP/M from Digital Research stalled, Sams turned back to Microsoft, which agreed to supply the OS — Microsoft then acquired 86-DOS/QDOS and adapted it into PC-DOS/MS-DOS. Sams didn't write the software himself; his contribution was the pivotal sourcing decision and the relationship that made the IBM–Microsoft partnership happen. Like Sydnes, he's a lightly documented figure — his clearest surviving likeness is his interview in the 1996 PBS documentary Triumph of the Nerds.
+
+Dave Bradley — ROM BIOS and Ctrl-Alt-Del
+David J. Bradley (b. 1949) joined IBM in 1975 after a PhD in electrical engineering from Purdue, and was one of the twelve original PC engineers. He wrote much of the machine's ROM BIOS — the low-level firmware that lets the operating system talk to the hardware. He's best remembered for a five-minute piece of code: the Ctrl-Alt-Del reboot combination, chosen (with Mel Hallerman) precisely because those three keys are almost impossible to hit by accident. It was meant as a developer convenience for fast restarts, not a consumer feature — but it became a cultural icon. Bradley later quipped on a panel that he may have invented it, but Bill Gates made it famous.
+
+Mark Dean — co-architect of the expansion bus
+Mark E. Dean (b. 1957, Jefferson City, Tennessee) was one of the standout engineers on the original PC and holds three of the nine original IBM PC patents. With Dennis Moeller he co-created the ISA (Industry Standard Architecture) bus — the expansion-slot system that let disk drives, printers, monitors, and add-in cards plug into the PC, and which became a de facto industry standard other makers built to for years. Dean went on to a landmark career: he helped lead the follow-on PC/AT, worked on the color graphics adapter, led a team that produced a 1-GHz processor in 1999, and in 1995 became the first African American named an IBM Fellow. He and Moeller were inducted into the National Inventors Hall of Fame in 1997.
+
+Dennis Moeller — co-inventor of the ISA bus
+Dennis L. Moeller (b. 1950, St. Louis) was Mark Dean's engineering partner on the bus architecture. Together they designed the interface that standardized how peripherals connect to the PC — the work that earned them their joint National Inventors Hall of Fame induction in 1997. His contribution is inseparable from Dean's on that core piece of the PC's expandability, which is arguably what let the IBM PC become a platform rather than a single product. Beyond his patents and that induction, Moeller kept a low public profile, so detailed biographical material (and photos) is limited.
+
+Lew Eggebrecht — the PC's chief system architect; he designed the overall hardware architecture (the 8088-based system board and how the pieces fit together) that Sydnes's group built.
+Mel (Melvin) Hallerman — the chief programmer of the original group; oversaw the systems software and co-chose the Ctrl-Alt-Del reboot with Dave Bradley.
+Joe (Joseph) Sarubbi — a veteran IBM engineer (with the company since 1952) who handled component sourcing, reliability testing, and manufacturing of the machine in Boca Raton — critical for shipping a reliable product on schedule.
+Patty McHugh — the senior associate engineer who designed the PC's motherboard (planar), sometimes called "the mother of the motherboard"; the one woman routinely named on the core team.
+H. L. "Sparky" Sparks — led sales/market planning, including the retail-channel strategy (Sears, ComputerLand) that got the PC in front of buyers.
+
+OUTSIDE SOFTWARE PARTNERS:
+Bill Gates & Paul Allen (Microsoft) — supplied Microsoft BASIC (baked into ROM) and, crucially, the operating system that shipped as PC-DOS/MS-DOS — the deal that made Microsoft.
+
+Tim Paterson (Seattle Computer Products) — wrote 86-DOS ("QDOS"), which Microsoft licensed then bought and turned into MS-DOS; he's the actual author of the DOS code.
+
+Gary Kildall (Digital Research) — creator of CP/M, the OS IBM approached first; the deal fell through, opening the door for Microsoft — one of tech's most famous "what ifs."

@@ -10,9 +10,14 @@ except ModuleNotFoundError:
 	from demos.pc45.audio import AudioController
 
 try:
-	from effects.portrait import ExtrudedPhoto
+	from base_stage import BaseStage
 except ModuleNotFoundError:
-	from demos.pc45.effects.portrait import ExtrudedPhoto
+	from demos.pc45.base_stage import BaseStage
+
+try:
+	from effects.portrait import ExtrudedPhoto, FlatImage
+except ModuleNotFoundError:
+	from demos.pc45.effects.portrait import ExtrudedPhoto, FlatImage
 
 try:
 	from march_on_with_ibm import MarchOnWithIBM
@@ -22,16 +27,19 @@ except ModuleNotFoundError:
 _ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
-class Stage2:
+class Stage2(BaseStage):
 
 	FPS = 60
-	TUNE = "MarchOnWithIBM.mp3"
-	PORTRAIT_IMAGE = "team/DonEstridge.png"
 	PORTRAIT_DEPTH_PX = 10
 	HALF_HEIGHT = 0.9
 	CAM_Z = -3.0
 	YAW = 24.0
 	YAW_SPEED = 0.5
+
+	CEO_IMAGE = "tjw.jpg"
+	CEO_HALF_HEIGHT = 0.55
+	CEO_X = -1.25
+	CEO_Y = 0.0
 
 	LYRIC_FONT = os.path.join(_ROOT, "lib", "resources", "Mx437_IBM_MDA.ttf")
 	LYRIC_PX = 28
@@ -39,26 +47,21 @@ class Stage2:
 	LYRIC_MARGIN = 24
 
 	def __init__(self, win_w, win_h, res_path, fov):
-		self.win_w = win_w
-		self.win_h = win_h
-		self.res_path = res_path
-		self.frame = 0
+		super().__init__(win_w, win_h, res_path, fov)
+		self.tune = "MarchOnWithIBM.mp3"
+		self.portrait_image = "team/DonEstridge.png"
 		glDisable(GL_BLEND)
 		glEnable(GL_DEPTH_TEST)
-		self.portrait = ExtrudedPhoto(os.path.join(res_path, self.PORTRAIT_IMAGE),
+		self.portrait = ExtrudedPhoto(os.path.join(res_path, self.portrait_image),
 		                              self.HALF_HEIGHT, self.PORTRAIT_DEPTH_PX)
-		self.audio = AudioController(self.res_path, self.TUNE)
+		self.audio = AudioController(self.res_path, self.tune)
 		self.audio.start()
 		self.font = pygame.font.Font(self.LYRIC_FONT, self.LYRIC_PX)
-		self.lyric_tex = glGenTextures(1)
-		glBindTexture(GL_TEXTURE_2D, self.lyric_tex)
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
+		self.lyric_tex = self.make_texture()
 		self._lyric_line = None
 		self._lyric_w = 0
 		self._lyric_h = 0
+		self.ceo = FlatImage(os.path.join(res_path, self.CEO_IMAGE), self.CEO_HALF_HEIGHT)
 
 	def render(self):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -67,6 +70,9 @@ class Stage2:
 		angle = self.YAW * math.sin(self.frame / self.FPS * self.YAW_SPEED)
 		glRotatef(angle, 0.0, 1.0, 0.0)
 		self.portrait.draw()
+		glLoadIdentity()
+		glTranslatef(self.CEO_X, self.CEO_Y, self.CAM_Z)
+		self.ceo.draw()
 		self._update_lyric(MarchOnWithIBM.line_at(self._elapsed()))
 		self._draw_lyric()
 		self.frame += 1
@@ -130,3 +136,4 @@ class Stage2:
 
 	def destroy(self):
 		self.portrait.destroy()
+		self.ceo.destroy()

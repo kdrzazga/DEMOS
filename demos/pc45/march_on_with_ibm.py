@@ -31,7 +31,7 @@ class MarchOnWithIBM:
 
 	@classmethod
 	def line_at(cls, seconds):
-		if seconds > 70:
+		if seconds > 75:
 			return ""
 		current = None
 		for start, text in cls.LINES:

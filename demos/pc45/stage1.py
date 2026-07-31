@@ -20,6 +20,11 @@ try:
 except ModuleNotFoundError:
 	from demos.pc45.audio import AudioController
 
+try:
+	from base_stage import BaseStage
+except ModuleNotFoundError:
+	from demos.pc45.base_stage import BaseStage
+
 
 class Camera:
 
@@ -68,7 +73,7 @@ class Camera:
 		glTranslatef(-cx, -cy, 0.0)
 
 
-class Stage1:
+class Stage1(BaseStage):
 
 	PC_IMAGE = "ibmpc.png"
 	SCREEN_RECT = (474, 118, 963, 428)
@@ -106,11 +111,7 @@ class Stage1:
 	DIM_FRAMES = 120
 
 	def __init__(self, win_w, win_h, res_path, fov):
-		self.win_w = win_w
-		self.win_h = win_h
-		self.res_path = res_path
-		self.fov = fov
-		self.frame = 0
+		super().__init__(win_w, win_h, res_path, fov)
 
 		glEnable(GL_TEXTURE_2D)
 		glEnable(GL_BLEND)
@@ -118,10 +119,10 @@ class Stage1:
 		glDisable(GL_DEPTH_TEST)
 
 		self.boot = BootScreen()
-		self.tex = self._make_texture()
+		self.tex = self.make_texture()
 		self.pc_tex = self._load_pc_texture()
-		self.caption_tex = self._make_texture()
-		self.title_tex = self._make_texture()
+		self.caption_tex = self.make_texture()
+		self.title_tex = self.make_texture()
 		self._setup_geometry()
 		self.camera = Camera(self.fov, self.pullback_start, self.PULLBACK_FRAMES, self.boot.FPS)
 		self.camera.set_views(self.view_c0, self.vh0, self.view_c1, self.vh1)
@@ -129,20 +130,11 @@ class Stage1:
 		self.audio = AudioController(self.res_path, self.BOOT_TUNE, self.HB_TUNE)
 		self.audio.start()
 
-	def _make_texture(self):
-		tex = glGenTextures(1)
-		glBindTexture(GL_TEXTURE_2D, tex)
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
-		return tex
-
 	def _load_pc_texture(self):
 		surface = pygame.image.load(os.path.join(self.res_path, self.PC_IMAGE))
 		self.pc_w, self.pc_h = surface.get_size()
 		data = pygame.image.tostring(surface, "RGBA", True)
-		tex = self._make_texture()
+		tex = self.make_texture()
 		glBindTexture(GL_TEXTURE_2D, tex)
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, self.pc_w, self.pc_h, 0,
 		             GL_RGBA, GL_UNSIGNED_BYTE, data)

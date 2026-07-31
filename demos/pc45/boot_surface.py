@@ -21,6 +21,8 @@ class BootScreen:
 	FONT_FILE = os.path.join(_ROOT, "lib", "resources", "Mx437_IBM_MDA.ttf")
 	FONT_PX = 21                            # ~16 pt at 96 dpi (matches the 2D version)
 	CAPTION_PX = 96
+	TITLE_BIG_PX = 128
+	TITLE_LINE_GAP = 6
 
 	# MDA phosphor green sampled from the glyph cores in dos1boot.jpg (#57FFA3).
 	MDA_GREEN = (87, 255, 163)
@@ -113,3 +115,15 @@ class BootScreen:
 
 	def render_date_caption(self):
 		return self.caption_font.render(self.date(), True, self.MDA_GREEN)
+
+	def render_title(self):
+		big = pygame.font.Font(self.FONT_FILE, self.TITLE_BIG_PX)
+		small = pygame.font.Font(self.FONT_FILE, self.TITLE_BIG_PX // 4)
+		line1 = big.render("45 years", True, self.MDA_GREEN)
+		line2 = small.render("of IBM PC", True, self.MDA_GREEN)
+		w = max(line1.get_width(), line2.get_width())
+		h = line1.get_height() + self.TITLE_LINE_GAP + line2.get_height()
+		surface = pygame.Surface((w, h), pygame.SRCALPHA)
+		surface.blit(line1, ((w - line1.get_width()) // 2, 0))
+		surface.blit(line2, ((w - line2.get_width()) // 2, line1.get_height() + self.TITLE_LINE_GAP))
+		return surface

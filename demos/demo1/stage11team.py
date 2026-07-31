@@ -41,7 +41,7 @@ class Stage11(Demo1Base):
 				self.tunnel.dot_size += 1
 			if relative_frame > 250 and relative_frame % 81 == 0:
 				self.tunnel.dot_size += 2
-			if relative_frame > 520:
+			if relative_frame > 580:
 				self.tunnel.dot_size += 1
 		# print(relative_frame)
 
@@ -52,7 +52,7 @@ class Stage11(Demo1Base):
 
 		if relative_frame > self.start_tunnel_frame:
 			self.tunnel.draw()
-			print(relative_frame)
+			#print(relative_frame)
 
 		crew = self.get_part_of_crew(relative_frame)
 

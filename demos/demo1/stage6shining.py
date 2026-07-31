@@ -20,7 +20,7 @@ class Stage6(Demo1Base):
 		self.shining5 = arcade.load_texture(path + "ka5.png")
 		self.shining6 = arcade.load_texture(path + "ka6.png")
 
-		self.twenty_six = arcade.load_texture(path + "26issues.png")
+		self.twenty_six = arcade.load_texture(path + "30issues.png")
 
 	def on_draw(self, frame):
 		relative_frame = frame - Stage6.START_FRAME

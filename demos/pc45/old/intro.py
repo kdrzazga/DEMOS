@@ -2,7 +2,7 @@ import arcade
 from arcade import Text
 
 from demos.pc45 import Constants
-from demos.pc45.base import Pc45Demo
+from demos.pc45.old.base import Pc45Demo
 from lib.beeptyper import Typer
 
 
@@ -17,13 +17,20 @@ class Intro(Pc45Demo):
 	# GREEN (0,255,0) reads too harsh and misses the minty phosphor cast.
 	MDA_GREEN = (87, 255, 163)
 
-	# --- boot timeline (frames @ ~60 fps) - tweak to taste / to match the audio ---
-	F_DATE_PROMPT = 90                     # "Enter today's date ..." is printed
-	F_DATE_TYPE = 160                      # the operator starts typing the date
+	FPS = 60                               # arcade's default update rate (frames per second)
+
+	# The screen sits with just a blinking cursor for the first 15 s (fan / disk
+	# spin-up on the soundtrack), then the DOS boot begins.
+	BLINK_START = 1 * FPS                  # cursor starts blinking at 1 s
+	BOOT_START = 15 * FPS                  # DOS boot sequence begins at 15 s
+
+	# --- DOS boot timeline, in frames measured FROM BOOT_START - tweak to taste ---
+	D_DATE_PROMPT = 0                      # "Enter today's date ..." printed (at 15 s)
+	D_DATE_TYPE = 70                       # the operator starts typing the date
 	DATE_CPS = 16                          # frames per typed character
-	F_BANNER1 = 430                        # "The IBM Personal Computer DOS"
-	F_BANNER2 = 470                        # "Version 1.00 ..."
-	F_PROMPT_A = 560                       # "A>" command prompt appears
+	D_BANNER1 = 340                        # "The IBM Personal Computer DOS"
+	D_BANNER2 = 380                        # "Version 1.00 ..."
+	D_PROMPT_A = 470                       # "A>" command prompt appears
 
 	DATE_PROMPT = "Enter today's date (m-d-y): "
 	DATE_VALUE = "8-12-81"                 # IBM PC (5150) announced 12 Aug 1981
@@ -61,22 +68,31 @@ class Intro(Pc45Demo):
 	def on_draw(self, frame: int):
 		Pc45Demo.clear_screen()
 
+		# Phase 1 (1 s .. 15 s): a blank screen with just a blinking cursor at home.
+		if frame < self.BOOT_START:
+			if frame >= self.BLINK_START and self._blink(frame):
+				self._draw("_", 0)
+			return
+
+		# Phase 2 (from 15 s): the PC-DOS 1.00 boot sequence.
+		b = frame - self.BOOT_START
+
 		# Row 0: the date prompt, then the operator types the date, with a cursor.
-		if frame >= self.F_DATE_PROMPT:
+		if b >= self.D_DATE_PROMPT:
 			line = self.DATE_PROMPT
-			if frame >= self.F_DATE_TYPE:
-				n = min(len(self.DATE_VALUE), (frame - self.F_DATE_TYPE) // self.DATE_CPS)
+			if b >= self.D_DATE_TYPE:
+				n = min(len(self.DATE_VALUE), (b - self.D_DATE_TYPE) // self.DATE_CPS)
 				line += self.DATE_VALUE[:n]
-			if frame < self.F_BANNER1 and self._blink(frame):
+			if b < self.D_BANNER1 and self._blink(frame):
 				line += "_"
 			self._draw(line, 0)
 
 		# Rows 2-3: the DOS copyright banner (printed by the system).
-		if frame >= self.F_BANNER1:
+		if b >= self.D_BANNER1:
 			self._draw(self.BANNER1, 2)
-		if frame >= self.F_BANNER2:
+		if b >= self.D_BANNER2:
 			self._draw(self.BANNER2, 3)
 
 		# Row 5: the A> command prompt with a blinking underscore cursor.
-		if frame >= self.F_PROMPT_A:
+		if b >= self.D_PROMPT_A:
 			self._draw("A>" + ("_" if self._blink(frame) else ""), 5)

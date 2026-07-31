@@ -14,8 +14,10 @@ class Intro(Demo1Base):
 	def __init__(self):
 		super().__init__()
 
-		sound = arcade.load_sound("demos/demo1/resources/beat.mp3")
-		sound.play(loop=False)
+		self.sound = arcade.load_sound("demos/demo1/resources/beat.mp3")
+
+	def play_music(self):
+		self.sound.play(loop=False)
 
 	def on_update(self, frame):
 		cf = random.randint(5, 55)

@@ -11,11 +11,16 @@ from demos.demo1.base import Demo1Base
 class Stage1(Demo1Base):
 
 	START_FRAME = 200
+	BALOON_WINDOWS = ((140,150), (161, 163),(166, 169),(175, 177), (179, 181))
 
 	def __init__(self):
 		super().__init__()
 		self.handbook = arcade.load_texture(Constants.RES_PATH + 'c64handbook.png')
-		self.baloon = Sprite(Constants.RES_PATH + "baloon.png")
+		self.baloon = Sprite(Constants.RES_PATH + "baloon2.png")
+		self.baloon.scale = (0.5, 0.5)
+		self.baloon_texture = self.baloon.texture
+		self.baloonKA = Sprite(Constants.RES_PATH + "baloonKA.png")
+		self.baloonKA.scale = (0.5, 0.5)
 		self.baloon.center_x = Constants.WIDTH//2
 		self.baloon.center_y = Constants.HEIGHT//2
 
@@ -43,9 +48,13 @@ class Stage1(Demo1Base):
 			self.write1(relative_frame)
 
 		if relative_frame > 140:
+			if any(lo <= relative_frame <= hi for lo, hi in Stage1.BALOON_WINDOWS):
+				self.baloon.texture = self.baloon_texture
+			else:
+				self.baloon.texture = self.baloonKA.texture
 			arcade.draw_sprite(self.baloon)
 			if relative_frame % 6 == 0:
-				scale = self.baloon.scale_x + 1
+				scale = self.baloon.scale_x + 0.35
 				self.baloon.scale = (scale, scale)
 
 	def write1(self, frame):

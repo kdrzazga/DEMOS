@@ -23,11 +23,14 @@ from demos.demo1.outro import Outro
 
 
 class Demo1(arcade.Window):
-    def __init__(self):
+    def __init__(self, triggered=False):
         super().__init__(Constants.WIDTH, Constants.HEIGHT, "Komoda & Amiga +", fullscreen=False)
 
-        self.frame = 0 * Stage13.START_FRAME
+        self.paused = triggered
+        self.frame = 0 * Stage7.START_FRAME
         self.intro = Intro()
+        if not self.paused:
+            self.intro.play_music()
         self.stage1 = Stage1()
         self.stage2 = Stage2()
         self.stage3 = Stage3()
@@ -49,7 +52,14 @@ class Demo1(arcade.Window):
         width, height = pyautogui.size()
         pyautogui.moveTo(width - 1, height - 1)
 
+    def on_mouse_press(self, x, y, button, modifiers):
+        if self.paused:
+            self.paused = False
+            self.intro.play_music()
+
     def on_update(self, delta_time):
+        if self.paused:
+            return
         self.frame += 1
 
         if self.frame < Stage1.START_FRAME:

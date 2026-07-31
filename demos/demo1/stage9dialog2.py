@@ -25,6 +25,7 @@ class Stage9(Stage8):
 	def on_draw(self, frame):
 		super().clear_screen(BLACK)
 		relative_frame = frame - Stage9.START_FRAME
+		self.column_name_header(relative_frame)
 		self.head.draw(0.56*Constants.WIDTH)
 
 		if relative_frame < self.speech_end_frame:

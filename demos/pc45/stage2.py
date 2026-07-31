@@ -5,6 +5,11 @@ import pygame
 from OpenGL.GL import *
 
 try:
+	from audio import AudioController
+except ModuleNotFoundError:
+	from demos.pc45.audio import AudioController
+
+try:
 	from effects.portrait import ExtrudedPhoto
 except ModuleNotFoundError:
 	from demos.pc45.effects.portrait import ExtrudedPhoto
@@ -13,6 +18,7 @@ except ModuleNotFoundError:
 class Stage2:
 
 	FPS = 60
+	TUNE = "MarchOnWithIBM.mp3"
 	PORTRAIT_IMAGE = "team/DonEstridge.png"
 	PORTRAIT_DEPTH_PX = 10
 	HALF_HEIGHT = 0.9
@@ -21,11 +27,14 @@ class Stage2:
 	YAW_SPEED = 0.5
 
 	def __init__(self, win_w, win_h, res_path, fov):
+		self.res_path = res_path
 		self.frame = 0
 		glDisable(GL_BLEND)
 		glEnable(GL_DEPTH_TEST)
 		self.portrait = ExtrudedPhoto(os.path.join(res_path, self.PORTRAIT_IMAGE),
 		                              self.HALF_HEIGHT, self.PORTRAIT_DEPTH_PX)
+		self.audio = AudioController(self.res_path, self.TUNE)
+		self.audio.start()
 
 	def render(self):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)

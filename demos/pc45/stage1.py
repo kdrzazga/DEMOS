@@ -15,45 +15,10 @@ try:
 except ModuleNotFoundError:
 	from demos.pc45.effects.fireworks import Firework
 
-
-class AudioController:
-
-	BOOT_TUNE = "pc-boot.mp3"
-	HB_TUNE = "HB.mp3"
-	DECAY = 0.99
-
-	def __init__(self, res_path):
-		self.res_path = res_path
-		self.volume = 1.0
-		self.hb_played = False
-
-	def start(self):
-		self.volume = 1.0
-		self.hb_played = False
-		try:
-			pygame.mixer.music.load(os.path.join(self.res_path, self.BOOT_TUNE))
-			pygame.mixer.music.set_volume(self.volume)
-			pygame.mixer.music.play()
-		except pygame.error as exc:
-			print("audio unavailable:", exc)
-
-	def update(self, fading, hb_cue):
-		if self.hb_played:
-			return
-		if hb_cue:
-			pygame.mixer.music.load(os.path.join(self.res_path, self.HB_TUNE))
-			self.volume = 1.0
-			pygame.mixer.music.set_volume(self.volume)
-			pygame.mixer.music.play()
-			self.hb_played = True
-			return
-		if fading:
-			self.volume *= self.DECAY
-			pygame.mixer.music.set_volume(self.volume)
-
-	def fade_out(self, step):
-		self.volume = max(0.0, self.volume - step)
-		pygame.mixer.music.set_volume(self.volume)
+try:
+	from audio import AudioController
+except ModuleNotFoundError:
+	from demos.pc45.audio import AudioController
 
 
 class Camera:
@@ -107,6 +72,8 @@ class Stage1:
 
 	PC_IMAGE = "ibmpc.png"
 	SCREEN_RECT = (474, 118, 963, 428)
+	BOOT_TUNE = "pc-boot.mp3"
+	HB_TUNE = "HB.mp3"
 
 	PULLBACK_FRAMES = 300
 	COVER_OVERSCAN = 0.99
@@ -159,7 +126,7 @@ class Stage1:
 		self.camera = Camera(self.fov, self.pullback_start, self.PULLBACK_FRAMES, self.boot.FPS)
 		self.camera.set_views(self.view_c0, self.vh0, self.view_c1, self.vh1)
 		self._build_fireworks()
-		self.audio = AudioController(self.res_path)
+		self.audio = AudioController(self.res_path, self.BOOT_TUNE, self.HB_TUNE)
 		self.audio.start()
 
 	def _make_texture(self):

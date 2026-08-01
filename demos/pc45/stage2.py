@@ -15,9 +15,9 @@ except ModuleNotFoundError:
 	from demos.pc45.base_stage import BaseStage
 
 try:
-	from effects.portrait import ExtrudedPhoto, FlatImage
+	from effects.portrait import ExtrudedPhoto
 except ModuleNotFoundError:
-	from demos.pc45.effects.portrait import ExtrudedPhoto, FlatImage
+	from demos.pc45.effects.portrait import ExtrudedPhoto
 
 try:
 	from march_on_with_ibm import MarchOnWithIBM
@@ -30,16 +30,11 @@ _ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__
 class Stage2(BaseStage):
 
 	FPS = 60
-	PORTRAIT_DEPTH_PX = 10
+	PORTRAIT_DEPTH_PX = 30
 	HALF_HEIGHT = 0.9
 	CAM_Z = -3.0
 	YAW = 24.0
 	YAW_SPEED = 0.5
-
-	CEO_IMAGE = "tjw.jpg"
-	CEO_HALF_HEIGHT = 0.55
-	CEO_X = -1.25
-	CEO_Y = 0.0
 
 	LYRIC_FONT = os.path.join(_ROOT, "lib", "resources", "Mx437_IBM_MDA.ttf")
 	LYRIC_PX = 28
@@ -49,19 +44,36 @@ class Stage2(BaseStage):
 	def __init__(self, win_w, win_h, res_path, fov):
 		super().__init__(win_w, win_h, res_path, fov)
 		self.tune = "MarchOnWithIBM.mp3"
-		self.portrait_image = "team/DonEstridge.png"
+		self.tune_seconds = 76
+		self.portrait_images = (
+			("team/DonEstridge.png", "Don Estridge"),
+			("team/mark-dean.png", "Mark Dean"),
+			("team/DennisL.Moeller.png", "Dennis L. Moeller"),
+			("team/wiliamLowe.png", "William Lowe"),
+		)
+		self.portrait_seconds = 3
+		self.name_margin = 24
 		glDisable(GL_BLEND)
 		glEnable(GL_DEPTH_TEST)
-		self.portrait = ExtrudedPhoto(os.path.join(res_path, self.portrait_image),
-		                              self.HALF_HEIGHT, self.PORTRAIT_DEPTH_PX)
+		self.portraits = [ExtrudedPhoto(os.path.join(res_path, img), self.HALF_HEIGHT, self.PORTRAIT_DEPTH_PX)
+		                  for img, name in self.portrait_images]
 		self.audio = AudioController(self.res_path, self.tune)
 		self.audio.start()
 		self.font = pygame.font.Font(self.LYRIC_FONT, self.LYRIC_PX)
+		self.name_texs = [self._texture_from_surface(self.font.render(name, True, (255, 255, 255)))
+		                  for img, name in self.portrait_images]
 		self.lyric_tex = self.make_texture()
 		self._lyric_line = None
 		self._lyric_w = 0
 		self._lyric_h = 0
-		self.ceo = FlatImage(os.path.join(res_path, self.CEO_IMAGE), self.CEO_HALF_HEIGHT)
+		self.ceo_image = "tjw.jpg"
+		self.ceo_scale = 0.25
+		self.ceo_line = "With T.J. Watson guiding us"
+		self.ceo_margin = 30
+		ceo = pygame.image.load(os.path.join(res_path, self.ceo_image))
+		ceo = pygame.transform.smoothscale(
+			ceo, (int(ceo.get_width() * self.ceo_scale), int(ceo.get_height() * self.ceo_scale)))
+		self.ceo, self.ceo_w, self.ceo_h = self._texture_from_surface(ceo)
 
 	def render(self):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -69,12 +81,14 @@ class Stage2(BaseStage):
 		glTranslatef(0.0, 0.0, self.CAM_Z)
 		angle = self.YAW * math.sin(self.frame / self.FPS * self.YAW_SPEED)
 		glRotatef(angle, 0.0, 1.0, 0.0)
-		self.portrait.draw()
-		glLoadIdentity()
-		glTranslatef(self.CEO_X, self.CEO_Y, self.CAM_Z)
-		self.ceo.draw()
+		i = int(self.frame / self.FPS / self.portrait_seconds)
+		if i < len(self.portraits):
+			self.portraits[i].draw()
 		self._update_lyric(MarchOnWithIBM.line_at(self._elapsed()))
+		self._draw_ceo()
 		self._draw_lyric()
+		if i < len(self.portraits):
+			self._draw_name(i)
 		self.frame += 1
 
 	def _elapsed(self):
@@ -96,9 +110,7 @@ class Stage2(BaseStage):
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, self._lyric_w, self._lyric_h, 0,
 		             GL_RGBA, GL_UNSIGNED_BYTE, data)
 
-	def _draw_lyric(self):
-		if not self._lyric_line:
-			return
+	def _blit(self, tex, x, y, w, h):
 		glDisable(GL_DEPTH_TEST)
 		glEnable(GL_BLEND)
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
@@ -111,16 +123,12 @@ class Stage2(BaseStage):
 		glLoadIdentity()
 		glEnable(GL_TEXTURE_2D)
 		glColor4f(1.0, 1.0, 1.0, 1.0)
-		glBindTexture(GL_TEXTURE_2D, self.lyric_tex)
-		x0 = (self.win_w - self._lyric_w) / 2.0
-		x1 = x0 + self._lyric_w
-		y0 = self.LYRIC_MARGIN
-		y1 = y0 + self._lyric_h
+		glBindTexture(GL_TEXTURE_2D, tex)
 		glBegin(GL_QUADS)
-		glTexCoord2f(0.0, 0.0); glVertex2f(x0, y0)
-		glTexCoord2f(1.0, 0.0); glVertex2f(x1, y0)
-		glTexCoord2f(1.0, 1.0); glVertex2f(x1, y1)
-		glTexCoord2f(0.0, 1.0); glVertex2f(x0, y1)
+		glTexCoord2f(0.0, 0.0); glVertex2f(x, y)
+		glTexCoord2f(1.0, 0.0); glVertex2f(x + w, y)
+		glTexCoord2f(1.0, 1.0); glVertex2f(x + w, y + h)
+		glTexCoord2f(0.0, 1.0); glVertex2f(x, y + h)
 		glEnd()
 		glMatrixMode(GL_MODELVIEW)
 		glPopMatrix()
@@ -130,10 +138,34 @@ class Stage2(BaseStage):
 		glDisable(GL_BLEND)
 		glEnable(GL_DEPTH_TEST)
 
+	def _draw_lyric(self):
+		if not self._lyric_line:
+			return
+		x = (self.win_w - self._lyric_w) / 2.0
+		self._blit(self.lyric_tex, x, self.LYRIC_MARGIN, self._lyric_w, self._lyric_h)
+
+	def _draw_ceo(self):
+		if self._lyric_line != self.ceo_line:
+			return
+		x = self.win_w - self.ceo_w - self.ceo_margin
+		self._blit(self.ceo, x, self.ceo_margin, self.ceo_w, self.ceo_h)
+
+	def _draw_name(self, i):
+		tex, w, h = self.name_texs[i]
+		self._blit(tex, (self.win_w - w) / 2.0, self.win_h - h - self.name_margin, w, h)
+
+	def _texture_from_surface(self, surface):
+		tex = self.make_texture()
+		glBindTexture(GL_TEXTURE_2D, tex)
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface.get_width(), surface.get_height(), 0,
+		             GL_RGBA, GL_UNSIGNED_BYTE, pygame.image.tostring(surface, "RGBA", True))
+		return tex, surface.get_width(), surface.get_height()
+
 	@property
 	def done(self):
-		return False
+		return self.frame / self.FPS >= self.tune_seconds
 
 	def destroy(self):
-		self.portrait.destroy()
-		self.ceo.destroy()
+		for p in self.portraits:
+			p.destroy()
+		glDeleteTextures([self.ceo, self.lyric_tex, *[t for t, _, _ in self.name_texs]])

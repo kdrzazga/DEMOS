@@ -17,6 +17,8 @@ from pygame.locals import DOUBLEBUF, OPENGL, QUIT, KEYDOWN, K_ESCAPE
 from OpenGL.GL import glClearColor, glMatrixMode, GL_PROJECTION, GL_MODELVIEW
 from OpenGL.GLU import gluPerspective
 
+from lib import Globals
+
 try:
 	from stage1 import Stage1
 except ModuleNotFoundError:
@@ -26,6 +28,11 @@ try:
 	from stage2 import Stage2
 except ModuleNotFoundError:
 	from demos.pc45.stage2 import Stage2
+
+try:
+	from stage3 import Stage3
+except ModuleNotFoundError:
+	from demos.pc45.stage3 import Stage3
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -50,7 +57,7 @@ class GlDemo:
 
 		self.clock = pygame.time.Clock()
 		self.running = False
-		self._stages = [Stage1, Stage2]
+		self._stages = [Stage1, Stage2, Stage3]
 		self._index = 0
 		self.stage = self._make_stage(0)
 
@@ -64,6 +71,8 @@ class GlDemo:
 			self.stage = self._make_stage(self._index)
 		else:
 			self.running = False
+			print(Globals.get_duration())
+			print("BYE !")
 
 	def _process_events(self):
 		for event in pygame.event.get():

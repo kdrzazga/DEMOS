@@ -52,7 +52,7 @@ class Stage3(BaseStage):
 
     def _build_scene(self):
         building = BuildingBuilder().with_pillar(0.9).with_logo(2, 2).build()
-        camera = OrbitCamera(Vector3(0.0, building.total_height * 0.5, 0.0),
+        camera = OrbitCamera(Vector3(0.0, building.total_height * 0.5, 5.0),
                              self.FAR_DISTANCE, azimuth=0.0, elevation=0.15)
         renderer = LitSurfaceRenderer(Vector3(0.4, 0.85, 0.5))
         return Scene(building, camera, renderer)

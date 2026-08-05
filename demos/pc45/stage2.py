@@ -3,6 +3,7 @@ import os
 
 import pygame
 from OpenGL.GL import *
+from OpenGL.GLU import gluPerspective
 
 try:
 	from audio import AudioController
@@ -18,6 +19,11 @@ try:
 	from effects.portrait import ExtrudedPhoto
 except ModuleNotFoundError:
 	from demos.pc45.effects.portrait import ExtrudedPhoto
+
+try:
+	from team_cube import TeamCube
+except ModuleNotFoundError:
+	from demos.pc45.team_cube import TeamCube
 
 try:
 	from march_on_with_ibm import MarchOnWithIBM
@@ -74,6 +80,9 @@ class Stage2(BaseStage):
 		ceo = pygame.transform.smoothscale(
 			ceo, (int(ceo.get_width() * self.ceo_scale), int(ceo.get_height() * self.ceo_scale)))
 		self.ceo, self.ceo_w, self.ceo_h = self._texture_from_surface(ceo)
+		self.cube = TeamCube(self.res_path, [img for img, name in self.portrait_images])
+		self.cube_fraction = 0.15
+		self.cube_margin = 20
 
 	def render(self):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -89,6 +98,8 @@ class Stage2(BaseStage):
 		self._draw_lyric()
 		if i < len(self.portraits):
 			self._draw_name(i)
+		else:
+			self._draw_cube()
 		self.frame += 1
 
 	def _elapsed(self):
@@ -161,6 +172,30 @@ class Stage2(BaseStage):
 		             GL_RGBA, GL_UNSIGNED_BYTE, pygame.image.tostring(surface, "RGBA", True))
 		return tex, surface.get_width(), surface.get_height()
 
+	def _draw_cube(self):
+		rw = int(self.win_w * self.cube_fraction)
+		rh = int(self.win_h * self.cube_fraction)
+		glViewport(self.cube_margin, self.cube_margin, rw, rh)
+		glMatrixMode(GL_PROJECTION)
+		glPushMatrix()
+		glLoadIdentity()
+		gluPerspective(45.0, rw / rh, 0.1, 100.0)
+		glMatrixMode(GL_MODELVIEW)
+		glPushMatrix()
+		glLoadIdentity()
+		glEnable(GL_DEPTH_TEST)
+		glDisable(GL_BLEND)
+		glTranslatef(0.0, 0.0, -4.5)
+		glRotatef(18.0, 1.0, 0.0, 0.0)
+		self.cube.update()
+		self.cube.draw()
+		glMatrixMode(GL_MODELVIEW)
+		glPopMatrix()
+		glMatrixMode(GL_PROJECTION)
+		glPopMatrix()
+		glMatrixMode(GL_MODELVIEW)
+		glViewport(0, 0, self.win_w, self.win_h)
+
 	@property
 	def done(self):
 		return self.frame / self.FPS >= self.tune_seconds
@@ -168,4 +203,5 @@ class Stage2(BaseStage):
 	def destroy(self):
 		for p in self.portraits:
 			p.destroy()
+		self.cube.destroy()
 		glDeleteTextures([self.ceo, self.lyric_tex, *[t for t, _, _ in self.name_texs]])

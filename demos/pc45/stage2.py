@@ -26,6 +26,16 @@ except ModuleNotFoundError:
 	from demos.pc45.team_cube import TeamCube
 
 try:
+	from team_slides import TeamSlides
+except ModuleNotFoundError:
+	from demos.pc45.team_slides import TeamSlides
+
+try:
+	from stage2textwall import Textwall
+except ModuleNotFoundError:
+	from demos.pc45.stage2textwall import Textwall
+
+try:
 	from march_on_with_ibm import MarchOnWithIBM
 except ModuleNotFoundError:
 	from demos.pc45.march_on_with_ibm import MarchOnWithIBM
@@ -83,6 +93,16 @@ class Stage2(BaseStage):
 		self.cube = TeamCube(self.res_path, [img for img, name in self.portrait_images])
 		self.cube_fraction = 0.15
 		self.cube_margin = 20
+		self.slides_start = len(self.portraits) * self.portrait_seconds
+		screens = (
+			("team/DonEstridge.png", Textwall.don_estridge),
+			("team/mark-dean.png", Textwall.mark_dean),
+			("team/DennisL.Moeller.png", Textwall.dennis_moeller),
+			("team/wiliamLowe.png", Textwall.william_lowe),
+			(None, Textwall.others),
+		)
+		self.slideshow = TeamSlides(self.res_path, self.win_w, self.win_h,
+		                            self.tune_seconds - self.slides_start, screens)
 
 	def render(self):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -99,6 +119,7 @@ class Stage2(BaseStage):
 		if i < len(self.portraits):
 			self._draw_name(i)
 		else:
+			self.slideshow.draw(self.frame / self.FPS - self.slides_start)
 			self._draw_cube()
 		self.frame += 1
 
@@ -204,4 +225,5 @@ class Stage2(BaseStage):
 		for p in self.portraits:
 			p.destroy()
 		self.cube.destroy()
+		self.slideshow.destroy()
 		glDeleteTextures([self.ceo, self.lyric_tex, *[t for t, _, _ in self.name_texs]])

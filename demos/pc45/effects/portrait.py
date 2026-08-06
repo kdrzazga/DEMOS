@@ -54,3 +54,36 @@ class ExtrudedPhoto:
 
 	def destroy(self):
 		glDeleteTextures([self.tex])
+
+
+class FlatImage:
+
+	def __init__(self, path, half_height):
+		surface = pygame.image.load(path)
+		self.img_w, self.img_h = surface.get_size()
+		data = pygame.image.tostring(surface, "RGBA", True)
+		self.tex = glGenTextures(1)
+		glBindTexture(GL_TEXTURE_2D, self.tex)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, self.img_w, self.img_h, 0,
+		             GL_RGBA, GL_UNSIGNED_BYTE, data)
+		self.hh = half_height
+		self.hw = half_height * (self.img_w / self.img_h)
+
+	def draw(self):
+		hw, hh = self.hw, self.hh
+		glColor3f(1.0, 1.0, 1.0)
+		glEnable(GL_TEXTURE_2D)
+		glBindTexture(GL_TEXTURE_2D, self.tex)
+		glBegin(GL_QUADS)
+		glTexCoord2f(0.0, 0.0); glVertex3f(-hw, -hh, 0.0)
+		glTexCoord2f(1.0, 0.0); glVertex3f(hw, -hh, 0.0)
+		glTexCoord2f(1.0, 1.0); glVertex3f(hw, hh, 0.0)
+		glTexCoord2f(0.0, 1.0); glVertex3f(-hw, hh, 0.0)
+		glEnd()
+
+	def destroy(self):
+		glDeleteTextures([self.tex])

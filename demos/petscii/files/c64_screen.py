@@ -1,4 +1,5 @@
 import math
+import os
 
 import pygame
 from OpenGL.GL import (
@@ -64,6 +65,11 @@ class C64Screen:
         self.mesh = PetsciiMesh(font_size)
         self.mesh_drawn = False
 
+        pygame.mixer.init()
+        self.wolf = self.load_sound("wolf.mp3")
+        self.wolf_background = self.load_sound("wolf-background1.mp3")
+        self.music_started = False
+
         self.header_typers = (self.header_typer1, self.header_typer2, self.header_typer3)
         # the mesh appears once every header has finished typing
         self.mesh_start_frame = max(t.start_frame + len(t.text) * t.speed
@@ -89,6 +95,7 @@ class C64Screen:
         if frame > C64Screen.HEADER_START_FRAME - 50:
             self.draw_background()
             if frame > C64Screen.HEADER_START_FRAME:
+                self.start_music()
                 self.draw_header(frame)
 
         glEnable(GL_TEXTURE_2D)
@@ -101,6 +108,17 @@ class C64Screen:
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
         glTranslatef(0.0, 0.0, Constants.CAMERA_Z)
+
+    def load_sound(self, filename):
+        path = os.path.join(os.path.dirname(__file__), "resources", filename)
+        return pygame.mixer.Sound(path)
+
+    def start_music(self):
+        if self.music_started:
+            return
+        self.wolf.play()
+        self.wolf_background.play()
+        self.music_started = True
 
     def gl_color(self):
         """self.color (0..255 per channel) as OpenGL floats (0..1)."""

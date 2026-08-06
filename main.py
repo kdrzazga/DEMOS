@@ -27,7 +27,7 @@ DEMOS = {
     "petscii": petscii_demo,
 }
 
-DEFAULT_DEMO = "pc45"
+DEFAULT_DEMO = "petscii"
 
 
 if __name__ == "__main__":

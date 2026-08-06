@@ -29,15 +29,11 @@ from OpenGL.GL import (
 from OpenGL.GLU import gluPerspective
 
 from demos.petscii.files.globals import Constants
+from demos.petscii.files.mesh import PetsciiMesh
 from demos.petscii.files.typer import Typer
 
 
 class C64Screen:
-    """A coloured rectangle zooming in from the distance between the two noise screens.
-
-    It is as wide as the noise screens, so once it reaches the screen plane its left
-    and right edges sit exactly on their outer edges.
-    """
 
     START_Z = -34 * 6
     TARGET_Z = -5
@@ -53,7 +49,7 @@ class C64Screen:
         self.half_width = Constants.HALF_WIDTH
         self.half_height = Constants.HALF_WIDTH * Constants.HEIGHT / Constants.WIDTH
 
-        font_size = Constants.WIDTH // Constants.COLUMNS
+        font_size = self.font_size = Constants.WIDTH // Constants.COLUMNS
         start_x = (Constants.WIDTH - len(Constants.HEADER) * font_size) // 2
         start_x2 = (Constants.WIDTH - len(Constants.HEADER2) * font_size) // 2
         self.screen_surface = pygame.Surface((Constants.WIDTH, Constants.HEIGHT))
@@ -64,6 +60,14 @@ class C64Screen:
         self.header_typer3 = Typer(C64Screen.HEADER2_START_FRAME + 50, Constants.HEADER3,
                                    self.screen_surface, Constants.WIDTH*0.006, 5*font_size, font_size)
         self.texture = glGenTextures(1)
+
+        self.mesh = PetsciiMesh(font_size)
+        self.mesh_drawn = False
+
+        self.header_typers = (self.header_typer1, self.header_typer2, self.header_typer3)
+        # the mesh appears once every header has finished typing
+        self.mesh_start_frame = max(t.start_frame + len(t.text) * t.speed
+                                    for t in self.header_typers)
 
     def update(self, frame):
         if self.z < C64Screen.TARGET_Z:
@@ -128,8 +132,12 @@ class C64Screen:
         """Type the BASIC header onto the black screen and draw it as a textured quad."""
         #self.screen_surface.fill((0, 0, 0))
 
-        for typer in (self.header_typer1, self.header_typer2, self.header_typer3):
+        for typer in self.header_typers:
             typer.type(frame)
+
+        if not self.mesh_drawn and frame > self.mesh_start_frame:
+            self.mesh.draw(self.screen_surface)
+            self.mesh_drawn = True
 
         self._upload(self.screen_surface)
         inset_w = self.half_width * 0.8

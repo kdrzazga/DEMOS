@@ -13,8 +13,8 @@ takes over. ESC / window-close quits.
 import os
 
 import pygame
-from pygame.locals import DOUBLEBUF, OPENGL, QUIT, KEYDOWN, K_ESCAPE
-from OpenGL.GL import glClearColor, glMatrixMode, GL_PROJECTION, GL_MODELVIEW
+from pygame.locals import DOUBLEBUF, OPENGL, QUIT, KEYDOWN, K_ESCAPE, FULLSCREEN, MOUSEBUTTONDOWN
+from OpenGL.GL import glClearColor, glClear, glMatrixMode, GL_PROJECTION, GL_MODELVIEW, GL_COLOR_BUFFER_BIT
 from OpenGL.GLU import gluPerspective
 
 from lib import Globals
@@ -44,11 +44,15 @@ class GlDemo:
 	FOV = 45.0
 	FPS = 60
 
-	def __init__(self):
+	def __init__(self, windowed=False, triggered=False):
 		pygame.init()
 		pygame.mixer.init()
-		pygame.display.set_mode((self.WIN_W, self.WIN_H), DOUBLEBUF | OPENGL)
+		flags = DOUBLEBUF | OPENGL
+		if not windowed:
+			flags |= FULLSCREEN
+		pygame.display.set_mode((self.WIN_W, self.WIN_H), flags)
 		pygame.display.set_caption("45 years of IBM-PC")
+		pygame.mouse.set_pos((self.WIN_W - 1, self.WIN_H // 2))
 
 		glClearColor(0.0, 0.0, 0.0, 1.0)
 		glMatrixMode(GL_PROJECTION)
@@ -57,9 +61,12 @@ class GlDemo:
 
 		self.clock = pygame.time.Clock()
 		self.running = False
+		self.paused = triggered
 		self._stages = [Stage1, Stage2, Stage3]
 		self._index = 0
 		self.stage = self._make_stage(0)
+		if self.paused:
+			pygame.mixer.music.pause()
 
 	def _make_stage(self, index):
 		return self._stages[index](self.WIN_W, self.WIN_H, self.RES_PATH, self.FOV)
@@ -78,14 +85,20 @@ class GlDemo:
 		for event in pygame.event.get():
 			if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
 				self.running = False
+			elif event.type == MOUSEBUTTONDOWN and self.paused:
+				self.paused = False
+				pygame.mixer.music.unpause()
 
 	def run(self):
 		self.running = True
 		while self.running:
 			self._process_events()
-			self.stage.render()
-			if self.stage.done:
-				self._advance()
+			if self.paused:
+				glClear(GL_COLOR_BUFFER_BIT)
+			else:
+				self.stage.render()
+				if self.stage.done:
+					self._advance()
 			pygame.display.flip()
 			self.clock.tick(self.FPS)
 		pygame.quit()

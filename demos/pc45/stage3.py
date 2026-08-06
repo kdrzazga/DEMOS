@@ -22,6 +22,11 @@ except ModuleNotFoundError:
     from demos.pc45.building3d.linear_algebra import Vector3
     from demos.pc45.building3d.building.building_builder import BuildingBuilder
 
+try:
+    from stage3_textwall import Textwall
+except ModuleNotFoundError:
+    from demos.pc45.stage3_textwall import Textwall
+
 
 class Stage3(BaseStage):
 
@@ -48,7 +53,35 @@ class Stage3(BaseStage):
                      GL_RGBA, GL_UNSIGNED_BYTE, pygame.image.tostring(bg, "RGBA", True))
         self.scene = self._build_scene()
         self._configure_projection()
+        self.panel = (win_w * 0.25, win_h * 0.25, win_w * 0.75, win_h * 0.75)
+        self.panel_alpha = 0.5
+        self.caption_color = (87, 255, 163)
+        self.captions = self._build_captions()
         self._play(self.tunes[0][0])
+
+    def _build_captions(self):
+        rw = self.win_w * 0.5
+        rh = self.win_h * 0.5
+        font_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+            "lib", "resources", "Mx437_IBM_MDA.ttf")
+        font_px = int(rh / len(Textwall.line_timestamp_pairs) * 0.6)
+        font = pygame.font.Font(font_path, font_px)
+        limit = rw * 0.9
+        widest = max(font.size(text)[0] for _, text in Textwall.line_timestamp_pairs)
+        if widest > limit:
+            font_px = max(8, int(font_px * limit / widest))
+            font = pygame.font.Font(font_path, font_px)
+        captions = []
+        for ts, text in Textwall.line_timestamp_pairs:
+            surface = font.render(text, True, self.caption_color)
+            tw, th = surface.get_size()
+            tex = self.make_texture()
+            glBindTexture(GL_TEXTURE_2D, tex)
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tw, th, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                         pygame.image.tostring(surface, "RGBA", True))
+            captions.append((ts, tex, tw, th))
+        return captions
 
     def _build_scene(self):
         building = BuildingBuilder().with_pillar(0.9).with_logo(2, 2).build()
@@ -125,6 +158,46 @@ class Stage3(BaseStage):
         glPopMatrix()
         glMatrixMode(GL_MODELVIEW)
 
+    def _draw_summary(self, elapsed):
+        x0, y0, x1, y1 = self.panel
+        glDisable(GL_DEPTH_TEST)
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        glMatrixMode(GL_PROJECTION)
+        glPushMatrix()
+        glLoadIdentity()
+        glOrtho(0.0, self.win_w, 0.0, self.win_h, -1.0, 1.0)
+        glMatrixMode(GL_MODELVIEW)
+        glPushMatrix()
+        glLoadIdentity()
+        glDisable(GL_TEXTURE_2D)
+        glColor4f(0.0, 0.0, 0.0, self.panel_alpha)
+        glBegin(GL_QUADS)
+        glVertex2f(x0, y0); glVertex2f(x1, y0); glVertex2f(x1, y1); glVertex2f(x0, y1)
+        glEnd()
+        glEnable(GL_TEXTURE_2D)
+        glColor4f(1.0, 1.0, 1.0, 1.0)
+        row_h = (y1 - y0) / len(self.captions)
+        for i, (ts, tex, tw, th) in enumerate(self.captions):
+            if elapsed < ts:
+                continue
+            x = (self.win_w - tw) / 2.0
+            y = y1 - (i + 0.5) * row_h - th / 2.0
+            glBindTexture(GL_TEXTURE_2D, tex)
+            glBegin(GL_QUADS)
+            glTexCoord2f(0.0, 0.0); glVertex2f(x, y)
+            glTexCoord2f(1.0, 0.0); glVertex2f(x + tw, y)
+            glTexCoord2f(1.0, 1.0); glVertex2f(x + tw, y + th)
+            glTexCoord2f(0.0, 1.0); glVertex2f(x, y + th)
+            glEnd()
+        glMatrixMode(GL_MODELVIEW)
+        glPopMatrix()
+        glMatrixMode(GL_PROJECTION)
+        glPopMatrix()
+        glMatrixMode(GL_MODELVIEW)
+        glDisable(GL_BLEND)
+        glEnable(GL_DEPTH_TEST)
+
     def render(self):
         elapsed_seconds = self.frame / self.FPS
         if elapsed_seconds < self.PHOTO_START_SECONDS:
@@ -133,6 +206,8 @@ class Stage3(BaseStage):
             glClearColor(0.0, 0.0, 0.0, 1.0)
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
             self._draw_background()
+        if self._index == 0:
+            self._draw_summary((self.frame - self._tune_start) / self.FPS)
         if self._index < len(self.tunes):
             elapsed = (self.frame - self._tune_start) / self.FPS
             if elapsed >= self.tunes[self._index][1]:
@@ -149,3 +224,5 @@ class Stage3(BaseStage):
     def destroy(self):
         pygame.mixer.music.stop()
         glDeleteTextures([self.bg])
+        for _, tex, _, _ in self.captions:
+            glDeleteTextures([tex])

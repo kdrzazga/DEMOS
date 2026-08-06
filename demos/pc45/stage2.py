@@ -95,14 +95,15 @@ class Stage2(BaseStage):
 		self.cube_margin = 20
 		self.slides_start = len(self.portraits) * self.portrait_seconds
 		screens = (
-			("team/DonEstridge.png", Textwall.don_estridge),
-			("team/mark-dean.png", Textwall.mark_dean),
-			("team/DennisL.Moeller.png", Textwall.dennis_moeller),
-			("team/wiliamLowe.png", Textwall.william_lowe),
-			(None, Textwall.others),
+			("team/DonEstridge.png", Textwall.don_estridge, 2.0),
+			("team/mark-dean.png", Textwall.mark_dean, 1.0),
+			("team/DennisL.Moeller.png", Textwall.dennis_moeller, 2.0),
+			("team/wiliamLowe.png", Textwall.william_lowe, 2.0),
+			(None, Textwall.others, 3.0),
 		)
 		self.slideshow = TeamSlides(self.res_path, self.win_w, self.win_h,
-		                            self.tune_seconds - self.slides_start, screens)
+		                            self.tune_seconds - self.slides_start, screens,
+		                            travel_image="ISAslot.png", travel_slides=(1, 2))
 
 	def render(self):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)

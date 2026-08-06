@@ -51,6 +51,8 @@ class Stage3(BaseStage):
         glBindTexture(GL_TEXTURE_2D, self.bg)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, self.bg_w, self.bg_h, 0,
                      GL_RGBA, GL_UNSIGNED_BYTE, pygame.image.tostring(bg, "RGBA", True))
+        self.bg_distance = 57.0
+        self.bg_half_h = 30.0
         self.scene = self._build_scene()
         self._configure_projection()
         self.panel = (win_w * 0.25, win_h * 0.25, win_w * 0.75, win_h * 0.75)
@@ -130,11 +132,8 @@ class Stage3(BaseStage):
         self.scene.draw()
 
     def _draw_background(self):
-        scale = max(self.win_w / self.bg_w, self.win_h / self.bg_h)
-        sw = self.bg_w * scale
-        sh = self.bg_h * scale
-        x0 = (self.win_w - sw) / 2.0
-        y0 = (self.win_h - sh) / 2.0
+        hh = self.bg_half_h
+        hw = hh * (self.bg_w / self.bg_h)
         glDisable(GL_DEPTH_TEST)
         glDisable(GL_BLEND)
         glEnable(GL_TEXTURE_2D)
@@ -142,16 +141,17 @@ class Stage3(BaseStage):
         glMatrixMode(GL_PROJECTION)
         glPushMatrix()
         glLoadIdentity()
-        glOrtho(0.0, self.win_w, 0.0, self.win_h, -1.0, 1.0)
+        gluPerspective(55.0, self.win_w / self.win_h, 0.5, 600.0)
         glMatrixMode(GL_MODELVIEW)
         glPushMatrix()
         glLoadIdentity()
+        glTranslatef(0.0, 0.0, -self.bg_distance)
         glBindTexture(GL_TEXTURE_2D, self.bg)
         glBegin(GL_QUADS)
-        glTexCoord2f(0.0, 0.0); glVertex2f(x0, y0)
-        glTexCoord2f(1.0, 0.0); glVertex2f(x0 + sw, y0)
-        glTexCoord2f(1.0, 1.0); glVertex2f(x0 + sw, y0 + sh)
-        glTexCoord2f(0.0, 1.0); glVertex2f(x0, y0 + sh)
+        glTexCoord2f(0.0, 0.0); glVertex3f(-hw, -hh, 0.0)
+        glTexCoord2f(1.0, 0.0); glVertex3f(hw, -hh, 0.0)
+        glTexCoord2f(1.0, 1.0); glVertex3f(hw, hh, 0.0)
+        glTexCoord2f(0.0, 1.0); glVertex3f(-hw, hh, 0.0)
         glEnd()
         glMatrixMode(GL_MODELVIEW)
         glPopMatrix()

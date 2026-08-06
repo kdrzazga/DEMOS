@@ -41,7 +41,7 @@ class Stage3(BaseStage):
 
     def __init__(self, win_w, win_h, res_path, fov):
         super().__init__(win_w, win_h, res_path, fov)
-        self.tunes = (("summary/summary.mp3", 30), ("summary/dominance.mp3", 3))
+        self.tunes = (("summary/summary.mp3", 30),)
         self._index = 0
         self._tune_start = 0
         self.bg_image = "summary/HQ.jpg"
@@ -55,6 +55,7 @@ class Stage3(BaseStage):
         self._configure_projection()
         self.panel = (win_w * 0.25, win_h * 0.25, win_w * 0.75, win_h * 0.75)
         self.panel_alpha = 0.5
+        self.summary_delay = 1.0
         self.caption_color = (87, 255, 163)
         self.captions = self._build_captions()
         self._play(self.tunes[0][0])
@@ -207,7 +208,9 @@ class Stage3(BaseStage):
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
             self._draw_background()
         if self._index == 0:
-            self._draw_summary((self.frame - self._tune_start) / self.FPS)
+            summary_elapsed = (self.frame - self._tune_start) / self.FPS
+            if summary_elapsed >= self.summary_delay:
+                self._draw_summary(summary_elapsed)
         if self._index < len(self.tunes):
             elapsed = (self.frame - self._tune_start) / self.FPS
             if elapsed >= self.tunes[self._index][1]:

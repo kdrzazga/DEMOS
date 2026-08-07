@@ -10,6 +10,7 @@ from OpenGL.GL import (
     glEnable,
 )
 
+from demos.petscii.files.petscii.asian import Asian
 from lib import Globals
 from lib.pygame_demo import PygameDemo
 from demos.petscii.files.c64_screen import C64Screen
@@ -58,6 +59,7 @@ class PetsciiDemo(PygameDemo):
         self.noise = Noise(Constants.WIDTH, Constants.HEIGHT)
         self.logo = KnaLogo(char_size=16)
         self.c64 = DjSpaceThunder(char_size=16)
+        self.asian = Asian()
         self.tiltLeft = TiltScreen(Constants.WIDTH, Constants.HEIGHT)
         self.tiltRight = TiltScreen(Constants.WIDTH, Constants.HEIGHT)
         self.c64_screen = C64Screen()

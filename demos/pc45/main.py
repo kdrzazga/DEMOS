@@ -13,11 +13,11 @@ takes over. ESC / window-close quits.
 import os
 
 import pygame
-from pygame.locals import DOUBLEBUF, OPENGL, QUIT, KEYDOWN, K_ESCAPE, FULLSCREEN, MOUSEBUTTONDOWN
-from OpenGL.GL import glClearColor, glClear, glMatrixMode, GL_PROJECTION, GL_MODELVIEW, GL_COLOR_BUFFER_BIT
+from OpenGL.GL import glClearColor, glMatrixMode, GL_PROJECTION, GL_MODELVIEW
 from OpenGL.GLU import gluPerspective
 
 from lib import Globals
+from lib.pygame_demo import PygameDemo
 
 try:
 	from stage1 import Stage1
@@ -37,39 +37,36 @@ except ModuleNotFoundError:
 _ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
-class GlDemo:
+class GlDemo(PygameDemo):
 
-	WIN_W, WIN_H = 1280, 800
 	RES_PATH = os.path.join(_ROOT, "demos", "pc45", "resources")
 	FOV = 45.0
-	FPS = 60
 
 	def __init__(self, windowed=False, triggered=False):
-		pygame.init()
+		super().__init__(1280, 800, "45 years of IBM-PC", fps=60,
+		                 windowed=windowed, triggered=triggered)
+
+	def setup(self):
 		pygame.mixer.init()
-		flags = DOUBLEBUF | OPENGL
-		if not windowed:
-			flags |= FULLSCREEN
-		pygame.display.set_mode((self.WIN_W, self.WIN_H), flags)
-		pygame.display.set_caption("45 years of IBM-PC")
-		pygame.mouse.set_pos((self.WIN_W - 1, self.WIN_H // 2))
+		pygame.mouse.set_pos((self.width - 1, self.height // 2))
 
 		glClearColor(0.0, 0.0, 0.0, 1.0)
 		glMatrixMode(GL_PROJECTION)
-		gluPerspective(self.FOV, self.WIN_W / self.WIN_H, 0.1, 100.0)
+		gluPerspective(self.FOV, self.width / self.height, 0.1, 100.0)
 		glMatrixMode(GL_MODELVIEW)
 
-		self.clock = pygame.time.Clock()
-		self.running = False
-		self.paused = triggered
-		self._stages = [Stage1, Stage2, Stage3]
+		self._stages = (Stage1, Stage2, Stage3)
 		self._index = 0
 		self.stage = self._make_stage(0)
-		if self.paused:
-			pygame.mixer.music.pause()
+
+	def on_pause(self):
+		pygame.mixer.music.pause()
+
+	def on_start(self):
+		pygame.mixer.music.unpause()
 
 	def _make_stage(self, index):
-		return self._stages[index](self.WIN_W, self.WIN_H, self.RES_PATH, self.FOV)
+		return self._stages[index](self.width, self.height, self.RES_PATH, self.FOV)
 
 	def _advance(self):
 		self.stage.destroy()
@@ -81,27 +78,10 @@ class GlDemo:
 			print(Globals.get_duration())
 			print("BYE !")
 
-	def _process_events(self):
-		for event in pygame.event.get():
-			if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
-				self.running = False
-			elif event.type == MOUSEBUTTONDOWN and self.paused:
-				self.paused = False
-				pygame.mixer.music.unpause()
-
-	def run(self):
-		self.running = True
-		while self.running:
-			self._process_events()
-			if self.paused:
-				glClear(GL_COLOR_BUFFER_BIT)
-			else:
-				self.stage.render()
-				if self.stage.done:
-					self._advance()
-			pygame.display.flip()
-			self.clock.tick(self.FPS)
-		pygame.quit()
+	def step(self):
+		self.stage.render()
+		if self.stage.done:
+			self._advance()
 
 
 if __name__ == "__main__":

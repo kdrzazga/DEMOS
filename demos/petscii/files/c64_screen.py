@@ -1,4 +1,5 @@
 import math
+import os
 
 import pygame
 from OpenGL.GL import (
@@ -10,9 +11,13 @@ from OpenGL.GL import (
     GL_TEXTURE_2D,
     GL_TEXTURE_MAG_FILTER,
     GL_TEXTURE_MIN_FILTER,
+    GL_BLEND,
+    GL_ONE_MINUS_SRC_ALPHA,
+    GL_SRC_ALPHA,
     GL_UNSIGNED_BYTE,
     glBegin,
     glBindTexture,
+    glBlendFunc,
     glColor3f,
     glDisable,
     glEnable,
@@ -29,47 +34,84 @@ from OpenGL.GL import (
 from OpenGL.GLU import gluPerspective
 
 from demos.petscii.files.globals import Constants
+from demos.petscii.files.mesh import PetsciiMesh
 from demos.petscii.files.typer import Typer
 
 
 class C64Screen:
-    """A coloured rectangle zooming in from the distance between the two noise screens.
-
-    It is as wide as the noise screens, so once it reaches the screen plane its left
-    and right edges sit exactly on their outer edges.
-    """
 
     START_Z = -34 * 6
     TARGET_Z = -5
-    ZOOM_SPEED = 1
+    ZOOM_SPEED = 1.6
     FAR_PLANE = 300.0
 
-    HEADER_START_FRAME = 850
-    HEADER2_START_FRAME = HEADER_START_FRAME + 45
+    HEADER2_OFFSET = 45
+    HEADER3_OFFSET = 95
 
     def __init__(self):
         self.z = C64Screen.START_Z
         self.color = list(Constants.PALETTE[11])
         self.half_width = Constants.HALF_WIDTH
         self.half_height = Constants.HALF_WIDTH * Constants.HEIGHT / Constants.WIDTH
+        self.inset_w = self.half_width * 0.8
+        self.inset_h = self.half_height * 0.8
 
-        font_size = Constants.WIDTH // Constants.COLUMNS
+        font_size = self.font_size = Constants.WIDTH // Constants.COLUMNS
         start_x = (Constants.WIDTH - len(Constants.HEADER) * font_size) // 2
         start_x2 = (Constants.WIDTH - len(Constants.HEADER2) * font_size) // 2
         self.screen_surface = pygame.Surface((Constants.WIDTH, Constants.HEIGHT))
-        self.header_typer1 = Typer(C64Screen.HEADER_START_FRAME, Constants.HEADER,
+        self.header_typer1 = Typer(0, Constants.HEADER,
                                    self.screen_surface, start_x, font_size, font_size)
-        self.header_typer2 = Typer(C64Screen.HEADER2_START_FRAME, Constants.HEADER2,
+        self.header_typer2 = Typer(C64Screen.HEADER2_OFFSET, Constants.HEADER2,
                                    self.screen_surface, start_x2, 3*font_size, font_size)
-        self.header_typer3 = Typer(C64Screen.HEADER2_START_FRAME + 50, Constants.HEADER3,
+        self.header_typer3 = Typer(C64Screen.HEADER3_OFFSET, Constants.HEADER3,
                                    self.screen_surface, Constants.WIDTH*0.006, 5*font_size, font_size)
         self.texture = glGenTextures(1)
+
+        self.mesh = PetsciiMesh(font_size)
+        self.mesh_drawn = False
+        self.header_start = None
+
+        self.caption_color = (255, 255, 255)
+        self.caption_texture = glGenTextures(1)
+        self.mesh_texture = glGenTextures(1)
+        self.caption_ready = False
+        self.caption_start_frame = 0
+        self.caption_step = 6
+        self.caption_amplitude = 2
+
+        self.captions = ("PETSCII", "3D", "DEMO")
+        self.caption_index = 0
+        self.mesh_caption = self.captions[0]
+        self.drawn_caption = None
+        self.caption_timer = 0
+        self.caption_duration = 200
+
+        pygame.mixer.init()
+        self.wolf = self.load_sound("wolf.mp3")
+        self.wolf_background = self.load_sound("wolf-background1.mp3")
+        self.music_started = False
+
+        self.header_typers = (self.header_typer1, self.header_typer2, self.header_typer3)
+        # the mesh appears once every header has finished typing
+        self.mesh_start_frame = max(t.start_frame + len(t.text) * t.speed
+                                    for t in self.header_typers)
 
     def update(self, frame):
         if self.z < C64Screen.TARGET_Z:
             self.z = min(C64Screen.TARGET_Z, self.z + C64Screen.ZOOM_SPEED)
         if frame > 20:
             self.change_color_rgb(frame, amplitude=127.5, offset=127.5)
+        self.update_caption()
+
+    def update_caption(self):
+        if not self.caption_ready:
+            return
+        self.caption_timer += 1
+        if self.caption_timer >= self.caption_duration:
+            self.caption_timer = 0
+            self.caption_index = (self.caption_index + 1) % len(self.captions)
+            self.mesh_caption = self.captions[self.caption_index]
 
     def render(self, frame):
         glDisable(GL_TEXTURE_2D)
@@ -82,12 +124,27 @@ class C64Screen:
         glVertex3f(-self.half_width, -self.half_height, self.z)
         glEnd()
 
-        if frame > C64Screen.HEADER_START_FRAME - 50:
-            self.draw_background()
-            if frame > C64Screen.HEADER_START_FRAME:
-                self.draw_header(frame)
+        self.draw_background()
+        if self.arrived():
+            self.begin_headers(frame)
+            self.start_music()
+            self.draw_header(frame)
+            self.draw_mesh(frame)
 
         glEnable(GL_TEXTURE_2D)
+
+    def arrived(self):
+        return self.z >= C64Screen.TARGET_Z
+
+    def begin_headers(self, frame):
+        if self.header_start is not None:
+            return
+        self.header_start = frame
+        self.header_typer1.start_frame = frame
+        self.header_typer2.start_frame = frame + C64Screen.HEADER2_OFFSET
+        self.header_typer3.start_frame = frame + C64Screen.HEADER3_OFFSET
+        self.mesh_start_frame = max(t.start_frame + len(t.text) * t.speed
+                                    for t in self.header_typers)
 
     def _begin_3d(self):
         glMatrixMode(GL_PROJECTION)
@@ -98,8 +155,18 @@ class C64Screen:
         glLoadIdentity()
         glTranslatef(0.0, 0.0, Constants.CAMERA_Z)
 
+    def load_sound(self, filename):
+        path = os.path.join(os.path.dirname(__file__), "resources", filename)
+        return pygame.mixer.Sound(path)
+
+    def start_music(self):
+        if self.music_started:
+            return
+        self.wolf.play()
+        self.wolf_background.play()
+        self.music_started = True
+
     def gl_color(self):
-        """self.color (0..255 per channel) as OpenGL floats (0..1)."""
         return tuple(channel / 255 for channel in self.color)
 
     def change_color_rgb(self, frame, amplitude, offset):
@@ -114,39 +181,89 @@ class C64Screen:
 
     def draw_background(self, color=(0, 0, 0)):
         glColor3f(*color)
-        inset_w = self.half_width * 0.8
-        inset_h = self.half_height * 0.8
         z = self.z + 0.01  # nudge towards the camera so it sits on top of the border
         glBegin(GL_QUADS)
-        glVertex3f(-inset_w, inset_h, z)
-        glVertex3f(inset_w, inset_h, z)
-        glVertex3f(inset_w, -inset_h, z)
-        glVertex3f(-inset_w, -inset_h, z)
+        glVertex3f(-self.inset_w, self.inset_h, z)
+        glVertex3f(self.inset_w, self.inset_h, z)
+        glVertex3f(self.inset_w, -self.inset_h, z)
+        glVertex3f(-self.inset_w, -self.inset_h, z)
         glEnd()
 
     def draw_header(self, frame):
-        """Type the BASIC header onto the black screen and draw it as a textured quad."""
-        #self.screen_surface.fill((0, 0, 0))
-
-        for typer in (self.header_typer1, self.header_typer2, self.header_typer3):
+        for typer in self.header_typers:
             typer.type(frame)
 
         self._upload(self.screen_surface)
-        inset_w = self.half_width * 0.8
-        inset_h = self.half_height * 0.8
         z = self.z + 0.02  # just in front of the black screen
         glEnable(GL_TEXTURE_2D)
         glColor3f(*self.gl_color())
         glBegin(GL_QUADS)
-        glTexCoord2f(0, 0); glVertex3f(-inset_w, inset_h, z)
-        glTexCoord2f(1, 0); glVertex3f(inset_w, inset_h, z)
-        glTexCoord2f(1, 1); glVertex3f(inset_w, -inset_h, z)
-        glTexCoord2f(0, 1); glVertex3f(-inset_w, -inset_h, z)
+        glTexCoord2f(0, 0); glVertex3f(-self.inset_w, self.inset_h, z)
+        glTexCoord2f(1, 0); glVertex3f(self.inset_w, self.inset_h, z)
+        glTexCoord2f(1, 1); glVertex3f(self.inset_w, -self.inset_h, z)
+        glTexCoord2f(0, 1); glVertex3f(-self.inset_w, -self.inset_h, z)
         glEnd()
 
-    def _upload(self, surface):
+    def draw_mesh(self, frame):
+        if not self.mesh_drawn and frame > self.mesh_start_frame:
+            self._upload(self.mesh.lattice_surface(), self.mesh_texture)
+            self.mesh_drawn = True
+            self.caption_ready = True
+
+        if not self.caption_ready:
+            return
+
+        if self.mesh_caption != self.drawn_caption:
+            self.build_caption(frame)
+
+        z = self.z + 0.03
+        cell = self.font_size * self.mesh.stretch / Constants.WIDTH * (2 * self.inset_w)
+        x_offset = self.caption_offset(frame - self.caption_start_frame,
+                                       self.caption_amplitude) * cell
+        self.draw_layer(self.caption_texture, self.inset_w, self.inset_h, z,
+                        (1.0, 1.0, 1.0), x_offset)
+        self.draw_layer(self.mesh_texture, self.inset_w, self.inset_h, z + 0.01,
+                        self.gl_color())
+
+    def build_caption(self, frame):
+        self._upload(self.mesh.text_surface(self.mesh_caption, self.caption_color),
+                     self.caption_texture)
+        self.drawn_caption = self.mesh_caption
+        self.caption_start_frame = frame
+        width = self.mesh.caption_width(self.mesh_caption)
+        self.caption_amplitude = max(1, (Constants.COLUMNS - 2 - width) // 2 - 1)
+
+    def draw_layer(self, texture, inset_w, inset_h, z, color, x_offset=0.0):
+        glBindTexture(GL_TEXTURE_2D, texture)
+        glColor3f(*color)
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        left = -inset_w + x_offset
+        right = inset_w + x_offset
+        glBegin(GL_QUADS)
+        glTexCoord2f(0, 0); glVertex3f(left, inset_h, z)
+        glTexCoord2f(1, 0); glVertex3f(right, inset_h, z)
+        glTexCoord2f(1, 1); glVertex3f(right, -inset_h, z)
+        glTexCoord2f(0, 1); glVertex3f(left, -inset_h, z)
+        glEnd()
+        glDisable(GL_BLEND)
+
+    def caption_offset(self, frames, amplitude):
+        steps = frames // self.caption_step
+        if steps < amplitude:
+            return -steps
+        steps -= amplitude
+        period = 4 * amplitude
+        phase = steps % period
+        if phase < 2 * amplitude:
+            return -amplitude + phase
+        return amplitude - (phase - 2 * amplitude)
+
+    def _upload(self, surface, texture=None):
+        if texture is None:
+            texture = self.texture
         data = pygame.image.tobytes(surface, "RGBA")
-        glBindTexture(GL_TEXTURE_2D, self.texture)
+        glBindTexture(GL_TEXTURE_2D, texture)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface.get_width(), surface.get_height(),

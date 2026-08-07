@@ -21,12 +21,25 @@ from demos.demo1.stage9dialog2 import Stage9
 from demos.demo1.stage10dialog3 import Stage10
 from demos.demo1.outro import Outro
 
+from lib.base_demo import BaseDemo
 
-class Demo1(arcade.Window):
-    def __init__(self, triggered=False):
-        super().__init__(Constants.WIDTH, Constants.HEIGHT, "Komoda & Amiga +", fullscreen=False)
 
-        self.paused = triggered
+class Demo1(arcade.Window, BaseDemo):
+    def __init__(self, windowed=False, triggered=False):
+        arcade.Window.__init__(self, Constants.WIDTH, Constants.HEIGHT,
+                               "Komoda & Amiga +", fullscreen=not windowed)
+        BaseDemo.__init__(self, windowed=windowed, triggered=triggered)
+
+        # Fit the fixed 800x600 world into the physical window without distortion.
+        # In fullscreen the window is the monitor's native resolution, so the world
+        # is scaled up and pillar/letter-boxed with black bars around it.
+        self.scale_cam = arcade.Camera2D(
+            position=(0.0, 0.0),  # world (0,0) at the viewport's bottom-left
+            projection=arcade.LRBT(0, Constants.WIDTH, 0, Constants.HEIGHT),
+            viewport=arcade.LBWH(0, 0, self.width, self.height),
+        )
+        self._fit_world_to_window()
+
         self.frame = 0 * Stage7.START_FRAME
         self.intro = Intro()
         if not self.paused:
@@ -52,10 +65,30 @@ class Demo1(arcade.Window):
         width, height = pyautogui.size()
         pyautogui.moveTo(width - 1, height - 1)
 
+    def on_start(self):
+        self.intro.play_music()
+
     def on_mouse_press(self, x, y, button, modifiers):
-        if self.paused:
-            self.paused = False
-            self.intro.play_music()
+        self.trigger()
+
+    def _fit_world_to_window(self):
+        """Scale the world uniformly into the largest centred rectangle that fits
+        the window, preserving the 4:3 aspect ratio (black bars fill the rest).
+        The scissor clips off-world sprites/text at the world edge, exactly as the
+        window edge did when running 1:1."""
+        scale = min(self.width / Constants.WIDTH, self.height / Constants.HEIGHT)
+        vp_w = Constants.WIDTH * scale
+        vp_h = Constants.HEIGHT * scale
+        vp_x = (self.width - vp_w) / 2
+        vp_y = (self.height - vp_h) / 2
+        rect = arcade.LBWH(vp_x, vp_y, vp_w, vp_h)
+        self.scale_cam.viewport = rect
+        self.scale_cam.scissor = rect
+
+    def on_resize(self, width, height):
+        super().on_resize(width, height)
+        if getattr(self, "scale_cam", None) is not None:
+            self._fit_world_to_window()
 
     def on_update(self, delta_time):
         if self.paused:
@@ -94,8 +127,12 @@ class Demo1(arcade.Window):
             self.player.volume = max(0.0, vol)
 
     def on_draw(self):
+        self.default_camera.use()             # full window, no scissor
+        self.clear(color=arcade.color.BLACK)  # paints the letterbox bars
+        self.scale_cam.use()                  # map the 800x600 world into the viewport
+
         lblue = Color.from_hex_string(Constants.LIGHT_BLUE)
-        self.clear(color=lblue)
+        arcade.draw_rect_filled(arcade.LBWH(0, 0, Constants.WIDTH, Constants.HEIGHT), color=lblue)
 
         if self.frame < Stage1.START_FRAME:
             self.intro.on_draw(self.frame)

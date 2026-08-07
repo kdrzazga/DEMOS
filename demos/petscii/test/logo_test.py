@@ -6,7 +6,7 @@ import pygame
 _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 sys.path.insert(0, _ROOT)
 
-from demos.petscii.files.kna_logo import KnaLogo
+from demos.petscii.files.petscii.kna_logo import KnaLogo
 
 
 def main():

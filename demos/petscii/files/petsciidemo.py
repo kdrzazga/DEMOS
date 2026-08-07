@@ -10,6 +10,7 @@ from OpenGL.GL import (
     glEnable,
 )
 
+from lib import Globals
 from lib.pygame_demo import PygameDemo
 from demos.petscii.files.c64_screen import C64Screen
 from demos.petscii.files.dj_space_thunder import DjSpaceThunder
@@ -22,10 +23,10 @@ from demos.petscii.files.tilt_screen import TiltScreen
 class PetsciiDemo(PygameDemo):
     """PETSCII demo: two noise screens that each tilt away to opposite edges."""
 
-    NOISE_SECONDS = 8
-    SECOND_NOISE_SECONDS = 3
-    TILT_SECONDS = 3
-    SHRINK_SECONDS = 3
+    NOISE_SECONDS = 6
+    SECOND_NOISE_SECONDS = 2.4
+    TILT_SECONDS = 2.4
+    SHRINK_SECONDS = 2.4
     PAUSE_SECONDS = 1
 
     # screen one appears, tilts its right edge back, then slides it to the left edge;
@@ -104,6 +105,7 @@ class PetsciiDemo(PygameDemo):
         elif self.scene == PetsciiDemo.SCENE_SHRINK2:
             self.tiltRight.shrink(self.scene_progress(PetsciiDemo.SHRINK_SECONDS))
             self.c64_screen.update(self.scene_frame)
+            print("Elapsed time " + str(Globals.get_duration()))
 
     def scene_progress(self, seconds):
         """How far the current scene has run, as a 0..1 fraction of seconds."""

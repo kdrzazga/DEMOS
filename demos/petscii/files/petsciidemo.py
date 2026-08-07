@@ -13,9 +13,9 @@ from OpenGL.GL import (
 from lib import Globals
 from lib.pygame_demo import PygameDemo
 from demos.petscii.files.c64_screen import C64Screen
-from demos.petscii.files.dj_space_thunder import DjSpaceThunder
+from demos.petscii.files.petscii.dj_space_thunder import DjSpaceThunder
 from demos.petscii.files.globals import Constants
-from demos.petscii.files.kna_logo import KnaLogo
+from demos.petscii.files.petscii.kna_logo import KnaLogo
 from demos.petscii.files.noise import Noise
 from demos.petscii.files.tilt_screen import TiltScreen
 

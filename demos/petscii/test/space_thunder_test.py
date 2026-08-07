@@ -6,7 +6,7 @@ import pygame
 _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 sys.path.insert(0, _ROOT)
 
-from demos.petscii.files.dj_space_thunder import DjSpaceThunder
+from demos.petscii.files.petscii.dj_space_thunder import DjSpaceThunder
 
 
 def main():

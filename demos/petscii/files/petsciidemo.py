@@ -59,7 +59,7 @@ class PetsciiDemo(PygameDemo):
         self.noise = Noise(Constants.WIDTH, Constants.HEIGHT)
         self.logo = KnaLogo(char_size=16)
         self.c64 = DjSpaceThunder(char_size=16)
-        self.asian = Asian()
+        self.asian = Asian(16)
         self.tiltLeft = TiltScreen(Constants.WIDTH, Constants.HEIGHT)
         self.tiltRight = TiltScreen(Constants.WIDTH, Constants.HEIGHT)
         self.c64_screen = C64Screen()

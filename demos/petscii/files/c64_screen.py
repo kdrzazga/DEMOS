@@ -72,12 +72,20 @@ class C64Screen:
         self.mesh_drawn = False
         self.header_start = None
 
-        self.petscii_color = (255, 255, 255)
-        self.petscii_texture = glGenTextures(1)
+        self.caption_color = (255, 255, 255)
+        self.caption_texture = glGenTextures(1)
         self.mesh_texture = glGenTextures(1)
-        self.petscii_ready = False
-        self.petscii_start_frame = 0
-        self.petscii_step = 12
+        self.caption_ready = False
+        self.caption_start_frame = 0
+        self.caption_step = 6
+        self.caption_amplitude = 2
+
+        self.captions = ("PETSCII", "3D", "DEMO")
+        self.caption_index = 0
+        self.mesh_caption = self.captions[0]
+        self.drawn_caption = None
+        self.caption_timer = 0
+        self.caption_duration = 200
 
         pygame.mixer.init()
         self.wolf = self.load_sound("wolf.mp3")
@@ -94,6 +102,16 @@ class C64Screen:
             self.z = min(C64Screen.TARGET_Z, self.z + C64Screen.ZOOM_SPEED)
         if frame > 20:
             self.change_color_rgb(frame, amplitude=127.5, offset=127.5)
+        self.update_caption()
+
+    def update_caption(self):
+        if not self.caption_ready:
+            return
+        self.caption_timer += 1
+        if self.caption_timer >= self.caption_duration:
+            self.caption_timer = 0
+            self.caption_index = (self.caption_index + 1) % len(self.captions)
+            self.mesh_caption = self.captions[self.caption_index]
 
     def render(self, frame):
         glDisable(GL_TEXTURE_2D)
@@ -188,23 +206,32 @@ class C64Screen:
 
     def draw_mesh(self, frame):
         if not self.mesh_drawn and frame > self.mesh_start_frame:
-            self._upload(self.mesh.text_surface("PETSCII", self.petscii_color),
-                         self.petscii_texture)
             self._upload(self.mesh.lattice_surface(), self.mesh_texture)
             self.mesh_drawn = True
-            self.petscii_ready = True
-            self.petscii_start_frame = frame
+            self.caption_ready = True
 
-        if not self.petscii_ready:
+        if not self.caption_ready:
             return
+
+        if self.mesh_caption != self.drawn_caption:
+            self.build_caption(frame)
 
         z = self.z + 0.03
         cell = self.font_size * self.mesh.stretch / Constants.WIDTH * (2 * self.inset_w)
-        x_offset = self.petscii_offset(frame - self.petscii_start_frame) * cell
-        self.draw_layer(self.petscii_texture, self.inset_w, self.inset_h, z,
+        x_offset = self.caption_offset(frame - self.caption_start_frame,
+                                       self.caption_amplitude) * cell
+        self.draw_layer(self.caption_texture, self.inset_w, self.inset_h, z,
                         (1.0, 1.0, 1.0), x_offset)
         self.draw_layer(self.mesh_texture, self.inset_w, self.inset_h, z + 0.01,
                         self.gl_color())
+
+    def build_caption(self, frame):
+        self._upload(self.mesh.text_surface(self.mesh_caption, self.caption_color),
+                     self.caption_texture)
+        self.drawn_caption = self.mesh_caption
+        self.caption_start_frame = frame
+        width = self.mesh.caption_width(self.mesh_caption)
+        self.caption_amplitude = max(1, (Constants.COLUMNS - 2 - width) // 2 - 1)
 
     def draw_layer(self, texture, inset_w, inset_h, z, color, x_offset=0.0):
         glBindTexture(GL_TEXTURE_2D, texture)
@@ -221,15 +248,16 @@ class C64Screen:
         glEnd()
         glDisable(GL_BLEND)
 
-    def petscii_offset(self, frames):
-        steps = frames // self.petscii_step
-        if steps < 2:
+    def caption_offset(self, frames, amplitude):
+        steps = frames // self.caption_step
+        if steps < amplitude:
             return -steps
-        steps -= 2
-        phase = steps % 8
-        if phase < 4:
-            return -2 + phase
-        return 2 - (phase - 4)
+        steps -= amplitude
+        period = 4 * amplitude
+        phase = steps % period
+        if phase < 2 * amplitude:
+            return -amplitude + phase
+        return amplitude - (phase - 2 * amplitude)
 
     def _upload(self, surface, texture=None):
         if texture is None:

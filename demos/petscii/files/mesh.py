@@ -7,10 +7,12 @@ from demos.petscii.files.globals import Constants
 class PetsciiMesh:
 
     def __init__(self, font_size, top_row=8, rows=11, top_char=239, fill_char=204,
-                 bottom_char=247, border_char=32, color=(255, 255, 255), stretch=1.04):
+                 bottom_char=247, border_char=32, color=(255, 255, 255), stretch=1.04,
+                 caption_rows=7):
         self.font_size = font_size
         self.top_row = top_row
         self.rows = rows
+        self.caption_rows = caption_rows
         self.top_char = top_char
         self.fill_char = fill_char
         self.bottom_char = bottom_char
@@ -51,8 +53,14 @@ class PetsciiMesh:
         self.draw(surface, self.highlights(self.converter.convert_caption(text), x, color))
 
     def text_surface(self, text, color, x=None):
-        highlights = self.highlights(self.converter.convert_caption(text), x, color)
+        highlights = self.highlights(self.caption_pixels(text), x, color)
         return self._compose({pos: self.highlight_glyph(c) for pos, c in highlights.items()})
+
+    def caption_pixels(self, text):
+        return self.converter.fit_caption(text, Constants.COLUMNS - 2, self.caption_rows)
+
+    def caption_width(self, text):
+        return max((column for _, column in self.caption_pixels(text)), default=0) + 1
 
     def lattice_surface(self):
         columns = Constants.COLUMNS

@@ -44,6 +44,13 @@ from demos.petscii.files.petscii.asian import Asian
 CHAR_SIZE = 12
 DEPTH = 7  # pixels between the front and back faces
 
+class Globals:
+    hat_changed = False
+    eyes_step = 0
+
+
+EYE_STEPS = ((6000, "close_eyes"), (11000, "eyes_wide_open"), (15000, "eyes_default"))
+
 
 def upload(surface):
     texture = glGenTextures(1)
@@ -97,6 +104,7 @@ def main():
     distance = width * 1.6
     clock = pygame.time.Clock()
     angle = 0.0
+
     running = True
     while running:
         for event in pygame.event.get():
@@ -104,6 +112,9 @@ def main():
                 running = False
             elif event.type == KEYDOWN and event.key == K_ESCAPE:
                 running = False
+
+        texture = conditionally_change_hat(image, surface, texture)
+        texture = conditionally_change_eyes(image, surface, texture)
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glMatrixMode(GL_PROJECTION)
@@ -128,6 +139,28 @@ def main():
         angle = (angle + 1.0) % 360
         clock.tick(30)
     pygame.quit()
+
+
+def conditionally_change_hat(image, surface, texture):
+    if not Globals.hat_changed and pygame.time.get_ticks() >= 9000:
+        image.alternate_hat()
+        image.render(surface)
+        texture = upload(surface)
+        Globals.hat_changed = True
+        print("Hat changed")
+    return texture
+
+
+def conditionally_change_eyes(image, surface, texture):
+    if Globals.eyes_step < len(EYE_STEPS):
+        when, method = EYE_STEPS[Globals.eyes_step]
+        if pygame.time.get_ticks() >= when:
+            getattr(image, method)()
+            image.render(surface)
+            texture = upload(surface)
+            Globals.eyes_step += 1
+            print(method)
+    return texture
 
 
 if __name__ == "__main__":

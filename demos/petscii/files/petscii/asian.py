@@ -1,3 +1,7 @@
+import os
+
+import pygame
+
 from demos.petscii.files.petscii_image import PetsciiImage
 
 
@@ -5,9 +9,10 @@ class Asian(PetsciiImage):
 
     def __init__(self, char_size):
         super().__init__(char_size)
-
-        self.all_graphics_file = "resources/all-graphics.mp3"
-        self.three_d = "resources/3d.mp3"
+        current_directory = os.getcwd()
+        print(current_directory)
+        self.all_graphics = pygame.mixer.Sound("..\\files\\resources\\all-graphics.mp3")
+        self.three_d = pygame.mixer.Sound("..\\files\\resources\\3d.mp3")
 
         self.hat_row = 9
         self.eyes_area = (12, 13)
@@ -189,10 +194,12 @@ class Asian(PetsciiImage):
                 self.reversed[row + delta_row][column + delta_column] = 1
 
     def say_all_graphics(self):
-        pass
+        if not pygame.mixer.get_busy():
+            self.all_graphics.play()
 
     def say_3d(self):
-        pass
+        if not pygame.mixer.get_busy():
+            self.three_d.play()
 
     def smile(self):
         pass

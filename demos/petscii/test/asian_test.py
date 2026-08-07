@@ -47,6 +47,7 @@ DEPTH = 7  # pixels between the front and back faces
 class Globals:
     hat_changed = False
     eyes_step = 0
+    graphics_said = False
 
 
 EYE_STEPS = ((6000, "close_eyes"), (11000, "eyes_wide_open"), (15000, "eyes_default"))
@@ -115,6 +116,7 @@ def main():
 
         texture = conditionally_change_hat(image, surface, texture)
         texture = conditionally_change_eyes(image, surface, texture)
+        conditionally_say_all_graphics(image)
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glMatrixMode(GL_PROJECTION)
@@ -149,6 +151,13 @@ def conditionally_change_hat(image, surface, texture):
         Globals.hat_changed = True
         print("Hat changed")
     return texture
+
+
+def conditionally_say_all_graphics(image):
+    if not Globals.graphics_said and pygame.time.get_ticks() >= 15000:
+        image.say_all_graphics()
+        Globals.graphics_said = True
+        print("say_all_graphics")
 
 
 def conditionally_change_eyes(image, surface, texture):

@@ -12,7 +12,9 @@ class Asian(PetsciiImage):
         current_directory = os.getcwd()
         print(current_directory)
         self.all_graphics = pygame.mixer.Sound("..\\files\\resources\\all-graphics.mp3")
+        self.all_graphics_duration = 4 #seconds
         self.three_d = pygame.mixer.Sound("..\\files\\resources\\3d.mp3")
+        self.three_d_duration = 3
 
         self.hat_row = 9
         self.eyes_area = (12, 13)
@@ -20,6 +22,12 @@ class Asian(PetsciiImage):
 
         self.close_eyes_area = (26, 24)
         self.wide_open_eyes_area = (26, 25)
+
+        self.mouth_frame_ms = 150       # each lip shape is shown for 0.15 second
+        self.mouth_cycle = ("mouth_1", "mouth_2", "mouth_3", "mouth_4")
+        self.mouth_frames = ()          # built per-clip when a say_* method runs
+        self._talk_start = None
+        self._mouth_frame = -1
 
         self.alternate_base = self.copy_row(0)
         self.default_base = self.copy_row(self.hat_row)
@@ -194,12 +202,43 @@ class Asian(PetsciiImage):
                 self.reversed[row + delta_row][column + delta_column] = 1
 
     def say_all_graphics(self):
-        if not pygame.mixer.get_busy():
-            self.all_graphics.play()
+        self._say(self.all_graphics, self.all_graphics_duration)
 
     def say_3d(self):
+        self._say(self.three_d, self.three_d_duration)
+
+    def _say(self, sound, duration):
         if not pygame.mixer.get_busy():
-            self.three_d.play()
+            sound.play()
+        self.mouth_frames = self._build_mouth_frames(duration)
+        self._talk_start = pygame.time.get_ticks()
+        self._mouth_frame = -1
+
+    def _build_mouth_frames(self, duration):
+        frame_count = duration * 1000 // self.mouth_frame_ms
+        return tuple(
+            self.mouth_cycle[i % len(self.mouth_cycle)] for i in range(frame_count)
+        ) + ("default_mouth",)
+
+    @property
+    def talking(self):
+        return self._talk_start is not None
+
+    def talk(self):
+        """Advance the lip-sync animation. Returns True if the mouth changed
+        (so the caller can re-render). Does nothing until a say_* method is
+        called and stops on its own once the mouth sequence has finished."""
+        if self._talk_start is None:
+            return False
+        frame = (pygame.time.get_ticks() - self._talk_start) // self.mouth_frame_ms
+        if frame >= len(self.mouth_frames):
+            self._talk_start = None  # animation finished, mouth left at default
+            return False
+        if frame == self._mouth_frame:
+            return False
+        self._mouth_frame = frame
+        getattr(self, self.mouth_frames[frame])()
+        return True
 
     def smile(self):
         pass

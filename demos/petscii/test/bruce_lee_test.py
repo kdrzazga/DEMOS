@@ -40,11 +40,17 @@ _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."
 sys.path.insert(0, _ROOT)
 
 from demos.petscii.files.petscii.bruce_lee_stage1 import BruceLeeStage
+from demos.petscii.files.petscii.bruce_lee import BruceLee
 
 CHAR_SIZE = 24
 SWAY_DEGREES = 10.0   # peak left/right tilt
 SWAY_PERIOD = 5000.0  # milliseconds for a full left-right-left cycle
 ZOOM = 0.9            # camera distance as a multiple of width; smaller = closer/zoomed in
+
+POSES = ("stand", "run1", "run2", "kick")
+POSE_MS = 4000            # each pose is held for 4 seconds
+BRUCE_ORIGIN = (18, 17)   # (row, column) Bruce is stamped at -- centre, near the bottom
+LIGHT_GRAY = 15           # matches the stage background so Bruce's cells blend in
 
 
 def upload(surface):
@@ -67,16 +73,26 @@ def draw_surface(half_width, half_height):
     glEnd()
 
 
+def render_scene(stage, bruce, surface):
+    stage.render(surface)                          # opaque stage fills the surface
+    bruce.render(surface, transparent_space=True)  # overlay only Bruce's non-blank cells
+
+
 def main():
     pygame.init()
-    image = BruceLeeStage(CHAR_SIZE)
-    width, height = image.size()
+    stage = BruceLeeStage(CHAR_SIZE)
+    bruce = BruceLee(CHAR_SIZE)
+    bruce.background_color = LIGHT_GRAY
+    bruce.origin = BRUCE_ORIGIN
+    width, height = stage.size()
     pygame.display.set_mode((width, height), DOUBLEBUF | OPENGL)
     pygame.display.set_caption("Bruce Lee PETSCII 3D")
 
     surface = pygame.Surface((width, height))
-    image.render(surface)
+    bruce.stand()
+    render_scene(stage, bruce, surface)
     texture = upload(surface)
+    pose = 0
 
     glClearColor(0.0, 0.0, 0.0, 1.0)
     glEnable(GL_TEXTURE_2D)
@@ -93,6 +109,13 @@ def main():
                 running = False
             elif event.type == KEYDOWN and event.key == K_ESCAPE:
                 running = False
+
+        step = (pygame.time.get_ticks() // POSE_MS) % len(POSES)
+        if step != pose:
+            pose = step
+            getattr(bruce, POSES[pose])()
+            render_scene(stage, bruce, surface)
+            texture = upload(surface)
 
         sway = SWAY_DEGREES * math.sin(2 * math.pi * pygame.time.get_ticks() / SWAY_PERIOD)
 

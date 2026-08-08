@@ -9,11 +9,15 @@ class Asian(PetsciiImage):
 
     def __init__(self, char_size):
         super().__init__(char_size)
-        current_directory = os.getcwd()
-        print(current_directory)
-        self.all_graphics = pygame.mixer.Sound("..\\files\\resources\\all-graphics.mp3")
+        dir = os.getcwd() + "\\demos\\petscii\\files\\resources\\"
+        try:
+            self.all_graphics = pygame.mixer.Sound(dir + "all-graphics.mp3")
+        except (pygame.error, FileNotFoundError):
+            dir = os.getcwd() + "\\..\\files\\resources\\"
+            self.all_graphics = pygame.mixer.Sound(dir + "all-graphics.mp3")
+        print(dir)
         self.all_graphics_duration = 4 #seconds
-        self.three_d = pygame.mixer.Sound("..\\files\\resources\\3d.mp3")
+        self.three_d = pygame.mixer.Sound(dir + "3d.mp3")
         self.three_d_duration = 3
 
         self.hat_row = 9

@@ -26,6 +26,7 @@ class PetsciiImage:
         self._glyphs = {}
         self._corner_orders = {}
         self.render_progress = 0
+        self.background_color = Constants.BACKGROUND_COLOR
 
     def font(self, char_size=None):
         char_size = self.char_size if char_size is None else char_size
@@ -42,7 +43,7 @@ class PetsciiImage:
         char_size = self.char_size if char_size is None else char_size
         cell_size = self.font(char_size).size("W")
         if not transparent_space:
-            surface.fill(Constants.PALETTE[Constants.BACKGROUND_COLOR])
+            surface.fill(Constants.PALETTE[self.background_color])
         for row in range(Constants.ROWS):
             for column in range(Constants.COLUMNS):
                 if transparent_space and self.is_blank(row, column):
@@ -56,7 +57,7 @@ class PetsciiImage:
         char_size = self.char_size if char_size is None else char_size
         cell_size = self.font(char_size).size("W")
         if not transparent_space:
-            surface.fill(Constants.PALETTE[Constants.BACKGROUND_COLOR])
+            surface.fill(Constants.PALETTE[self.background_color])
         for corner in range(Constants.CORNERS):
             for row, column in self.cells_from_corner(corner):
                 if transparent_space and self.is_blank(row, column):
@@ -88,7 +89,7 @@ class PetsciiImage:
         return self._corner_orders[corner]
 
     def draw_cell(self, surface, char_size, cell_size, row, column, origin=(0, 0)):
-        background = Constants.PALETTE[Constants.BACKGROUND_COLOR]
+        background = Constants.PALETTE[self.background_color]
         foreground, cell_background = Constants.PALETTE[self.colors[row][column]], background
         if self.reversed[row][column]:
             foreground, cell_background = cell_background, foreground

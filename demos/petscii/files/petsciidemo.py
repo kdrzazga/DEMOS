@@ -32,6 +32,8 @@ class PetsciiDemo(PygameDemo):
     SHRINK_SECONDS = 2.4
     PAUSE_SECONDS = 1
     ASIAN_SECONDS = 3
+    LEAN_SECONDS = 1.5
+    SLIDE_SECONDS = 1.5
 
     WELCOME_SECONDS = 4
 
@@ -46,7 +48,8 @@ class PetsciiDemo(PygameDemo):
     SCENE_TILT2 = 6
     SCENE_SHRINK2 = 7
     SCENE_ASIAN = 8
-    SCENE_COUNT = 9
+    SCENE_ENCORE = 9
+    SCENE_COUNT = 10
 
     def __init__(self, windowed=False, triggered=False):
         super().__init__(Constants.WIDTH, Constants.HEIGHT, "PETSCII 3D Demo",
@@ -57,6 +60,7 @@ class PetsciiDemo(PygameDemo):
         self.scene_frame = 0
         self.scene = PetsciiDemo.SCENE_WELCOME
         self.captions_frame = None
+        self.encore_frame = None
 
         glClearColor(0.0, 0.0, 0.0, 1.0)
         glEnable(GL_TEXTURE_2D)
@@ -72,6 +76,8 @@ class PetsciiDemo(PygameDemo):
         self.tiltLeft = TiltScreen(Constants.WIDTH, Constants.HEIGHT)
         self.tiltRight = TiltScreen(Constants.WIDTH, Constants.HEIGHT)
         self.c64_screen = C64Screen()
+        self.c64_screen2 = C64Screen()
+        self.c64_screen2.music_started = True
         self.welcome = WelcomeStage()
 
     def step(self):
@@ -140,6 +146,19 @@ class PetsciiDemo(PygameDemo):
             if self.asian_animation.finished:
                 self.c64_screen.zoom(1.75)
             self.c64_screen.update(self.frame)
+            if self.asian_animation.finished and self.c64_screen.z >= self.c64_screen.target_z:
+                if self.encore_frame is None:
+                    self.encore_frame = self.frame
+                elif self.frame - self.encore_frame > Constants.FPS:
+                    self.set_scene(PetsciiDemo.SCENE_ENCORE)
+        elif self.scene == PetsciiDemo.SCENE_ENCORE:
+            self.asian_animation.update(self.scene_frame)
+            self.c64_screen.lean(self.scene_progress(PetsciiDemo.LEAN_SECONDS))
+            slide_frame = self.scene_frame - Constants.FPS * PetsciiDemo.LEAN_SECONDS
+            if slide_frame > 0:
+                self.c64_screen.slide(slide_frame / (Constants.FPS * PetsciiDemo.SLIDE_SECONDS))
+            self.c64_screen.update(self.frame)
+            self.c64_screen2.update(self.frame)
 
         self.noiseLeft.set_intensity(self.tiltLeft.presence())
         self.noiseRight.set_intensity(self.tiltRight.presence())
@@ -159,11 +178,13 @@ class PetsciiDemo(PygameDemo):
             self.draw_second_screen()
         if self.scene >= PetsciiDemo.SCENE_SHRINK2:
             self.c64_screen.render(self.frame)
-        if self.scene == PetsciiDemo.SCENE_ASIAN:
+        if self.scene == PetsciiDemo.SCENE_ENCORE:
+            self.c64_screen2.render(self.frame)
+        if self.scene >= PetsciiDemo.SCENE_ASIAN:
             self.asian_animation.draw()
 
     def _asian_flown(self):
-        return self.scene == PetsciiDemo.SCENE_ASIAN and self.asian_animation.finished
+        return self.scene >= PetsciiDemo.SCENE_ASIAN and self.asian_animation.finished
 
     def draw_first_screen(self):
         self.compose_first_surface()

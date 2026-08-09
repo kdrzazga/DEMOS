@@ -25,6 +25,7 @@ from OpenGL.GL import (
     glGenTextures,
     glLoadIdentity,
     glMatrixMode,
+    glMultMatrixf,
     glTexCoord2f,
     glTexImage2D,
     glTexParameteri,
@@ -45,6 +46,7 @@ class C64Screen:
     ZOOM_SPEED = 1.6
     FINALE_ZOOM_SPEED = 0.04
     FAR_PLANE = 300.0
+    TILT_DEPTH = -5.0
 
     HEADER2_OFFSET = 45
     HEADER3_OFFSET = 95
@@ -53,6 +55,8 @@ class C64Screen:
         self.z = C64Screen.START_Z
         self.target_z = C64Screen.TARGET_Z
         self.zoom_speed = C64Screen.ZOOM_SPEED
+        self.tilt_progress = 0.0
+        self.slide_progress = 0.0
         self.color = list(Constants.PALETTE[11])
         self.half_width = Constants.HALF_WIDTH
         self.half_height = Constants.HALF_WIDTH * Constants.HEIGHT / Constants.WIDTH
@@ -88,7 +92,7 @@ class C64Screen:
         self.mesh_caption = self.captions[0]
         self.drawn_caption = None
         self.caption_timer = 0
-        self.caption_duration = 200
+        self.caption_durations = (75, 220, 75)
 
         pygame.mixer.init()
         self.wolf = self.load_sound("wolf.mp3")
@@ -112,11 +116,31 @@ class C64Screen:
         self.target_z = eye / magnification - Constants.CAMERA_Z
         self.zoom_speed = speed if speed is not None else C64Screen.FINALE_ZOOM_SPEED
 
+    def lean(self, progress):
+        self.tilt_progress = min(1.0, progress)
+
+    def slide(self, progress):
+        self.slide_progress = min(1.0, progress)
+
+    def _apply_lean(self):
+        if self.tilt_progress <= 0.0 and self.slide_progress <= 0.0:
+            return
+        pt = self.tilt_progress
+        ps = self.slide_progress
+        slope = C64Screen.TILT_DEPTH / (2 * self.half_width)
+        intercept = C64Screen.TILT_DEPTH / 2
+        glMultMatrixf([
+            1.0 - ps, 0.0, pt * slope, 0.0,
+            0.0, 1.0, 0.0, 0.0,
+            0.0, 0.0, 1.0, 0.0,
+            -self.half_width * ps, 0.0, pt * (intercept - self.z), 1.0,
+        ])
+
     def update_caption(self):
         if not self.caption_ready:
             return
         self.caption_timer += 1
-        if self.caption_timer >= self.caption_duration:
+        if self.caption_timer >= self.caption_durations[self.caption_index]:
             self.caption_timer = 0
             self.caption_index = (self.caption_index + 1) % len(self.captions)
             self.mesh_caption = self.captions[self.caption_index]
@@ -124,6 +148,7 @@ class C64Screen:
     def render(self, frame):
         glDisable(GL_TEXTURE_2D)
         self._begin_3d()
+        self._apply_lean()
         glColor3f(*self.gl_color())
         glBegin(GL_QUADS)
         glVertex3f(-self.half_width, self.half_height, self.z)

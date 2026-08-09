@@ -37,7 +37,7 @@ class Typer:
 		glyph = self.font.render(self.text[:letters], False, Typer.COLOR)
 		self.surface.blit(glyph, (self.start_x, self.start_y))
 
-		print(current_frame)
+		#print(current_frame)
 
 	def beep(self):
 		"""Play a very short, high, random-pitched blip. The blips are built once

@@ -33,6 +33,10 @@ class Asian(PetsciiImage):
         self._talk_start = None
         self._mouth_frame = -1
 
+        self.speech = ()
+        self.speech_row = 20
+        self.speech_color = (255, 255, 255)
+
         self.alternate_base = self.copy_row(0)
         self.default_base = self.copy_row(self.hat_row)
         self.chars = [list(row) for row in Asian.chars]
@@ -207,9 +211,11 @@ class Asian(PetsciiImage):
 
     def say_all_graphics(self):
         self._say(self.all_graphics, self.all_graphics_duration)
+        self.speech = ('Graphics', 'in this demo', 'are PETSCII', 'characters')
 
     def say_3d(self):
         self._say(self.three_d, self.three_d_duration)
+        self.speech = (' They are', 'drawn in 3D', '   using', '   OpenGL')
 
     def _say(self, sound, duration):
         if not pygame.mixer.get_busy():
@@ -237,12 +243,27 @@ class Asian(PetsciiImage):
         frame = (pygame.time.get_ticks() - self._talk_start) // self.mouth_frame_ms
         if frame >= len(self.mouth_frames):
             self._talk_start = None  # animation finished, mouth left at default
-            return False
+            self.speech = ()
+            return True
         if frame == self._mouth_frame:
             return False
         self._mouth_frame = frame
         getattr(self, self.mouth_frames[frame])()
         return True
+
+    def render(self, surface, char_size=None, transparent_space=False, origin=(0, 0)):
+        super().render(surface, char_size, transparent_space, origin)
+        self.draw_speech(surface, char_size)
+
+    def draw_speech(self, surface, char_size=None):
+        if not self.speech:
+            return
+        char_size = self.char_size if char_size is None else char_size
+        font = self.font(char_size)
+        _, cell_height = font.size("W")
+        for index, line in enumerate(self.speech):
+            glyph = font.render(line, False, self.speech_color)
+            surface.blit(glyph, (0, (self.speech_row + index) * cell_height))
 
     def smile(self):
         pass

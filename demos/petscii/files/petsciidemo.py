@@ -136,8 +136,10 @@ class PetsciiDemo(PygameDemo):
                     self.set_scene(PetsciiDemo.SCENE_ASIAN)
             print("Elapsed time " + str(Globals.get_duration()))
         elif self.scene == PetsciiDemo.SCENE_ASIAN:
-            self.c64_screen.update(self.frame)
             self.asian_animation.update(self.scene_frame)
+            if self.asian_animation.finished:
+                self.c64_screen.zoom(1.75)
+            self.c64_screen.update(self.frame)
 
         self.noiseLeft.set_intensity(self.tiltLeft.presence())
         self.noiseRight.set_intensity(self.tiltRight.presence())
@@ -160,6 +162,9 @@ class PetsciiDemo(PygameDemo):
         if self.scene == PetsciiDemo.SCENE_ASIAN:
             self.asian_animation.draw()
 
+    def _asian_flown(self):
+        return self.scene == PetsciiDemo.SCENE_ASIAN and self.asian_animation.finished
+
     def draw_first_screen(self):
         self.compose_first_surface()
         if self.scene == PetsciiDemo.SCENE_NOISE:
@@ -177,12 +182,13 @@ class PetsciiDemo(PygameDemo):
     def compose_first_surface(self):
         """Boiling noise with the logo revealed on top; keeps animating even when covered."""
         self.noiseLeft.render(self.surface)
-        if self.frame > 10:
+        if self.frame > 10 and not self._asian_flown():
             self.logo.render_from_corners(self.surface, transparent_space=True)
 
     def compose_second_surface(self):
         """Boiling noise with the DJ Space Thunder logo revealed against the right edge."""
         self.noiseRight.render(self.surface2)
-        logo_width, _ = self.c64.size()
-        origin = (Constants.WIDTH - logo_width, 0)
-        self.c64.render_from_corners(self.surface2, transparent_space=True, origin=origin)
+        if not self._asian_flown():
+            logo_width, _ = self.c64.size()
+            origin = (Constants.WIDTH - logo_width, 0)
+            self.c64.render_from_corners(self.surface2, transparent_space=True, origin=origin)

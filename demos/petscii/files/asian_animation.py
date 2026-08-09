@@ -66,7 +66,7 @@ class AsianAnimation:
         self.speak_lead = int(Constants.FPS * 1.0)
         self.linger_frames = int(Constants.FPS * 2.0)
         self.fly_frames = int(Constants.FPS * 1.5)
-        self.fly_top = 7.0
+        self.fly_top = 5.0
         self.fly_right = 6.0
         self.z_far = -12.0
 
@@ -86,6 +86,10 @@ class AsianAnimation:
 
         self._render_asian()
 
+    @property
+    def finished(self):
+        return self.phase == AsianAnimation.DONE
+
     def update(self, frame):
         if self.phase == AsianAnimation.LEAP:
             self._update_leap()
@@ -95,6 +99,8 @@ class AsianAnimation:
             self._update_speak()
         elif self.phase == AsianAnimation.FLY:
             self._update_fly()
+        elif self.phase == AsianAnimation.DONE:
+            self._update_rest()
 
     def _update_leap(self):
         progress = min(1.0, self.leap_timer / self.leap_frames)
@@ -150,9 +156,11 @@ class AsianAnimation:
         if progress >= 1.0:
             self.phase = AsianAnimation.DONE
 
+    def _update_rest(self):
+        self.sway_timer += 1
+        self.angle = self.sway_degrees * math.sin(2 * math.pi * self.sway_timer / self.sway_period)
+
     def draw(self):
-        if self.phase == AsianAnimation.DONE:
-            return
         self._begin_3d()
         glTranslatef(self.x, self.y, self.z)
         glRotatef(self.angle, 0.0, 1.0, 0.0)

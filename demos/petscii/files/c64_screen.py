@@ -43,6 +43,7 @@ class C64Screen:
     START_Z = -34 * 6
     TARGET_Z = -5
     ZOOM_SPEED = 1.6
+    FINALE_ZOOM_SPEED = 0.04
     FAR_PLANE = 300.0
 
     HEADER2_OFFSET = 45
@@ -50,6 +51,8 @@ class C64Screen:
 
     def __init__(self):
         self.z = C64Screen.START_Z
+        self.target_z = C64Screen.TARGET_Z
+        self.zoom_speed = C64Screen.ZOOM_SPEED
         self.color = list(Constants.PALETTE[11])
         self.half_width = Constants.HALF_WIDTH
         self.half_height = Constants.HALF_WIDTH * Constants.HEIGHT / Constants.WIDTH
@@ -98,11 +101,16 @@ class C64Screen:
                                     for t in self.header_typers)
 
     def update(self, frame):
-        if self.z < C64Screen.TARGET_Z:
-            self.z = min(C64Screen.TARGET_Z, self.z + C64Screen.ZOOM_SPEED)
+        if self.z < self.target_z:
+            self.z = min(self.target_z, self.z + self.zoom_speed)
         if frame > 20:
             self.change_color_rgb(frame, amplitude=127.5, offset=127.5)
         self.update_caption()
+
+    def zoom(self, magnification, speed=None):
+        eye = C64Screen.TARGET_Z + Constants.CAMERA_Z
+        self.target_z = eye / magnification - Constants.CAMERA_Z
+        self.zoom_speed = speed if speed is not None else C64Screen.FINALE_ZOOM_SPEED
 
     def update_caption(self):
         if not self.caption_ready:

@@ -48,7 +48,7 @@ SWAY_PERIOD = 5000.0  # milliseconds for a full left-right-left cycle
 ZOOM = 0.9            # camera distance as a multiple of width; smaller = closer/zoomed in
 
 POSES = ("stand", "run1", "run2", "kick")
-POSE_MS = 4000            # each pose is held for 4 seconds
+POSE_MS = 400            # each pose is held for 4 seconds
 BRUCE_ORIGIN = (18, 17)   # (row, column) Bruce is stamped at -- centre, near the bottom
 LIGHT_GRAY = 15           # matches the stage background so Bruce's cells blend in
 

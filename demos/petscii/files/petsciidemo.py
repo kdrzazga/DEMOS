@@ -18,6 +18,7 @@ from demos.petscii.files.petscii.dj_space_thunder import DjSpaceThunder
 from demos.petscii.files.globals import Constants
 from demos.petscii.files.petscii.kna_logo import KnaLogo
 from demos.petscii.files.noise import Noise
+from demos.petscii.files.stage_welcome import WelcomeStage
 from demos.petscii.files.tilt_screen import TiltScreen
 
 
@@ -30,25 +31,28 @@ class PetsciiDemo(PygameDemo):
     SHRINK_SECONDS = 2.4
     PAUSE_SECONDS = 1
 
-    # screen one appears, tilts its right edge back, then slides it to the left edge;
-    # after a short pause screen two covers it and does the mirror, sliding out right.
-    SCENE_NOISE = 0
-    SCENE_TILT = 1
-    SCENE_SHRINK = 2
-    SCENE_PAUSE = 3
-    SCENE_NOISE2 = 4
-    SCENE_TILT2 = 5
-    SCENE_SHRINK2 = 6
-    SCENE_COUNT = 7
+    WELCOME_SECONDS = 4
+
+    # a welcome caption opens the demo; then screen one appears, tilts its right edge
+    # back and slides to the left edge; after a pause screen two covers it and mirrors.
+    SCENE_WELCOME = 0
+    SCENE_NOISE = 1
+    SCENE_TILT = 2
+    SCENE_SHRINK = 3
+    SCENE_PAUSE = 4
+    SCENE_NOISE2 = 5
+    SCENE_TILT2 = 6
+    SCENE_SHRINK2 = 7
+    SCENE_COUNT = 8
 
     def __init__(self, windowed=False, triggered=False):
-        super().__init__(Constants.WIDTH, Constants.HEIGHT, "PETSCII",
+        super().__init__(Constants.WIDTH, Constants.HEIGHT, "PETSCII 3D Demo",
                          fps=Constants.FPS, windowed=windowed, triggered=triggered)
 
     def setup(self):
         self.frame = 0
         self.scene_frame = 0
-        self.scene = PetsciiDemo.SCENE_NOISE
+        self.scene = PetsciiDemo.SCENE_WELCOME
 
         glClearColor(0.0, 0.0, 0.0, 1.0)
         glEnable(GL_TEXTURE_2D)
@@ -63,6 +67,7 @@ class PetsciiDemo(PygameDemo):
         self.tiltLeft = TiltScreen(Constants.WIDTH, Constants.HEIGHT)
         self.tiltRight = TiltScreen(Constants.WIDTH, Constants.HEIGHT)
         self.c64_screen = C64Screen()
+        self.welcome = WelcomeStage()
 
     def step(self):
         self.update()
@@ -83,7 +88,11 @@ class PetsciiDemo(PygameDemo):
     def update(self):
         self.frame += 1
         self.scene_frame += 1
-        if self.scene == PetsciiDemo.SCENE_NOISE:
+        if self.scene == PetsciiDemo.SCENE_WELCOME:
+            self.welcome.update(self.scene_frame)
+            if self.scene_frame > Constants.FPS * PetsciiDemo.WELCOME_SECONDS:
+                self.set_scene(PetsciiDemo.SCENE_NOISE)
+        elif self.scene == PetsciiDemo.SCENE_NOISE:
             if self.scene_frame > Constants.FPS * PetsciiDemo.NOISE_SECONDS:
                 self.set_scene(PetsciiDemo.SCENE_TILT)
         elif self.scene == PetsciiDemo.SCENE_TILT:
@@ -115,6 +124,9 @@ class PetsciiDemo(PygameDemo):
 
     def draw(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        if self.scene == PetsciiDemo.SCENE_WELCOME:
+            self.welcome.draw()
+            return
         self.draw_first_screen()
         if self.scene >= PetsciiDemo.SCENE_NOISE2:
             glClear(GL_DEPTH_BUFFER_BIT)  # let the second screen cover the first

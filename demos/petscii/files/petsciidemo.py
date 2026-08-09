@@ -60,7 +60,8 @@ class PetsciiDemo(PygameDemo):
 
         self.surface = pygame.Surface((Constants.WIDTH, Constants.HEIGHT))
         self.surface2 = pygame.Surface((Constants.WIDTH, Constants.HEIGHT))
-        self.noise = Noise(Constants.WIDTH, Constants.HEIGHT)
+        self.noiseLeft = Noise(Constants.WIDTH, Constants.HEIGHT)
+        self.noiseRight = Noise(Constants.WIDTH, Constants.HEIGHT)
         self.logo = KnaLogo(char_size=16)
         self.c64 = DjSpaceThunder(char_size=16)
         self.asian = Asian(16)
@@ -80,8 +81,14 @@ class PetsciiDemo(PygameDemo):
     def set_scene(self, scene):
         self.scene = scene
         self.scene_frame = 0
-        if scene == PetsciiDemo.SCENE_TILT:
+        if scene == PetsciiDemo.SCENE_NOISE:
+            self.noiseLeft.start()
+        elif scene == PetsciiDemo.SCENE_TILT:
             self.tiltLeft.reset()
+        elif scene == PetsciiDemo.SCENE_PAUSE:
+            self.noiseLeft.stop()
+        elif scene == PetsciiDemo.SCENE_NOISE2:
+            self.noiseRight.start()
         elif scene == PetsciiDemo.SCENE_TILT2:
             self.tiltRight.reset()
 
@@ -116,7 +123,12 @@ class PetsciiDemo(PygameDemo):
         elif self.scene == PetsciiDemo.SCENE_SHRINK2:
             self.tiltRight.shrink(self.scene_progress(PetsciiDemo.SHRINK_SECONDS))
             self.c64_screen.update(self.scene_frame)
+            if self.scene_frame > Constants.FPS * PetsciiDemo.SHRINK_SECONDS:
+                self.noiseRight.stop()
             print("Elapsed time " + str(Globals.get_duration()))
+
+        self.noiseLeft.set_intensity(self.tiltLeft.presence())
+        self.noiseRight.set_intensity(self.tiltRight.presence())
 
     def scene_progress(self, seconds):
         """How far the current scene has run, as a 0..1 fraction of seconds."""
@@ -150,13 +162,13 @@ class PetsciiDemo(PygameDemo):
 
     def compose_first_surface(self):
         """Boiling noise with the logo revealed on top; keeps animating even when covered."""
-        self.noise.render(self.surface)
+        self.noiseLeft.render(self.surface)
         if self.frame > 10:
             self.logo.render_from_corners(self.surface, transparent_space=True)
 
     def compose_second_surface(self):
         """Boiling noise with the DJ Space Thunder logo revealed against the right edge."""
-        self.noise.render(self.surface2)
+        self.noiseRight.render(self.surface2)
         logo_width, _ = self.c64.size()
         origin = (Constants.WIDTH - logo_width, 0)
         self.c64.render_from_corners(self.surface2, transparent_space=True, origin=origin)

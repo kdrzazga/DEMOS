@@ -10,6 +10,7 @@ from OpenGL.GL import (
     glEnable,
 )
 
+from demos.petscii.files.asian_animation import AsianAnimation
 from demos.petscii.files.petscii.asian import Asian
 from lib import Globals
 from lib.pygame_demo import PygameDemo
@@ -30,6 +31,7 @@ class PetsciiDemo(PygameDemo):
     TILT_SECONDS = 2.4
     SHRINK_SECONDS = 2.4
     PAUSE_SECONDS = 1
+    ASIAN_SECONDS = 3
 
     WELCOME_SECONDS = 4
 
@@ -43,7 +45,8 @@ class PetsciiDemo(PygameDemo):
     SCENE_NOISE2 = 5
     SCENE_TILT2 = 6
     SCENE_SHRINK2 = 7
-    SCENE_COUNT = 8
+    SCENE_ASIAN = 8
+    SCENE_COUNT = 9
 
     def __init__(self, windowed=False, triggered=False):
         super().__init__(Constants.WIDTH, Constants.HEIGHT, "PETSCII 3D Demo",
@@ -53,6 +56,7 @@ class PetsciiDemo(PygameDemo):
         self.frame = 0
         self.scene_frame = 0
         self.scene = PetsciiDemo.SCENE_WELCOME
+        self.captions_frame = None
 
         glClearColor(0.0, 0.0, 0.0, 1.0)
         glEnable(GL_TEXTURE_2D)
@@ -64,7 +68,7 @@ class PetsciiDemo(PygameDemo):
         self.noiseRight = Noise(Constants.WIDTH, Constants.HEIGHT)
         self.logo = KnaLogo(char_size=16)
         self.c64 = DjSpaceThunder(char_size=16)
-        self.asian = Asian(16)
+        self.asian_animation = AsianAnimation()
         self.tiltLeft = TiltScreen(Constants.WIDTH, Constants.HEIGHT)
         self.tiltRight = TiltScreen(Constants.WIDTH, Constants.HEIGHT)
         self.c64_screen = C64Screen()
@@ -125,7 +129,15 @@ class PetsciiDemo(PygameDemo):
             self.c64_screen.update(self.scene_frame)
             if self.scene_frame > Constants.FPS * PetsciiDemo.SHRINK_SECONDS:
                 self.noiseRight.stop()
+            if self.c64_screen.caption_ready and self.captions_frame is None:
+                self.captions_frame = self.frame
+            if self.captions_frame is not None:
+                if self.frame - self.captions_frame > Constants.FPS * PetsciiDemo.ASIAN_SECONDS:
+                    self.set_scene(PetsciiDemo.SCENE_ASIAN)
             print("Elapsed time " + str(Globals.get_duration()))
+        elif self.scene == PetsciiDemo.SCENE_ASIAN:
+            self.c64_screen.update(self.frame)
+            self.asian_animation.update(self.scene_frame)
 
         self.noiseLeft.set_intensity(self.tiltLeft.presence())
         self.noiseRight.set_intensity(self.tiltRight.presence())
@@ -145,6 +157,8 @@ class PetsciiDemo(PygameDemo):
             self.draw_second_screen()
         if self.scene >= PetsciiDemo.SCENE_SHRINK2:
             self.c64_screen.render(self.frame)
+        if self.scene == PetsciiDemo.SCENE_ASIAN:
+            self.asian_animation.draw()
 
     def draw_first_screen(self):
         self.compose_first_surface()

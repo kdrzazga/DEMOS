@@ -218,8 +218,7 @@ class Asian(PetsciiImage):
         self.speech = (' They are', 'drawn in 3D', '   using', '   OpenGL')
 
     def _say(self, sound, duration):
-        if not pygame.mixer.get_busy():
-            sound.play()
+        sound.play()
         self.mouth_frames = self._build_mouth_frames(duration)
         self._talk_start = pygame.time.get_ticks()
         self._mouth_frame = -1

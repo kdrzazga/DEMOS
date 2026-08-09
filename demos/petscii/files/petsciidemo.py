@@ -174,8 +174,7 @@ class PetsciiDemo(PygameDemo):
         if self.scene == PetsciiDemo.SCENE_WELCOME:
             self.welcome.draw()
             return
-        if self.scene != PetsciiDemo.SCENE_ENCORE:
-            self.draw_first_screen()
+        self.draw_first_screen()
         if self.scene >= PetsciiDemo.SCENE_NOISE2:
             glClear(GL_DEPTH_BUFFER_BIT)  # let the second screen cover the first
             self.draw_second_screen()

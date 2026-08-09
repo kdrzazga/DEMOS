@@ -11,6 +11,7 @@ from OpenGL.GL import (
 )
 
 from demos.petscii.files.asian_animation import AsianAnimation
+from demos.petscii.files.c64_base_screen import C64BaseScreen
 from demos.petscii.files.petscii.asian import Asian
 from lib import Globals
 from lib.pygame_demo import PygameDemo
@@ -54,6 +55,7 @@ class PetsciiDemo(PygameDemo):
     def __init__(self, windowed=False, triggered=False):
         super().__init__(Constants.WIDTH, Constants.HEIGHT, "PETSCII 3D Demo",
                          fps=Constants.FPS, windowed=windowed, triggered=triggered)
+        self.captions_frame = None
 
     def setup(self):
         self.frame = 0
@@ -76,7 +78,7 @@ class PetsciiDemo(PygameDemo):
         self.tiltLeft = TiltScreen(Constants.WIDTH, Constants.HEIGHT)
         self.tiltRight = TiltScreen(Constants.WIDTH, Constants.HEIGHT)
         self.c64_screen = C64Screen()
-        self.c64_screen2 = C64Screen()
+        self.c64_screen2 = C64BaseScreen()
         self.c64_screen2.music_started = True
         self.welcome = WelcomeStage()
 
@@ -172,7 +174,8 @@ class PetsciiDemo(PygameDemo):
         if self.scene == PetsciiDemo.SCENE_WELCOME:
             self.welcome.draw()
             return
-        self.draw_first_screen()
+        if self.scene != PetsciiDemo.SCENE_ENCORE:
+            self.draw_first_screen()
         if self.scene >= PetsciiDemo.SCENE_NOISE2:
             glClear(GL_DEPTH_BUFFER_BIT)  # let the second screen cover the first
             self.draw_second_screen()

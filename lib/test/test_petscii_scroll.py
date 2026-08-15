@@ -11,10 +11,14 @@ from lib.test.corpus import load_text, build_lines
 from lib.petscii_screen import PetsciiScreen
 from lib.petscii_image import PetsciiImage
 
+#file_name = "mosaic.txt"
+#file_name = "kna.txt"
+#file_name = "petscii.txt"
+file_name = "market_in_poland.txt"
 WIDTH, HEIGHT = 800, 600
 GREEN = (51, 255, 102)
 CHAR_SIZE = 16
-PETSCII_PATH = os.path.join(os.path.dirname(__file__), "..", "resources", "petscii.txt")
+PETSCII_PATH = os.path.join(os.path.dirname(__file__), "..", "resources", file_name)
 
 
 def build_walls(screen):
@@ -22,7 +26,7 @@ def build_walls(screen):
                                color=GREEN, x=16, y=12, initial_screen_y=260,
                                rows=25, speed=20, loop=False)
 
-    petscii_screen = PetsciiScreen.from_file(PETSCII_PATH, uppercase=True, background_color=2)
+    petscii_screen = PetsciiScreen.from_file(PETSCII_PATH, uppercase=True, background_color=0)
     petscii_image = PetsciiImage.from_petscii_screen(petscii_screen, char_size=CHAR_SIZE)
     picture_width = petscii_image.font(CHAR_SIZE).size("W")[0] * 40
     petscii_wall = PetsciiTextWall(petscii_image, surface=screen,

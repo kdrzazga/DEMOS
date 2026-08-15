@@ -29,7 +29,6 @@ class PetsciiTextWall(TextWall):
     def _render_row(self, row):
         strip = pygame.Surface(
             (Constants.COLUMNS * self.cell_width, self.cell_height), pygame.SRCALPHA)
-        strip.fill(Constants.PALETTE[self.image.background_color])
         for span in self._spans_in_row(row):
             strip.blit(self._render_span(span), (span.start * self.cell_width, 0))
         return strip

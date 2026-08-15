@@ -4,12 +4,18 @@ The main theme of this anniversary edition is multiplayer and cooperative gaming
 from classic experiences to modern homebrew titles that prove retro gaming is still
 best enjoyed together.
 
+
+
 Inside, you’ll find reviews of the latest releases, including Impossible Mission III,
 Traps N’Gemstones, Orbital Mission, and Terra Cresta 2026, alongside a rich selection
 of technical articles, programming tutorials, interviews,
 and features from across the Commodore community. Continue your journey through 6502 Assembly – Part VII, build a Scientific Calculator on the C64 in BASIC, discover Amiga in the Hands of the Famous, and read an exclusive interview with Raistlin of Genesis Project, plus much more.
 
+
+
 The new issue is available now in both printed and digital editions in our store
+
+
 
 Following the success of the original Tantooman, we are proud to present Tantooman Volume Two
 a brand-new collection of 120 additional levels for the Commodore 64 and Commodore 128.

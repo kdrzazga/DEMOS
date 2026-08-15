@@ -70,6 +70,9 @@ class TextWall:
         for line in self.tick(dt):
             self._push_line(line)
 
+    def update(self, dt):
+        self.write(dt)
+
     def _next_line(self):
         if self.cursor >= len(self.lines):
             if not self.loop:

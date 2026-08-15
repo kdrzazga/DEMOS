@@ -7,7 +7,7 @@ from that snapshot's colour RAM ($D800). The outer frame -- top three rows, bott
 three rows, and the first and last columns -- has been blanked to spaces.
 """
 
-from demos.petscii.files.petscii_image import PetsciiImage
+from lib.petscii_image import PetsciiImage
 
 
 class DjSpaceThunder(PetsciiImage):

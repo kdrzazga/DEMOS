@@ -80,7 +80,7 @@ class TextWall:
         return line
 
     def is_finished(self):
-        return (not self.loop) and len(self.lines) > 0 and self.cursor >= len(self.lines)
+        return (not self.loop) and 0 < len(self.lines) <= self.cursor
 
     def _push_line(self, line):
         self.visible.append(line)

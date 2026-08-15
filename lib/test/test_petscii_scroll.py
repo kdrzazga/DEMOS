@@ -8,8 +8,8 @@ import pygame
 from lib.textwall import TextWallArray, PygameTextWall
 from lib.petscii_textwall import PetsciiTextWall
 from lib.test.corpus import load_text, build_lines
-from demos.petscii.files.petscii_screen import PetsciiScreen
-from demos.petscii.files.petscii_image import PetsciiImage
+from lib.petscii_screen import PetsciiScreen
+from lib.petscii_image import PetsciiImage
 
 WIDTH, HEIGHT = 800, 600
 GREEN = (51, 255, 102)
@@ -22,7 +22,7 @@ def build_walls(screen):
                                color=GREEN, x=16, y=12, initial_screen_y=260,
                                rows=25, speed=20, loop=False)
 
-    petscii_screen = PetsciiScreen.from_file(PETSCII_PATH, uppercase=False, background_color=2)
+    petscii_screen = PetsciiScreen.from_file(PETSCII_PATH, uppercase=True, background_color=2)
     petscii_image = PetsciiImage.from_petscii_screen(petscii_screen, char_size=CHAR_SIZE)
     picture_width = petscii_image.font(CHAR_SIZE).size("W")[0] * 40
     petscii_wall = PetsciiTextWall(petscii_image, surface=screen,

@@ -22,7 +22,7 @@ def build_walls(screen):
                                color=GREEN, x=16, y=12, initial_screen_y=260,
                                rows=25, speed=20, loop=False)
 
-    petscii_screen = PetsciiScreen.from_file(PETSCII_PATH)
+    petscii_screen = PetsciiScreen.from_file(PETSCII_PATH, uppercase=False, background_color=2)
     petscii_image = PetsciiImage.from_petscii_screen(petscii_screen, char_size=CHAR_SIZE)
     picture_width = petscii_image.font(CHAR_SIZE).size("W")[0] * 40
     petscii_wall = PetsciiTextWall(petscii_image, surface=screen,

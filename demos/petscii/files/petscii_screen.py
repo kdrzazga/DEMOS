@@ -3,15 +3,16 @@ from demos.petscii.files.globals import Constants
 
 class PetsciiScreen:
 
-    def __init__(self, characters, colors, uppercase=False):
+    def __init__(self, characters, colors, uppercase=False, background_color=0):
         self.characters = characters
         self.colors = colors
         self.uppercase = uppercase
+        self.background_color = background_color
 
     @classmethod
-    def from_file(cls, path, uppercase=False):
+    def from_file(cls, path, uppercase=False, background_color=0):
         characters, colors = cls._parse(path)
-        return cls(characters, colors, uppercase)
+        return cls(characters, colors, uppercase, background_color)
 
     @classmethod
     def _parse(cls, path):

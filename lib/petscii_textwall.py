@@ -29,6 +29,7 @@ class PetsciiTextWall(TextWall):
     def _render_row(self, row):
         strip = pygame.Surface(
             (Constants.COLUMNS * self.cell_width, self.cell_height), pygame.SRCALPHA)
+        strip.fill(Constants.PALETTE[self.image.background_color])
         for span in self._spans_in_row(row):
             strip.blit(self._render_span(span), (span.start * self.cell_width, 0))
         return strip
@@ -64,6 +65,6 @@ class PetsciiTextWall(TextWall):
         foreground = Constants.PALETTE[span.color]
         font = self.image.font(self.char_size)
         if span.inverted:
-            background = Constants.PALETTE[Constants.BACKGROUND_COLOR]
+            background = Constants.PALETTE[self.image.background_color]
             return font.render(glyphs, False, background, foreground)
         return font.render(glyphs, False, foreground)

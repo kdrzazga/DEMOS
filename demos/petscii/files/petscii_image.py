@@ -36,6 +36,7 @@ class PetsciiImage:
         image.colors = screen.colors
         image.reversed = tuple(tuple(False for _ in row) for row in screen.characters)
         image.font_base = Constants.FONT_BASE + (0x100 if screen.uppercase else 0)
+        image.background_color = screen.background_color
         return image
 
     def font(self, char_size=None):

@@ -36,13 +36,7 @@ class TextWall:
             y += self.line_step
 
     def draw(self):
-        scrolling = len(self.visible) >= self.rows
-        top = self.y - (self.scroll_offset() if scrolling else 0.0)
-        self.draw_lines(self.visible, self.x, top)
-        if scrolling:
-            incoming = self.peek_next()
-            if incoming:
-                self.draw_line(incoming, self.x, top + len(self.visible) * self.line_step)
+        self.draw_lines(self.visible, self.x, self.y)
 
     def _fresh_buffer(self):
         return ["" for _ in range(self._pad_lines)]
@@ -85,16 +79,6 @@ class TextWall:
         self.cursor += 1
         return line
 
-    def peek_next(self):
-        if not self.lines:
-            return None
-        if self.cursor < len(self.lines):
-            return self.lines[self.cursor]
-        return self.lines[0] if self.loop else None
-
-    def scroll_offset(self):
-        return self.progress * self.line_step
-
     def is_finished(self):
         return (not self.loop) and len(self.lines) > 0 and self.cursor >= len(self.lines)
 
@@ -127,6 +111,10 @@ class TextWallArray:
     @property
     def _rows(self):
         return self.walls[0].rows
+
+    @property
+    def _line_step(self):
+        return self.walls[0].line_step
 
     def _add_line(self, text, wall_index):
         self.buffer.append((text, wall_index))
@@ -168,19 +156,15 @@ class TextWallArray:
                     self._phase = "done"
 
     def draw(self):
-        active = self.walls[self._index] if self._phase == "animating" else None
-        scrolling = active is not None and len(self.buffer) >= self._rows
-        y = self._band_top - (active.scroll_offset() if scrolling else 0.0)
-        for index, wall in enumerate(self.walls):
-            slice_lines = [line for (line, owner) in self.buffer if owner == index]
+        band_top = self._band_top
+        step = self._line_step
+        offset = 0
+        for w, wall in enumerate(self.walls):
+            slice_lines = [text for (text, wi) in self.buffer if wi == w]
             if not slice_lines:
                 continue
-            wall.draw_lines(slice_lines, wall.x, y)
-            y += len(slice_lines) * wall.line_step
-        if scrolling:
-            incoming = active.peek_next()
-            if incoming:
-                active.draw_line(incoming, active.x, y)
+            wall.draw_lines(slice_lines, wall.x, band_top + offset * step)
+            offset += len(slice_lines)
 
     def reset(self):
         self._started = False

@@ -69,6 +69,10 @@ class TiltScreen:
         """Slide the moving edge across to the far side, progress 0 .. 1 (collapsed)."""
         self.slide = min(1.0, progress)
 
+    def presence(self):
+        away = max(self.depth / TiltScreen.TILT_DEPTH, self.slide)
+        return max(0.0, min(1.0, 1.0 - away))
+
     def draw_flat(self, surface):
         """Fill the window with the surface, untilted (the 2D presentation)."""
         self._upload(surface)

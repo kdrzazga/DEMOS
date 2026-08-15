@@ -26,6 +26,18 @@ class PetsciiImage:
         self._glyphs = {}
         self._corner_orders = {}
         self.render_progress = 0
+        self.background_color = Constants.BACKGROUND_COLOR
+        self.font_base = Constants.FONT_BASE
+
+    @classmethod
+    def from_petscii_screen(cls, screen, char_size=16):
+        image = cls(char_size)
+        image.chars = screen.characters
+        image.colors = screen.colors
+        image.reversed = tuple(tuple(False for _ in row) for row in screen.characters)
+        image.font_base = Constants.FONT_BASE + (0x100 if screen.uppercase else 0)
+        image.background_color = screen.background_color
+        return image
 
     def font(self, char_size=None):
         char_size = self.char_size if char_size is None else char_size
@@ -42,7 +54,7 @@ class PetsciiImage:
         char_size = self.char_size if char_size is None else char_size
         cell_size = self.font(char_size).size("W")
         if not transparent_space:
-            surface.fill(Constants.PALETTE[Constants.BACKGROUND_COLOR])
+            surface.fill(Constants.PALETTE[self.background_color])
         for row in range(Constants.ROWS):
             for column in range(Constants.COLUMNS):
                 if transparent_space and self.is_blank(row, column):
@@ -56,7 +68,7 @@ class PetsciiImage:
         char_size = self.char_size if char_size is None else char_size
         cell_size = self.font(char_size).size("W")
         if not transparent_space:
-            surface.fill(Constants.PALETTE[Constants.BACKGROUND_COLOR])
+            surface.fill(Constants.PALETTE[self.background_color])
         for corner in range(Constants.CORNERS):
             for row, column in self.cells_from_corner(corner):
                 if transparent_space and self.is_blank(row, column):
@@ -88,7 +100,7 @@ class PetsciiImage:
         return self._corner_orders[corner]
 
     def draw_cell(self, surface, char_size, cell_size, row, column, origin=(0, 0)):
-        background = Constants.PALETTE[Constants.BACKGROUND_COLOR]
+        background = Constants.PALETTE[self.background_color]
         foreground, cell_background = Constants.PALETTE[self.colors[row][column]], background
         if self.reversed[row][column]:
             foreground, cell_background = cell_background, foreground
@@ -102,7 +114,7 @@ class PetsciiImage:
         key = (char_size, code, foreground, background)
         if key not in self._glyphs:
             self._glyphs[key] = self.font(char_size).render(
-                chr(Constants.FONT_BASE + code), False, foreground, background)
+                chr(self.font_base + code), False, foreground, background)
         return self._glyphs[key]
 
     def is_blank(self, row, column):

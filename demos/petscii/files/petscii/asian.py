@@ -1,3 +1,7 @@
+import os
+
+import pygame
+
 from demos.petscii.files.petscii_image import PetsciiImage
 
 
@@ -5,9 +9,16 @@ class Asian(PetsciiImage):
 
     def __init__(self, char_size):
         super().__init__(char_size)
-
-        self.all_graphics_file = "resources/all-graphics.mp3"
-        self.three_d = "resources/3d.mp3"
+        dir = os.getcwd() + "\\demos\\petscii\\files\\resources\\"
+        try:
+            self.all_graphics = pygame.mixer.Sound(dir + "all-graphics.mp3")
+        except (pygame.error, FileNotFoundError):
+            dir = os.getcwd() + "\\..\\files\\resources\\"
+            self.all_graphics = pygame.mixer.Sound(dir + "all-graphics.mp3")
+        print(dir)
+        self.all_graphics_duration = 4 #seconds
+        self.three_d = pygame.mixer.Sound(dir + "3d.mp3")
+        self.three_d_duration = 3
 
         self.hat_row = 9
         self.eyes_area = (12, 13)
@@ -15,6 +26,16 @@ class Asian(PetsciiImage):
 
         self.close_eyes_area = (26, 24)
         self.wide_open_eyes_area = (26, 25)
+
+        self.mouth_frame_ms = 150       # each lip shape is shown for 0.15 second
+        self.mouth_cycle = ("mouth_1", "mouth_2", "mouth_3", "mouth_4")
+        self.mouth_frames = ()          # built per-clip when a say_* method runs
+        self._talk_start = None
+        self._mouth_frame = -1
+
+        self.speech = ()
+        self.speech_row = 20
+        self.speech_color = (255, 255, 255)
 
         self.alternate_base = self.copy_row(0)
         self.default_base = self.copy_row(self.hat_row)
@@ -189,10 +210,59 @@ class Asian(PetsciiImage):
                 self.reversed[row + delta_row][column + delta_column] = 1
 
     def say_all_graphics(self):
-        pass
+        self._say(self.all_graphics, self.all_graphics_duration)
+        self.speech = ('Graphics', 'in this demo', 'are PETSCII', 'characters')
 
     def say_3d(self):
-        pass
+        self._say(self.three_d, self.three_d_duration)
+        self.speech = (' They are', 'drawn in 3D', '   using', '   OpenGL')
+
+    def _say(self, sound, duration):
+        sound.play()
+        self.mouth_frames = self._build_mouth_frames(duration)
+        self._talk_start = pygame.time.get_ticks()
+        self._mouth_frame = -1
+
+    def _build_mouth_frames(self, duration):
+        frame_count = duration * 1000 // self.mouth_frame_ms
+        return tuple(
+            self.mouth_cycle[i % len(self.mouth_cycle)] for i in range(frame_count)
+        ) + ("default_mouth",)
+
+    @property
+    def talking(self):
+        return self._talk_start is not None
+
+    def talk(self):
+        """Advance the lip-sync animation. Returns True if the mouth changed
+        (so the caller can re-render). Does nothing until a say_* method is
+        called and stops on its own once the mouth sequence has finished."""
+        if self._talk_start is None:
+            return False
+        frame = (pygame.time.get_ticks() - self._talk_start) // self.mouth_frame_ms
+        if frame >= len(self.mouth_frames):
+            self._talk_start = None  # animation finished, mouth left at default
+            self.speech = ()
+            return True
+        if frame == self._mouth_frame:
+            return False
+        self._mouth_frame = frame
+        getattr(self, self.mouth_frames[frame])()
+        return True
+
+    def render(self, surface, char_size=None, transparent_space=False, origin=(0, 0)):
+        super().render(surface, char_size, transparent_space, origin)
+        self.draw_speech(surface, char_size)
+
+    def draw_speech(self, surface, char_size=None):
+        if not self.speech:
+            return
+        char_size = self.char_size if char_size is None else char_size
+        font = self.font(char_size)
+        _, cell_height = font.size("W")
+        for index, line in enumerate(self.speech):
+            glyph = font.render(line, False, self.speech_color)
+            surface.blit(glyph, (0, (self.speech_row + index) * cell_height))
 
     def smile(self):
         pass

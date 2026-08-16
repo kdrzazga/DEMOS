@@ -43,7 +43,7 @@ class TiltScreen:
     then draw with that state, keeping the opposite edge pinned to z = 0.
     """
 
-    TILT_DEPTH = -5.0
+    TILT_DEPTH = -1.8
 
     def __init__(self, width, height, half_width=Constants.HALF_WIDTH,
                  camera_z=Constants.CAMERA_Z):

@@ -33,7 +33,7 @@ DEMOS = {
     "demo3": demo3,
 }
 
-DEFAULT_DEMO = "kna"
+DEFAULT_DEMO = "petscii"
 
 
 if __name__ == "__main__":

@@ -15,11 +15,12 @@ PETSCII = os.path.join(RESOURCES, "petscii")
 
 class ScreenWindingAnim:
 
-    def __init__(self, surface, *, char_size=16, text_color=(51, 255, 102),
+    def __init__(self, surface, *, char_size=16, border=None, text_color=(51, 255, 102),
                  border_color=14, background_color=0, read_speed=15, fill_speed=120,
                  picture_speed=30, intro_pause=2.0, market_pause=5.0):
         self.surface = surface
         self.char_size = char_size
+        self.border = border
         self.text_color = text_color
         self.background_color = background_color
         self.picture_speed = picture_speed
@@ -62,7 +63,7 @@ class ScreenWindingAnim:
 
     def _build_frame(self, border_color, background_color):
         width, height = self.surface.get_size()
-        border = 2 * self.cell_width
+        border = self.border if self.border is not None else 2 * self.cell_width
         total_width = Constants.COLUMNS * self.cell_width + 2 * border
         total_height = Constants.ROWS * self.cell_height + 2 * border
         origin = ((width - total_width) // 2, (height - total_height) // 2)

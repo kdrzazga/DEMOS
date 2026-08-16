@@ -53,9 +53,11 @@ from demos.petscii.files.typer import Typer
 class C64BaseScreen:
 
     START_Z = -34 * 6
-    TARGET_Z = -5
+    TARGET_Z = -1.5
     ZOOM_SPEED = 1.6
     FINALE_ZOOM_SPEED = 0.04
+    PULSE_FAR = -2.5
+    PULSE_SPEED = 0.06
     FAR_PLANE = 300.0
     TILT_DEPTH = -5.0
 
@@ -66,6 +68,10 @@ class C64BaseScreen:
         self.z = C64BaseScreen.START_Z
         self.target_z = C64BaseScreen.TARGET_Z
         self.zoom_speed = C64BaseScreen.ZOOM_SPEED
+        self.pulse = False
+        self._pulsing = False
+        self._pulse_phase = 0.0
+        self._arrived = False
         self.tilt_progress = 0.0
         self.slide_progress = 0.0
         self.color = list(Constants.PALETTE[11])
@@ -127,8 +133,17 @@ class C64BaseScreen:
                                     for t in self.header_typers)
 
     def update(self, frame):
-        if self.z < self.target_z:
+        if self._pulsing:
+            self._pulse_phase += C64BaseScreen.PULSE_SPEED
+            center = (C64BaseScreen.TARGET_Z + C64BaseScreen.PULSE_FAR) / 2
+            reach = (C64BaseScreen.TARGET_Z - C64BaseScreen.PULSE_FAR) / 2
+            self.z = center + reach * math.cos(self._pulse_phase)
+        elif self.z < self.target_z:
             self.z = min(self.target_z, self.z + self.zoom_speed)
+            if self.z >= self.target_z:
+                self._arrived = True
+                if self.pulse:
+                    self._pulsing = True
         if frame > 20:
             self.change_color_rgb(frame, amplitude=127.5, offset=127.5)
         self.update_caption()
@@ -137,6 +152,8 @@ class C64BaseScreen:
         eye = C64BaseScreen.TARGET_Z + Constants.CAMERA_Z
         self.target_z = eye / magnification - Constants.CAMERA_Z
         self.zoom_speed = speed if speed is not None else C64BaseScreen.FINALE_ZOOM_SPEED
+        self.pulse = False
+        self._pulsing = False
 
     def lean(self, progress):
         self.tilt_progress = min(1.0, progress)
@@ -218,7 +235,7 @@ class C64BaseScreen:
         pass
 
     def arrived(self):
-        return self.z >= C64BaseScreen.TARGET_Z
+        return self._arrived
 
     def begin_headers(self, frame):
         if self.header_start is not None:

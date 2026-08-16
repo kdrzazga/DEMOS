@@ -35,7 +35,6 @@ from OpenGL.GL import (
     glGenTextures,
     glLoadIdentity,
     glMatrixMode,
-    glMultMatrixf,
     glOrtho,
     glTexCoord2f,
     glTexImage2D,
@@ -45,6 +44,7 @@ from OpenGL.GL import (
 )
 from OpenGL.GLU import gluPerspective
 
+from lib.rotator import AngleRotator, Point
 from demos.petscii.files.globals import Constants
 from demos.petscii.files.mesh import PetsciiMesh
 from demos.petscii.files.typer import Typer
@@ -53,11 +53,12 @@ from demos.petscii.files.typer import Typer
 class C64BaseScreen:
 
     START_Z = -34 * 6
-    TARGET_Z = -5
+    TARGET_Z = -1.5
     ZOOM_SPEED = 1.6
     FINALE_ZOOM_SPEED = 0.04
+    PULSE_FAR = -2.5
+    PULSE_SPEED = 0.06
     FAR_PLANE = 300.0
-    TILT_DEPTH = -5.0
 
     HEADER2_OFFSET = 45
     HEADER3_OFFSET = 95
@@ -66,8 +67,14 @@ class C64BaseScreen:
         self.z = C64BaseScreen.START_Z
         self.target_z = C64BaseScreen.TARGET_Z
         self.zoom_speed = C64BaseScreen.ZOOM_SPEED
-        self.tilt_progress = 0.0
-        self.slide_progress = 0.0
+        self.pulse = False
+        self._pulsing = False
+        self._pulse_phase = 0.0
+        self._arrived = False
+        self.rotator = None
+        self.shrink_total_frames = 0
+        self.shrink_elapsed_frames = 0
+        self.min_width_scale = 1.0
         self.color = list(Constants.PALETTE[11])
         self.half_width = Constants.HALF_WIDTH
         self.half_height = Constants.HALF_WIDTH * Constants.HEIGHT / Constants.WIDTH
@@ -127,36 +134,61 @@ class C64BaseScreen:
                                     for t in self.header_typers)
 
     def update(self, frame):
-        if self.z < self.target_z:
+        if self._pulsing:
+            self._pulse_phase += C64BaseScreen.PULSE_SPEED
+            center = (C64BaseScreen.TARGET_Z + C64BaseScreen.PULSE_FAR) / 2
+            reach = (C64BaseScreen.TARGET_Z - C64BaseScreen.PULSE_FAR) / 2
+            self.z = center + reach * math.cos(self._pulse_phase)
+        elif self.z < self.target_z:
             self.z = min(self.target_z, self.z + self.zoom_speed)
+            if self.z >= self.target_z:
+                self._arrived = True
+                if self.pulse:
+                    self._pulsing = True
         if frame > 20:
             self.change_color_rgb(frame, amplitude=127.5, offset=127.5)
         self.update_caption()
+        if self.rotator is not None and self.at_front() and not self.rotator.finished:
+            self.rotator.rotate()
+        self._advance_shrink()
 
     def zoom(self, magnification, speed=None):
         eye = C64BaseScreen.TARGET_Z + Constants.CAMERA_Z
         self.target_z = eye / magnification - Constants.CAMERA_Z
         self.zoom_speed = speed if speed is not None else C64BaseScreen.FINALE_ZOOM_SPEED
+        self.pulse = False
+        self._pulsing = False
 
-    def lean(self, progress):
-        self.tilt_progress = min(1.0, progress)
+    def zoom_to_front(self, speed=None):
+        self.target_z = 0.0
+        self.zoom_speed = speed if speed is not None else C64BaseScreen.FINALE_ZOOM_SPEED
+        self.pulse = False
+        self._pulsing = False
 
-    def slide(self, progress):
-        self.slide_progress = min(1.0, progress)
+    def at_front(self):
+        return self.z >= 0.0
 
-    def _apply_lean(self):
-        if self.tilt_progress <= 0.0 and self.slide_progress <= 0.0:
+    def start_leaning(self, still_edge, total_angle, total_duration, fps):
+        self.rotator = AngleRotator(self.screen_surface, still_edge, total_angle,
+                                    total_duration, fps, half_width=self.half_width)
+
+    def start_shrinking(self, total_duration, fps, min_width_scale):
+        self.shrink_total_frames = total_duration * fps
+        self.min_width_scale = min_width_scale
+
+    def _advance_shrink(self):
+        if self.shrink_total_frames <= 0:
             return
-        pt = self.tilt_progress
-        ps = self.slide_progress
-        slope = C64BaseScreen.TILT_DEPTH / (2 * self.half_width)
-        intercept = C64BaseScreen.TILT_DEPTH / 2
-        glMultMatrixf([
-            1.0 - ps, 0.0, pt * slope, 0.0,
-            0.0, 1.0, 0.0, 0.0,
-            0.0, 0.0, 1.0, 0.0,
-            -self.half_width * ps, 0.0, pt * (intercept - self.z), 1.0,
-        ])
+        if self.rotator is None or not self.rotator.finished:
+            return
+        if self.shrink_elapsed_frames < self.shrink_total_frames:
+            self.shrink_elapsed_frames += 1
+
+    def _width_scale(self):
+        if self.shrink_total_frames <= 0:
+            return 1.0
+        progress = min(1.0, self.shrink_elapsed_frames / self.shrink_total_frames)
+        return 1.0 - (1.0 - self.min_width_scale) * progress
 
     def update_caption(self):
         if not self.caption_ready:
@@ -204,9 +236,14 @@ class C64BaseScreen:
     def _present(self):
         glEnable(GL_TEXTURE_2D)
         self._begin_3d()
-        self._apply_lean()
         glColor3f(1.0, 1.0, 1.0)
         glBindTexture(GL_TEXTURE_2D, self.fbo_texture)
+        if self.rotator is None:
+            self._draw_screen_quad()
+        else:
+            self._draw_rotated_screen_quad()
+
+    def _draw_screen_quad(self):
         glBegin(GL_QUADS)
         glTexCoord2f(0, 1); glVertex3f(-self.half_width, self.half_height, self.z)
         glTexCoord2f(1, 1); glVertex3f(self.half_width, self.half_height, self.z)
@@ -214,11 +251,32 @@ class C64BaseScreen:
         glTexCoord2f(0, 0); glVertex3f(-self.half_width, -self.half_height, self.z)
         glEnd()
 
+    def _draw_rotated_screen_quad(self):
+        corners = self.rotator.current_vertices()
+        width_scale = self._width_scale()
+        quad = (
+            corners.top_left,
+            self._point_between(corners.top_left, corners.top_right, width_scale),
+            self._point_between(corners.bottom_left, corners.bottom_right, width_scale),
+            corners.bottom_left,
+        )
+        texture_coords = ((0, 1), (1, 1), (1, 0), (0, 0))
+        glBegin(GL_QUADS)
+        for corner, (u, v) in zip(quad, texture_coords):
+            glTexCoord2f(u, v)
+            glVertex3f(corner.x, corner.y, corner.z + self.z)
+        glEnd()
+
+    def _point_between(self, near, far, scale):
+        return Point(near.x + (far.x - near.x) * scale,
+                     near.y + (far.y - near.y) * scale,
+                     near.z + (far.z - near.z) * scale)
+
     def draw_mesh(self, frame):
         pass
 
     def arrived(self):
-        return self.z >= C64BaseScreen.TARGET_Z
+        return self._arrived
 
     def begin_headers(self, frame):
         if self.header_start is not None:

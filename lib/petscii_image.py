@@ -32,12 +32,23 @@ class PetsciiImage:
     @classmethod
     def from_petscii_screen(cls, screen, char_size=16):
         image = cls(char_size)
-        image.chars = screen.characters
+        image.chars = tuple(tuple(cls._screen_to_petscii(code & 0x7F) for code in row)
+                            for row in screen.characters)
         image.colors = screen.colors
-        image.reversed = tuple(tuple(False for _ in row) for row in screen.characters)
-        image.font_base = Constants.FONT_BASE + (0x100 if screen.uppercase else 0)
+        image.reversed = tuple(tuple(code >= 128 for code in row) for row in screen.characters)
+        image.font_base = Constants.FONT_BASE + (0 if screen.uppercase else 0x100)
         image.background_color = screen.background_color
         return image
+
+    @staticmethod
+    def _screen_to_petscii(code):
+        if code < 32:
+            return code + 64
+        if code < 64:
+            return code
+        if code < 96:
+            return code + 32
+        return code + 64
 
     def font(self, char_size=None):
         char_size = self.char_size if char_size is None else char_size

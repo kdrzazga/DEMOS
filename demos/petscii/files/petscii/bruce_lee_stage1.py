@@ -1,4 +1,4 @@
-from demos.petscii.files.petscii_image import PetsciiImage
+from lib.petscii_image import PetsciiImage
 
 
 class BruceLeeStage(PetsciiImage):

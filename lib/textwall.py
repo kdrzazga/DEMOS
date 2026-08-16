@@ -6,8 +6,8 @@ class TextWall:
 
     def __init__(self, lines=None, *, speed=20, x=16, y=12,
                  initial_screen_y=0, rows=24, color=(51, 255, 102),
-                 font_size=18, line_step=None, font_name="Courier New",
-                 loop=True):
+                 background_color=None, font_size=18, line_step=None,
+                 font_name="Courier New", loop=True):
         self.lines = tuple(lines) if lines else ()
         self.cursor = 0
         self.loop = loop
@@ -18,6 +18,7 @@ class TextWall:
         self.initial_screen_y = initial_screen_y
         self.rows = rows
         self.color = color
+        self.background_color = background_color
         self.font_size = font_size
         self.font_name = font_name
         self.line_step = line_step if line_step is not None else font_size * 1.5
@@ -70,6 +71,9 @@ class TextWall:
         for line in self.tick(dt):
             self._push_line(line)
 
+    def update(self, dt):
+        self.write(dt)
+
     def _next_line(self):
         if self.cursor >= len(self.lines):
             if not self.loop:
@@ -80,7 +84,7 @@ class TextWall:
         return line
 
     def is_finished(self):
-        return (not self.loop) and len(self.lines) > 0 and self.cursor >= len(self.lines)
+        return (not self.loop) and 0 < len(self.lines) <= self.cursor
 
     def _push_line(self, line):
         self.visible.append(line)
@@ -103,6 +107,16 @@ class TextWallArray:
         self.walls.append(wall)
         self.intervals.append(interval)
         return self
+
+    @property
+    def background_color(self):
+        if not self.walls:
+            return None
+        if self._phase == "waiting":
+            index = max(0, self._index - 1)
+        else:
+            index = min(self._index, len(self.walls) - 1)
+        return self.walls[index].background_color
 
     @property
     def _band_top(self):

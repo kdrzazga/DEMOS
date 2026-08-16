@@ -15,6 +15,7 @@ from demos.petscii.files.c64_base_screen import C64BaseScreen
 from demos.petscii.files.petscii.asian import Asian
 from lib import Globals
 from lib.pygame_demo import PygameDemo
+from lib.rotator import Edge
 from demos.petscii.files.c64_screen import C64Screen
 from demos.petscii.files.petscii.dj_space_thunder import DjSpaceThunder
 from demos.petscii.files.globals import Constants
@@ -22,6 +23,7 @@ from demos.petscii.files.petscii.kna_logo import KnaLogo
 from demos.petscii.files.noise import Noise
 from demos.petscii.files.stage_welcome import WelcomeStage
 from demos.petscii.files.tilt_screen import TiltScreen
+from demos.petscii.files.winding_screen import WindingScreen
 
 
 class PetsciiDemo(PygameDemo):
@@ -34,7 +36,9 @@ class PetsciiDemo(PygameDemo):
     PAUSE_SECONDS = 1
     ASIAN_SECONDS = 3
     LEAN_SECONDS = 1.5
-    SLIDE_SECONDS = 1.5
+    LEAN_ANGLE = 75.0
+    SHRINK_SECONDS = 1.5
+    SHRINK_WIDTH_FRACTION = 0.5
 
     WELCOME_SECONDS = 4
 
@@ -78,7 +82,8 @@ class PetsciiDemo(PygameDemo):
         self.tiltLeft = TiltScreen(Constants.WIDTH, Constants.HEIGHT)
         self.tiltRight = TiltScreen(Constants.WIDTH, Constants.HEIGHT)
         self.c64_screen = C64Screen()
-        self.c64_screen2 = C64BaseScreen()
+        self.c64_screen2 = WindingScreen()
+        self.c64_screen2.pulse = True
         self.c64_screen2.music_started = True
         self.welcome = WelcomeStage()
 
@@ -103,6 +108,12 @@ class PetsciiDemo(PygameDemo):
             self.noiseRight.start()
         elif scene == PetsciiDemo.SCENE_TILT2:
             self.tiltRight.reset()
+        elif scene == PetsciiDemo.SCENE_ENCORE:
+            self.c64_screen.zoom_to_front()
+            self.c64_screen.start_leaning(Edge.LEFT, PetsciiDemo.LEAN_ANGLE,
+                                          PetsciiDemo.LEAN_SECONDS, Constants.FPS)
+            self.c64_screen.start_shrinking(PetsciiDemo.SHRINK_SECONDS, Constants.FPS,
+                                            PetsciiDemo.SHRINK_WIDTH_FRACTION)
 
     def update(self):
         self.frame += 1
@@ -142,11 +153,10 @@ class PetsciiDemo(PygameDemo):
             if self.captions_frame is not None:
                 if self.frame - self.captions_frame > Constants.FPS * PetsciiDemo.ASIAN_SECONDS:
                     self.set_scene(PetsciiDemo.SCENE_ASIAN)
-            print("Elapsed time " + str(Globals.get_duration()))
         elif self.scene == PetsciiDemo.SCENE_ASIAN:
             self.asian_animation.update(self.scene_frame)
             if self.asian_animation.finished:
-                self.c64_screen.zoom(1.75)
+                self.c64_screen.zoom(1.1)
             self.c64_screen.update(self.frame)
             if self.asian_animation.finished and self.c64_screen.z >= self.c64_screen.target_z:
                 if self.encore_frame is None:
@@ -155,12 +165,9 @@ class PetsciiDemo(PygameDemo):
                     self.set_scene(PetsciiDemo.SCENE_ENCORE)
         elif self.scene == PetsciiDemo.SCENE_ENCORE:
             self.asian_animation.update(self.scene_frame)
-            self.c64_screen.lean(self.scene_progress(PetsciiDemo.LEAN_SECONDS))
-            slide_frame = self.scene_frame - Constants.FPS * PetsciiDemo.LEAN_SECONDS
-            if slide_frame > 0:
-                self.c64_screen.slide(slide_frame / (Constants.FPS * PetsciiDemo.SLIDE_SECONDS))
             self.c64_screen.update(self.frame)
             self.c64_screen2.update(self.frame)
+            print("Elapsed time " + str(Globals.get_duration()))
 
         self.noiseLeft.set_intensity(self.tiltLeft.presence())
         self.noiseRight.set_intensity(self.tiltRight.presence())

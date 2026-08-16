@@ -11,14 +11,16 @@ Span = namedtuple("Span", ("start", "codes", "color", "inverted"))
 class PetsciiTextWall(TextWall):
 
     def __init__(self, image, *, surface, x=0, y=0, initial_screen_y=0,
-                 rows=Constants.ROWS, speed=20, loop=False, char_size=16):
+                 rows=Constants.ROWS, speed=20, loop=False, char_size=16,
+                 background_color=0):
         self.surface = surface
         self.image = image
         self.char_size = char_size
         self.cell_width, self.cell_height = image.font(char_size).size("W")
         super().__init__(self._build_row_strips(), speed=speed, x=x, y=y,
                          initial_screen_y=initial_screen_y, rows=rows,
-                         line_step=self.cell_height, loop=loop)
+                         line_step=self.cell_height, loop=loop,
+                         background_color=background_color)
 
     def draw_line(self, strip, x, y):
         self.surface.blit(strip, (int(x), int(y)))

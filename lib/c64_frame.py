@@ -61,10 +61,14 @@ class C64Frame:
         self.surface.fill(Constants.PALETTE[self.border_color],
                           (self.origin_x, self.origin_y, self.width, self.height))
         char_rect = (self.char_x, self.char_y, self.char_width, self.char_height)
-        self.surface.fill(Constants.PALETTE[self.background_color], char_rect)
+        self.surface.fill(Constants.PALETTE[self._active_background()], char_rect)
         if self.content is None:
             return
         previous_clip = self.surface.get_clip()
         self.surface.set_clip(char_rect)
         self.content.draw()
         self.surface.set_clip(previous_clip)
+
+    def _active_background(self):
+        content_background = getattr(self.content, "background_color", None)
+        return content_background if content_background is not None else self.background_color

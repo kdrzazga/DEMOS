@@ -9,17 +9,23 @@ def load_text(name):
 
 
 def build_lines(text, max_chars=62):
-    words = text.split()
     lines = []
     line = ""
-    for w in words:
-        if not line:
-            line = w
-        elif len(line) + 1 + len(w) <= max_chars:
-            line += " " + w
-        else:
-            lines.append(line)
-            line = w
+    for source in text.split("\n"):
+        if not source.strip():
+            if line:
+                lines.append(line)
+                line = ""
+            lines.append("")
+            continue
+        for word in source.split():
+            if not line:
+                line = word
+            elif len(line) + 1 + len(word) <= max_chars:
+                line += " " + word
+            else:
+                lines.append(line)
+                line = word
     if line:
         lines.append(line)
     return lines

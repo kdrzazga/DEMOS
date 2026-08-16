@@ -18,7 +18,8 @@ file_name = "market_in_poland.txt"
 WIDTH, HEIGHT = 800, 600
 GREEN = (51, 255, 102)
 CHAR_SIZE = 16
-PETSCII_PATH = os.path.join(os.path.dirname(__file__), "..", "resources", file_name)
+PETSCII_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "demos", "petscii",
+                            "files", "resources", "petscii", file_name)
 
 
 def build_walls(screen):

@@ -164,15 +164,41 @@ class C64BaseScreen:
     def _apply_lean(self):
         if self.tilt_progress <= 0.0 and self.slide_progress <= 0.0:
             return
-        pt = self.tilt_progress
-        ps = self.slide_progress
+
         slope = C64BaseScreen.TILT_DEPTH / (2 * self.half_width)
         intercept = C64BaseScreen.TILT_DEPTH / 2
+
+        # Column-major 4x4 for glMultMatrixf. As a matrix the flat array is:
+        #     | m0  m4  m8  m12 |   x' = m0*x + m4*y + m8*z  + m12
+        m0 = 1.0 - self.slide_progress  # x scale (slide collapses width)
+        m4 = 0.0
+        m8 = 0.0
+        m12 = -self.half_width * self.slide_progress  # x translation, collapses toward the left
+
+        #     | m1  m5  m9  m13 |   y' = m1*x + m5*y + m9*z  + m13
+        m1 = 0.0
+        m5 = 1.0  # y unchanged
+        m9 = 0.0
+        m13 = 0.0
+
+        #     | m2  m6  m10 m14 |   z' = m2*x + m6*y + m10*z + m14
+        m2 = self.tilt_progress * slope  # x -> z shear (tilt), hinges on the left edge
+        m6 = 0.0
+        m10 = 1.0  # z unchanged
+        m14 = self.tilt_progress * intercept  # z translation (tilt offset)
+
+        #     | m3  m7  m11 m15 |   w' = m3*x + m7*y + m11*z + m15
+        # The panel is a flat quad at z = self.z, x in [-half_width, +half_width].
+        m3 = 0.0
+        m7 = 0.0
+        m11 = 0.0
+        m15 = 1.0
+
         glMultMatrixf([
-            1.0 - ps, 0.0, pt * slope, 0.0,
-            0.0, 1.0, 0.0, 0.0,
-            0.0, 0.0, 1.0, 0.0,
-            -self.half_width * ps, 0.0, pt * (intercept - self.z), 1.0,
+            m0, m1, m2, m3,
+            m4, m5, m6, m7,
+            m8, m9, m10, m11,
+            m12, m13, m14, m15,
         ])
 
     def update_caption(self):

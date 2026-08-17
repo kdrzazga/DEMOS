@@ -15,7 +15,6 @@ from demos.petscii.files.c64_base_screen import C64BaseScreen
 from demos.petscii.files.petscii.asian import Asian
 from lib import Globals
 from lib.pygame_demo import PygameDemo
-from lib.rotator import Edge
 from demos.petscii.files.c64_screen import C64Screen
 from demos.petscii.files.petscii.dj_space_thunder import DjSpaceThunder
 from demos.petscii.files.globals import Constants
@@ -36,9 +35,7 @@ class PetsciiDemo(PygameDemo):
     PAUSE_SECONDS = 1
     ASIAN_SECONDS = 3
     LEAN_SECONDS = 1.5
-    LEAN_ANGLE = 75.0
-    SHRINK_SECONDS = 1.5
-    SHRINK_WIDTH_FRACTION = 0.5
+    LEFT_NOISE_HIDE_FOLD = 0.9
 
     WELCOME_SECONDS = 4
 
@@ -110,10 +107,8 @@ class PetsciiDemo(PygameDemo):
             self.tiltRight.reset()
         elif scene == PetsciiDemo.SCENE_ENCORE:
             self.c64_screen.zoom_to_front()
-            self.c64_screen.start_leaning(Edge.LEFT, PetsciiDemo.LEAN_ANGLE,
-                                          PetsciiDemo.LEAN_SECONDS, Constants.FPS)
-            self.c64_screen.start_shrinking(PetsciiDemo.SHRINK_SECONDS, Constants.FPS,
-                                            PetsciiDemo.SHRINK_WIDTH_FRACTION)
+            self.c64_screen.fold_to_left_wall(TiltScreen.TILT_DEPTH,
+                                              PetsciiDemo.LEAN_SECONDS, Constants.FPS)
 
     def update(self):
         self.frame += 1
@@ -181,7 +176,8 @@ class PetsciiDemo(PygameDemo):
         if self.scene == PetsciiDemo.SCENE_WELCOME:
             self.welcome.draw()
             return
-        self.draw_first_screen()
+        if not self.c64_screen.folded_past(PetsciiDemo.LEFT_NOISE_HIDE_FOLD):
+            self.draw_first_screen()
         if self.scene >= PetsciiDemo.SCENE_NOISE2:
             glClear(GL_DEPTH_BUFFER_BIT)  # let the second screen cover the first
             self.draw_second_screen()

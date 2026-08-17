@@ -174,6 +174,16 @@ class C64BaseScreen:
             destination_bottom_right=(-hw, -hh, depth),
             total_duration=total_duration, fps=fps, half_width=hw)
 
+    def fold_to_right_wall(self, depth, total_duration, fps):
+        hw, hh = self.half_width, self.half_height
+        self.rotator = Rotator(
+            self.screen_surface,
+            destination_top_left=(hw, hh, depth),
+            destination_top_right=(hw, hh, 0.0),
+            destination_bottom_left=(hw, -hh, depth),
+            destination_bottom_right=(hw, -hh, 0.0),
+            total_duration=total_duration, fps=fps, half_width=hw)
+
     def folded_past(self, fraction):
         return self.rotator is not None and self.rotator.progress >= fraction
 

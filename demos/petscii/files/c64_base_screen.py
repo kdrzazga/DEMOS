@@ -263,6 +263,9 @@ class C64BaseScreen:
     def arrived(self):
         return self._arrived
 
+    def header_written(self, frame):
+        return self.header_start is not None and frame >= self.mesh_start_frame
+
     def begin_headers(self, frame):
         if self.header_start is not None:
             return

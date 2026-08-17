@@ -14,6 +14,7 @@ from demos.petscii.files.asian_animation import AsianAnimation
 from demos.petscii.files.c64_base_screen import C64BaseScreen
 from demos.petscii.files.petscii.asian import Asian
 from lib import Globals
+from lib.floor import Floor
 from lib.pygame_demo import PygameDemo
 from demos.petscii.files.c64_screen import C64Screen
 from demos.petscii.files.petscii.dj_space_thunder import DjSpaceThunder
@@ -67,6 +68,7 @@ class PetsciiDemo(PygameDemo):
         self.captions_frame = None
         self.encore_frame = None
         self.bajtek_frame = None
+        self.floor_frame = None
 
         glClearColor(0.0, 0.0, 0.0, 1.0)
         glEnable(GL_TEXTURE_2D)
@@ -88,6 +90,7 @@ class PetsciiDemo(PygameDemo):
         self.c64_screen3 = C64BaseScreen()
         self.c64_screen3.music_started = True
         self.c64_screen3.target_z = TiltScreen.TILT_DEPTH
+        self.floor = Floor(Constants.WIDTH, Constants.HEIGHT)
         self.welcome = WelcomeStage()
 
     def step(self):
@@ -177,12 +180,18 @@ class PetsciiDemo(PygameDemo):
                     self.bajtek_frame = self.frame
                 elif self.frame - self.bajtek_frame > Constants.FPS * PetsciiDemo.TOP_SECRET_SECONDS:
                     self.set_scene(PetsciiDemo.SCENE_ENCORE2)
-            print("Elapsed time " + str(Globals.get_duration()))
         elif self.scene == PetsciiDemo.SCENE_ENCORE2:
             self.asian_animation.update(self.scene_frame)
             self.c64_screen.update(self.frame)
             self.c64_screen2.update(self.frame)
             self.c64_screen3.update(self.frame)
+            if self.floor_frame is None and self.c64_screen3.header_written(self.frame):
+                self.floor_frame = self.frame
+                self.floor.initial_frame = self.frame
+                self.floor.add_balls(15)
+            if self.floor_frame is not None:
+                self.floor.update()
+            print("Elapsed time " + str(Globals.get_duration()))
 
         self.noiseLeft.set_intensity(self.tiltLeft.presence())
         self.noiseRight.set_intensity(self.tiltRight.presence())
@@ -208,6 +217,8 @@ class PetsciiDemo(PygameDemo):
             self.c64_screen2.render(self.frame)
         if self.scene >= PetsciiDemo.SCENE_ENCORE2:
             self.c64_screen3.render(self.frame)
+        if self.floor_frame is not None:
+            self.floor.draw(self.frame)
         if self.scene >= PetsciiDemo.SCENE_ASIAN:
             self.asian_animation.draw()
 

@@ -39,7 +39,7 @@ from demos.petscii.files.globals import Constants
 class JumpingLetter:
 
     def __init__(self, x, floor_level, z, texture, target_x=None, target_y=None,
-                 target_z=None, height=0.84, speed=0.1,
+                 target_z=None, height=0.84, speed=0.03,
                  sway_amplitude=0.5, sway_speed=0.1):
         self.base_x = x
         self.x = x
@@ -52,7 +52,7 @@ class JumpingLetter:
         self.max_y = floor_level + height + random.randint(1,9)/100
         self.y = floor_level
         self.direction = 1
-        self.speed = speed + random.randint(0,30)/100
+        self.speed = speed + random.randint(0,3)/100
         self.sway_amplitude = sway_amplitude
         self.sway_speed = sway_speed
         self.phase = random.uniform(0, 2 * math.pi)
@@ -84,19 +84,27 @@ class JumpingLettersToCaption:
         self.initial_frame = initial_frame
         self.duration = duration
         self.letter_size = letter_size
+        self.started = False
         self.letter_objects = []
-        count = len(self.letters)
-        for column, char in enumerate(self.letters):
-            texture = self._build_letter_texture(char, char_size, color)
-            letter_target_x = target_x + (column - (count - 1) / 2) * letter_size
-            start_x = random.uniform(1 - half_width, half_width - 1)
-            start_z = random.uniform(0.5 - depth, 0.2)
-            self.letter_objects.append(
-                JumpingLetter(start_x, floor_level, start_z, texture,
-                              letter_target_x, target_y, target_z))
+        for row, line in enumerate(caption.split("\n")):
+            for column, char in enumerate(line):
+                if char == " ":
+                    continue
+                texture = self._build_letter_texture(char, char_size, color)
+                letter_target_x = target_x + column * letter_size
+                letter_target_y = target_y - row * letter_size
+                start_x = random.uniform(1 - half_width, half_width - 1)
+                start_z = random.uniform(0.5 - depth, 0.2)
+                self.letter_objects.append(
+                    JumpingLetter(start_x, floor_level, start_z, texture,
+                                  letter_target_x, letter_target_y, target_z))
 
     def update(self, frame):
-        if frame - self.initial_frame < self.duration:
+        relative = frame - self.initial_frame
+        if relative < 0:
+            return
+        self.started = True
+        if relative < self.duration:
             for letter in self.letter_objects:
                 letter.update()
         else:
@@ -104,6 +112,8 @@ class JumpingLettersToCaption:
                 letter.settle()
 
     def draw(self):
+        if not self.started:
+            return
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glColor3f(1.0, 1.0, 1.0)

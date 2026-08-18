@@ -18,8 +18,8 @@ DURATION = 150
 
 def build_captions():
     return [
-        JumpingLettersToCaption('LOAD "*",8,1', 0, DURATION, 0.0, 0.5, 0.0),
-        JumpingLettersToCaption("LOADING", DURATION//2, DURATION, 0.0, -0.6, 0.0),
+        JumpingLettersToCaption('LOAD "*",8,1', 0, DURATION, -1.5, 0.5, 0.0),
+        JumpingLettersToCaption("LOADING", DURATION//2, DURATION, -1.5, -0.6, 0.0),
     ]
 
 

@@ -7,6 +7,7 @@ from OpenGL.GL import (
     GL_TEXTURE_2D,
     glClear,
     glClearColor,
+    glDisable,
     glEnable,
 )
 
@@ -14,7 +15,7 @@ from demos.petscii.files.asian_animation import AsianAnimation
 from demos.petscii.files.c64_base_screen import C64BaseScreen
 from demos.petscii.files.petscii.asian import Asian
 from lib import Globals
-from lib.floor import Floor
+from lib.floor import Floor, JumpingLettersToCaption
 from lib.pygame_demo import PygameDemo
 from demos.petscii.files.c64_screen import C64Screen
 from demos.petscii.files.petscii.dj_space_thunder import DjSpaceThunder
@@ -27,7 +28,6 @@ from demos.petscii.files.winding_screen import WindingScreen
 
 
 class PetsciiDemo(PygameDemo):
-    """PETSCII demo: two noise screens that each tilt away to opposite edges."""
 
     NOISE_SECONDS = 6
     SECOND_NOISE_SECONDS = 2.4
@@ -70,6 +70,7 @@ class PetsciiDemo(PygameDemo):
         self.encore_frame = 0
         self.bajtek_frame = 0
         self.floor_frame = 0
+        self.captions = None
 
         glClearColor(0.0, 0.0, 0.0, 1.0)
         glEnable(GL_TEXTURE_2D)
@@ -186,16 +187,37 @@ class PetsciiDemo(PygameDemo):
             self.c64_screen.update(self.frame)
             self.c64_screen2.update(self.frame)
             self.c64_screen3.update(self.frame)
-            if self.floor_frame is None and self.c64_screen3.header_written(self.frame):
-                self.floor_frame = self.frame
+            if self.captions is None and self.c64_screen3.header_written(self.frame):
+                self.captions = self._build_load_captions(self.frame)
                 self.floor.initial_frame = self.frame
-                self.floor.add_caption('LOAD "PETSCII BRUCE LEE",8,1')
-            if self.floor_frame is not None:
+            if self.captions is not None:
                 self.floor.update()
+                for caption in self.captions:
+                    caption.update(self.frame)
             print("Elapsed time " + str(Globals.get_duration()))
 
         self.noiseLeft.set_intensity(self.tiltLeft.presence())
         self.noiseRight.set_intensity(self.tiltRight.presence())
+
+    def _build_load_captions(self, start_frame):
+        top, left, size = 0.85, -1.51, 0.08
+        z = TiltScreen.TILT_DEPTH + 0.1
+        duration, stagger = 60, 75
+        floor_level = self.floor.level_y
+
+        def caption(text, row, order):
+            return JumpingLettersToCaption(
+                text, start_frame + order * stagger, duration,
+                left, top - row * size, z,
+                floor_level=floor_level, letter_size=size)
+
+        return [
+            caption('LOAD "PETSCII BRUCE LEE",8,1', 5, 0),
+            caption("SEARCHING FOR PETSCII BRUCE LEE", 7, 1),
+            caption("LOADING", 8, 2),
+            caption("READY.", 9, 3),
+            caption("RUN", 10, 4),
+        ]
 
     def scene_progress(self, seconds):
         """How far the current scene has run, as a 0..1 fraction of seconds."""
@@ -218,8 +240,12 @@ class PetsciiDemo(PygameDemo):
             self.c64_screen2.render(self.frame)
         if self.scene >= PetsciiDemo.SCENE_ENCORE2:
             self.c64_screen3.render(self.frame)
-        if self.floor_frame is not None:
+        if self.captions is not None:
             self.floor.draw(self.frame)
+            glDisable(GL_DEPTH_TEST)
+            for caption in self.captions:
+                caption.draw()
+            glEnable(GL_DEPTH_TEST)
         if self.scene >= PetsciiDemo.SCENE_ASIAN:
             self.asian_animation.draw()
 

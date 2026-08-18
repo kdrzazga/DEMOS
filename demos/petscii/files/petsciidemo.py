@@ -71,6 +71,7 @@ class PetsciiDemo(PygameDemo):
         self.bajtek_frame = None
         self.floor_frame = None
         self.captions = None
+        self.loading = False
 
         glClearColor(0.0, 0.0, 0.0, 1.0)
         glEnable(GL_TEXTURE_2D)
@@ -191,9 +192,13 @@ class PetsciiDemo(PygameDemo):
                 self.captions = self._build_load_captions(self.frame + 60)
                 self.floor.initial_frame = self.frame
             if self.captions is not None:
+                self.loading = self.loading_start <= self.frame < self.loading_end
+                self.c64_screen3.loading = self.loading
                 self.floor.update()
                 for caption in self.captions:
                     caption.update(self.frame)
+                for caption in self.captions[:3]:
+                    caption.visible = not self.loading
             print("Elapsed time " + str(Globals.get_duration()))
 
         self.noiseLeft.set_intensity(self.tiltLeft.presence())
@@ -211,13 +216,17 @@ class PetsciiDemo(PygameDemo):
                 left, top - row * size, z,
                 floor_level=floor_level, letter_size=size)
 
-        return [
+        captions = [
             caption('LOAD "PETSCII BRUCE LEE",8,1', 5, 0),
             caption("SEARCHING FOR PETSCII BRUCE LEE", 7, 1),
             caption("LOADING", 8, 2),
             caption("READY.", 9, 3),
             caption("RUN", 10, 4),
         ]
+        loading, ready = captions[2], captions[3]
+        self.loading_start = loading.initial_frame + loading.duration
+        self.loading_end = ready.initial_frame + ready.duration
+        return captions
 
     def scene_progress(self, seconds):
         """How far the current scene has run, as a 0..1 fraction of seconds."""

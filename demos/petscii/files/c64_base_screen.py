@@ -72,6 +72,7 @@ class C64BaseScreen:
         self._pulse_phase = 0.0
         self._arrived = False
         self.rotator = None
+        self.loading = False
         self.color = list(Constants.PALETTE[11])
         self.half_width = Constants.HALF_WIDTH
         self.half_height = Constants.HALF_WIDTH * Constants.HEIGHT / Constants.WIDTH
@@ -220,12 +221,13 @@ class C64BaseScreen:
         glVertex3f(-self.half_width, -self.half_height, 0.0)
         glEnd()
 
-        self.draw_background()
-        if self.arrived():
-            self.begin_headers(frame)
-            self.start_music()
-            self.draw_header(frame)
-            self.draw_mesh(frame)
+        if not self.loading:
+            self.draw_background()
+            if self.arrived():
+                self.begin_headers(frame)
+                self.start_music()
+                self.draw_header(frame)
+                self.draw_mesh(frame)
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
         glEnable(GL_DEPTH_TEST)

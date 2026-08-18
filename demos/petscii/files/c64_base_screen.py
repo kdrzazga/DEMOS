@@ -44,7 +44,7 @@ from OpenGL.GL import (
 )
 from OpenGL.GLU import gluPerspective
 
-from lib.rotator import AngleRotator, Point
+from lib.rotator import Rotator
 from demos.petscii.files.globals import Constants
 from demos.petscii.files.mesh import PetsciiMesh
 from demos.petscii.files.typer import Typer
@@ -72,9 +72,6 @@ class C64BaseScreen:
         self._pulse_phase = 0.0
         self._arrived = False
         self.rotator = None
-        self.shrink_total_frames = 0
-        self.shrink_elapsed_frames = 0
-        self.min_width_scale = 1.0
         self.color = list(Constants.PALETTE[11])
         self.half_width = Constants.HALF_WIDTH
         self.half_height = Constants.HALF_WIDTH * Constants.HEIGHT / Constants.WIDTH
@@ -150,7 +147,6 @@ class C64BaseScreen:
         self.update_caption()
         if self.rotator is not None and self.at_front() and not self.rotator.finished:
             self.rotator.rotate()
-        self._advance_shrink()
 
     def zoom(self, magnification, speed=None):
         eye = C64BaseScreen.TARGET_Z + Constants.CAMERA_Z
@@ -168,27 +164,28 @@ class C64BaseScreen:
     def at_front(self):
         return self.z >= 0.0
 
-    def start_leaning(self, still_edge, total_angle, total_duration, fps):
-        self.rotator = AngleRotator(self.screen_surface, still_edge, total_angle,
-                                    total_duration, fps, half_width=self.half_width)
+    def fold_to_left_wall(self, depth, total_duration, fps):
+        hw, hh = self.half_width, self.half_height
+        self.rotator = Rotator(
+            self.screen_surface,
+            destination_top_left=(-hw, hh, 0.0),
+            destination_top_right=(-hw, hh, depth),
+            destination_bottom_left=(-hw, -hh, 0.0),
+            destination_bottom_right=(-hw, -hh, depth),
+            total_duration=total_duration, fps=fps, half_width=hw)
 
-    def start_shrinking(self, total_duration, fps, min_width_scale):
-        self.shrink_total_frames = total_duration * fps
-        self.min_width_scale = min_width_scale
+    def fold_to_right_wall(self, depth, total_duration, fps):
+        hw, hh = self.half_width, self.half_height
+        self.rotator = Rotator(
+            self.screen_surface,
+            destination_top_left=(hw, hh, depth),
+            destination_top_right=(hw, hh, 0.0),
+            destination_bottom_left=(hw, -hh, depth),
+            destination_bottom_right=(hw, -hh, 0.0),
+            total_duration=total_duration, fps=fps, half_width=hw)
 
-    def _advance_shrink(self):
-        if self.shrink_total_frames <= 0:
-            return
-        if self.rotator is None or not self.rotator.finished:
-            return
-        if self.shrink_elapsed_frames < self.shrink_total_frames:
-            self.shrink_elapsed_frames += 1
-
-    def _width_scale(self):
-        if self.shrink_total_frames <= 0:
-            return 1.0
-        progress = min(1.0, self.shrink_elapsed_frames / self.shrink_total_frames)
-        return 1.0 - (1.0 - self.min_width_scale) * progress
+    def folded_past(self, fraction):
+        return self.rotator is not None and self.rotator.progress >= fraction
 
     def update_caption(self):
         if not self.caption_ready:
@@ -252,31 +249,22 @@ class C64BaseScreen:
         glEnd()
 
     def _draw_rotated_screen_quad(self):
-        corners = self.rotator.current_vertices()
-        width_scale = self._width_scale()
-        quad = (
-            corners.top_left,
-            self._point_between(corners.top_left, corners.top_right, width_scale),
-            self._point_between(corners.bottom_left, corners.bottom_right, width_scale),
-            corners.bottom_left,
-        )
+        front_bias = 0.05
         texture_coords = ((0, 1), (1, 1), (1, 0), (0, 0))
         glBegin(GL_QUADS)
-        for corner, (u, v) in zip(quad, texture_coords):
+        for corner, (u, v) in zip(self.rotator.current_vertices(), texture_coords):
             glTexCoord2f(u, v)
-            glVertex3f(corner.x, corner.y, corner.z + self.z)
+            glVertex3f(corner.x, corner.y, corner.z + self.z + front_bias)
         glEnd()
-
-    def _point_between(self, near, far, scale):
-        return Point(near.x + (far.x - near.x) * scale,
-                     near.y + (far.y - near.y) * scale,
-                     near.z + (far.z - near.z) * scale)
 
     def draw_mesh(self, frame):
         pass
 
     def arrived(self):
         return self._arrived
+
+    def header_written(self, frame):
+        return self.header_start is not None and frame >= self.mesh_start_frame
 
     def begin_headers(self, frame):
         if self.header_start is not None:

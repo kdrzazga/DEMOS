@@ -7,6 +7,7 @@ from OpenGL.GL import (
     GL_TEXTURE_2D,
     glClear,
     glClearColor,
+    glDisable,
     glEnable,
 )
 
@@ -14,8 +15,8 @@ from demos.petscii.files.asian_animation import AsianAnimation
 from demos.petscii.files.c64_base_screen import C64BaseScreen
 from demos.petscii.files.petscii.asian import Asian
 from lib import Globals
+from lib.floor import Floor, JumpingLettersToCaption
 from lib.pygame_demo import PygameDemo
-from lib.rotator import Edge
 from demos.petscii.files.c64_screen import C64Screen
 from demos.petscii.files.petscii.dj_space_thunder import DjSpaceThunder
 from demos.petscii.files.globals import Constants
@@ -27,7 +28,6 @@ from demos.petscii.files.winding_screen import WindingScreen
 
 
 class PetsciiDemo(PygameDemo):
-    """PETSCII demo: two noise screens that each tilt away to opposite edges."""
 
     NOISE_SECONDS = 6
     SECOND_NOISE_SECONDS = 2.4
@@ -36,9 +36,8 @@ class PetsciiDemo(PygameDemo):
     PAUSE_SECONDS = 1
     ASIAN_SECONDS = 3
     LEAN_SECONDS = 1.5
-    LEAN_ANGLE = 75.0
-    SHRINK_SECONDS = 1.5
-    SHRINK_WIDTH_FRACTION = 0.5
+    NOISE_HIDE_FOLD = 0.9
+    TOP_SECRET_SECONDS = 15
 
     WELCOME_SECONDS = 4
 
@@ -54,19 +53,24 @@ class PetsciiDemo(PygameDemo):
     SCENE_SHRINK2 = 7
     SCENE_ASIAN = 8
     SCENE_ENCORE = 9
-    SCENE_COUNT = 10
+    SCENE_ENCORE2 = 10
+    SCENE_COUNT = 11
 
     def __init__(self, windowed=False, triggered=False):
         super().__init__(Constants.WIDTH, Constants.HEIGHT, "PETSCII 3D Demo",
                          fps=Constants.FPS, windowed=windowed, triggered=triggered)
+        self.floor_frame = None
         self.captions_frame = None
 
     def setup(self):
         self.frame = 0
         self.scene_frame = 0
         self.scene = PetsciiDemo.SCENE_WELCOME
-        self.captions_frame = None
-        self.encore_frame = None
+        self.captions_frame = 0
+        self.encore_frame = 0
+        self.bajtek_frame = 0
+        self.floor_frame = 0
+        self.captions = None
 
         glClearColor(0.0, 0.0, 0.0, 1.0)
         glEnable(GL_TEXTURE_2D)
@@ -85,6 +89,10 @@ class PetsciiDemo(PygameDemo):
         self.c64_screen2 = WindingScreen()
         self.c64_screen2.pulse = True
         self.c64_screen2.music_started = True
+        self.c64_screen3 = C64BaseScreen()
+        self.c64_screen3.music_started = True
+        self.c64_screen3.target_z = TiltScreen.TILT_DEPTH
+        self.floor = Floor(Constants.WIDTH, Constants.HEIGHT)
         self.welcome = WelcomeStage()
 
     def step(self):
@@ -110,10 +118,12 @@ class PetsciiDemo(PygameDemo):
             self.tiltRight.reset()
         elif scene == PetsciiDemo.SCENE_ENCORE:
             self.c64_screen.zoom_to_front()
-            self.c64_screen.start_leaning(Edge.LEFT, PetsciiDemo.LEAN_ANGLE,
-                                          PetsciiDemo.LEAN_SECONDS, Constants.FPS)
-            self.c64_screen.start_shrinking(PetsciiDemo.SHRINK_SECONDS, Constants.FPS,
-                                            PetsciiDemo.SHRINK_WIDTH_FRACTION)
+            self.c64_screen.fold_to_left_wall(TiltScreen.TILT_DEPTH,
+                                              PetsciiDemo.LEAN_SECONDS, Constants.FPS)
+        elif scene == PetsciiDemo.SCENE_ENCORE2:
+            self.c64_screen2.zoom_to_front()
+            self.c64_screen2.fold_to_right_wall(TiltScreen.TILT_DEPTH,
+                                                PetsciiDemo.LEAN_SECONDS, Constants.FPS)
 
     def update(self):
         self.frame += 1
@@ -167,10 +177,47 @@ class PetsciiDemo(PygameDemo):
             self.asian_animation.update(self.scene_frame)
             self.c64_screen.update(self.frame)
             self.c64_screen2.update(self.frame)
+            if self.c64_screen2.arrived():
+                if self.bajtek_frame is None:
+                    self.bajtek_frame = self.frame
+                elif self.frame - self.bajtek_frame > Constants.FPS * PetsciiDemo.TOP_SECRET_SECONDS:
+                    self.set_scene(PetsciiDemo.SCENE_ENCORE2)
+        elif self.scene == PetsciiDemo.SCENE_ENCORE2:
+            self.asian_animation.update(self.scene_frame)
+            self.c64_screen.update(self.frame)
+            self.c64_screen2.update(self.frame)
+            self.c64_screen3.update(self.frame)
+            if self.captions is None and self.c64_screen3.header_written(self.frame):
+                self.captions = self._build_load_captions(self.frame)
+                self.floor.initial_frame = self.frame
+            if self.captions is not None:
+                self.floor.update()
+                for caption in self.captions:
+                    caption.update(self.frame)
             print("Elapsed time " + str(Globals.get_duration()))
 
         self.noiseLeft.set_intensity(self.tiltLeft.presence())
         self.noiseRight.set_intensity(self.tiltRight.presence())
+
+    def _build_load_captions(self, start_frame):
+        top, left, size = 0.85, -1.51, 0.08
+        z = TiltScreen.TILT_DEPTH + 0.1
+        duration, stagger = 60, 75
+        floor_level = self.floor.level_y
+
+        def caption(text, row, order):
+            return JumpingLettersToCaption(
+                text, start_frame + order * stagger, duration,
+                left, top - row * size, z,
+                floor_level=floor_level, letter_size=size)
+
+        return [
+            caption('LOAD "PETSCII BRUCE LEE",8,1', 5, 0),
+            caption("SEARCHING FOR PETSCII BRUCE LEE", 7, 1),
+            caption("LOADING", 8, 2),
+            caption("READY.", 9, 3),
+            caption("RUN", 10, 4),
+        ]
 
     def scene_progress(self, seconds):
         """How far the current scene has run, as a 0..1 fraction of seconds."""
@@ -181,14 +228,24 @@ class PetsciiDemo(PygameDemo):
         if self.scene == PetsciiDemo.SCENE_WELCOME:
             self.welcome.draw()
             return
-        self.draw_first_screen()
+        if not self.c64_screen.folded_past(PetsciiDemo.NOISE_HIDE_FOLD):
+            self.draw_first_screen()
         if self.scene >= PetsciiDemo.SCENE_NOISE2:
             glClear(GL_DEPTH_BUFFER_BIT)  # let the second screen cover the first
-            self.draw_second_screen()
+            if not self.c64_screen2.folded_past(PetsciiDemo.NOISE_HIDE_FOLD):
+                self.draw_second_screen()
         if self.scene >= PetsciiDemo.SCENE_SHRINK2:
             self.c64_screen.render(self.frame)
-        if self.scene == PetsciiDemo.SCENE_ENCORE:
+        if self.scene >= PetsciiDemo.SCENE_ENCORE:
             self.c64_screen2.render(self.frame)
+        if self.scene >= PetsciiDemo.SCENE_ENCORE2:
+            self.c64_screen3.render(self.frame)
+        if self.captions is not None:
+            self.floor.draw(self.frame)
+            glDisable(GL_DEPTH_TEST)
+            for caption in self.captions:
+                caption.draw()
+            glEnable(GL_DEPTH_TEST)
         if self.scene >= PetsciiDemo.SCENE_ASIAN:
             self.asian_animation.draw()
 

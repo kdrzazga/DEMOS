@@ -66,10 +66,10 @@ class PetsciiDemo(PygameDemo):
         self.frame = 0
         self.scene_frame = 0
         self.scene = PetsciiDemo.SCENE_WELCOME
-        self.captions_frame = 0
-        self.encore_frame = 0
-        self.bajtek_frame = 0
-        self.floor_frame = 0
+        self.captions_frame = None
+        self.encore_frame = None
+        self.bajtek_frame = None
+        self.floor_frame = None
         self.captions = None
 
         glClearColor(0.0, 0.0, 0.0, 1.0)
@@ -188,7 +188,7 @@ class PetsciiDemo(PygameDemo):
             self.c64_screen2.update(self.frame)
             self.c64_screen3.update(self.frame)
             if self.captions is None and self.c64_screen3.header_written(self.frame):
-                self.captions = self._build_load_captions(self.frame)
+                self.captions = self._build_load_captions(self.frame + 60)
                 self.floor.initial_frame = self.frame
             if self.captions is not None:
                 self.floor.update()
@@ -202,12 +202,12 @@ class PetsciiDemo(PygameDemo):
     def _build_load_captions(self, start_frame):
         top, left, size = 0.85, -1.51, 0.08
         z = TiltScreen.TILT_DEPTH + 0.1
-        duration, stagger = 60, 75
+        duration, stagger = 65, 75
         floor_level = self.floor.level_y
 
         def caption(text, row, order):
             return JumpingLettersToCaption(
-                text, start_frame + order * stagger, duration,
+                text, start_frame + 14*order, duration * (order + 2),
                 left, top - row * size, z,
                 floor_level=floor_level, letter_size=size)
 

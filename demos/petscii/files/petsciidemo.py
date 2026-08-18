@@ -59,16 +59,17 @@ class PetsciiDemo(PygameDemo):
     def __init__(self, windowed=False, triggered=False):
         super().__init__(Constants.WIDTH, Constants.HEIGHT, "PETSCII 3D Demo",
                          fps=Constants.FPS, windowed=windowed, triggered=triggered)
+        self.floor_frame = None
         self.captions_frame = None
 
     def setup(self):
         self.frame = 0
         self.scene_frame = 0
         self.scene = PetsciiDemo.SCENE_WELCOME
-        self.captions_frame = None
-        self.encore_frame = None
-        self.bajtek_frame = None
-        self.floor_frame = None
+        self.captions_frame = 0
+        self.encore_frame = 0
+        self.bajtek_frame = 0
+        self.floor_frame = 0
 
         glClearColor(0.0, 0.0, 0.0, 1.0)
         glEnable(GL_TEXTURE_2D)
@@ -188,7 +189,7 @@ class PetsciiDemo(PygameDemo):
             if self.floor_frame is None and self.c64_screen3.header_written(self.frame):
                 self.floor_frame = self.frame
                 self.floor.initial_frame = self.frame
-                self.floor.add_balls(15)
+                self.floor.add_caption('LOAD "PETSCII BRUCE LEE",8,1')
             if self.floor_frame is not None:
                 self.floor.update()
             print("Elapsed time " + str(Globals.get_duration()))

@@ -223,8 +223,12 @@ class PetsciiDemo(PygameDemo):
             caption("READY.", 9, 3),
             caption("RUN", 10, 4),
         ]
-        loading, ready = captions[2], captions[3]
-        self.loading_start = loading.initial_frame + loading.duration
+        loading, ready, run = captions[2], captions[3], captions[4]
+        loading_settled = loading.initial_frame + loading.duration
+        gap = ready.initial_frame + ready.duration - loading_settled
+        ready.duration += 5 * gap
+        run.duration += 5 * gap
+        self.loading_start = loading_settled + int(0.82 * Constants.FPS)
         self.loading_end = ready.initial_frame + ready.duration
         return captions
 

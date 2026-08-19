@@ -73,6 +73,9 @@ class PetsciiDemo(PygameDemo):
         self.floor_frame = None
         self.captions = None
         self.loading = False
+        self.asian_speech_frame = None
+        self.asian_speaking = False
+        self.asian_flew_back = False
 
         glClearColor(0.0, 0.0, 0.0, 1.0)
         glEnable(GL_TEXTURE_2D)
@@ -160,17 +163,6 @@ class PetsciiDemo(PygameDemo):
         self.noiseLeft.set_intensity(self.tiltLeft.presence())
         self.noiseRight.set_intensity(self.tiltRight.presence())
 
-    def update_asian(self):
-        self.asian_animation.update(self.scene_frame)
-        if self.asian_animation.finished:
-            self.c64_screen.zoom(1.1)
-        self.c64_screen.update(self.frame)
-        if self.asian_animation.finished and self.c64_screen.z >= self.c64_screen.target_z:
-            if self.encore_frame is None:
-                self.encore_frame = self.frame
-            elif self.frame - self.encore_frame > Constants.FPS:
-                self.set_scene(PetsciiDemo.SCENE_ENCORE)
-
     def update_shrink2(self):
         self.tiltRight.shrink(self.scene_progress(PetsciiDemo.SHRINK_SECONDS))
         self.c64_screen.update(self.scene_frame)
@@ -191,22 +183,20 @@ class PetsciiDemo(PygameDemo):
             self.captions = self._build_load_captions(self.frame + 60)
             self.floor.initial_frame = self.frame
         if self.captions is not None:
-            was_loading = self.loading
             self.loading = self.loading_start <= self.frame < self.loading_end
+            if self.loading and self.asian_speech_frame is None:
+                self.asian_speech_frame = self.frame
 
-            if self.asian_animation.x > 0:
+            # Position ownership: the manual tweaks place him during loading;
+            # while speaking the glide owns x/y/z; after fly_away() the fly does.
+            if not self.asian_speaking and not self.asian_flew_back \
+                    and self.asian_animation.x > 0:
                 self.asian_animation.x -= 0.015
 
-            print(self.asian_animation.x, self.asian_animation.y, self.asian_animation.z)
-
             if self.loading:
-                if self.asian_animation.z < -1.51:
-                    self.asian_animation.z += 0.13
-                    self.asian_animation.y -= 0.0251
-                elif self.asian_animation.y > 1:
-                    self.asian_animation.y -= 0.32
-                    self.asian_animation.z += 0.06
+                self.update_asian2()
 
+            self.advance_asian_speech()
 
             self.c64_screen3.loading = self.loading
             self.floor.update()
@@ -214,6 +204,43 @@ class PetsciiDemo(PygameDemo):
                 caption.update(self.frame)
             for caption in self.captions[:3]:
                 caption.visible = not self.loading
+
+    def update_asian(self):
+        self.asian_animation.update(self.scene_frame)
+        if self.asian_animation.finished:
+            self.c64_screen.zoom(1.1)
+        self.c64_screen.update(self.frame)
+        if self.asian_animation.finished and self.c64_screen.z >= self.c64_screen.target_z:
+            if self.encore_frame is None:
+                self.encore_frame = self.frame
+            elif self.frame - self.encore_frame > Constants.FPS:
+                self.set_scene(PetsciiDemo.SCENE_ENCORE)
+
+    def update_asian2(self):
+        if self.asian_speaking or self.asian_flew_back:
+            return
+        if self.asian_animation.z < -1.51:
+            self.asian_animation.z += 0.13
+            self.asian_animation.y -= 0.0271
+        elif self.asian_animation.y > 1:
+            self.asian_animation.y -= 0.32
+            self.asian_animation.z += 0.06
+        if self.asian_speech_frame is not None \
+                and self.frame - self.asian_speech_frame == 200:
+            self.asian_animation.speak("say_meet_bruce_lee")
+            self.asian_speaking = True
+
+    def advance_asian_speech(self):
+        """Run the lips while he speaks, easing him forward to the first-talk
+        pose, then jump him back to the top-right corner from there exactly as
+        he exits after the first talk."""
+        if not self.asian_speaking:
+            return
+        self.asian_animation.glide_to_speak_pose()
+        if not self.asian_animation.advance_speech():
+            self.asian_speaking = False
+            self.asian_flew_back = True
+            self.asian_animation.fly_away()
 
     def update_encore(self):
         self.asian_animation.update(self.scene_frame)

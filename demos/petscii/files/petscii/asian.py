@@ -20,7 +20,7 @@ class Asian(PetsciiImage):
         self.three_d = pygame.mixer.Sound(dir + "3d.mp3")
         self.three_d_duration = 3
         self.meet_bruce_lee = pygame.mixer.Sound(dir + "meet-bruce-lee.mp3")
-        self.meet_bruce_lee_duration = 3
+        self.meet_bruce_lee_duration = 8  # meet-bruce-lee.mp3 runs ~7.6s
 
         self.hat_row = 9
         self.eyes_area = (12, 13)
@@ -221,7 +221,7 @@ class Asian(PetsciiImage):
 
     def say_meet_bruce_lee(self):
         self._say(self.meet_bruce_lee, self.meet_bruce_lee_duration)
-        self.speech = ('Meet my legendary', 'friend Bruce Lee', 'from Hong Kong', '   OpenGL')
+        self.speech = ('Meet my legendary', 'friend Bruce Lee', 'from Hong Kong', 'in PETSCII')
 
     def _say(self, sound, duration):
         sound.play()

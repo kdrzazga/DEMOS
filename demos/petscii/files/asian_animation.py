@@ -115,6 +115,33 @@ class AsianAnimation:
         self.land_z = 0.0
         self.leap_peak = 3.0
 
+    def speak(self, phrase):
+        """Start a single spoken phrase (audio + lip-sync + on-screen text)
+        outside the leap/fly choreography, for the encore. Call advance_speech()
+        each frame afterwards to run the lips, then fly_away() when it ends."""
+        getattr(self.asian, phrase)()
+        self._render_asian()
+
+    def advance_speech(self):
+        """Advance the lip-sync one frame, re-rendering when the mouth changes.
+        Returns True while the phrase is still being spoken."""
+        if self.asian.talk():
+            self._render_asian()
+        return self.asian.talking
+
+    def glide_to_speak_pose(self, rate=0.08):
+        """Ease back to the centred pose the first talk spoke and flew from
+        (x=0, y=0, z=z_front). Called while speaking so the encore fly-away
+        traces the same arc instead of crossing the screen from behind."""
+        self.x += (0.0 - self.x) * rate
+        self.y += (0.0 - self.y) * rate
+        self.z += (self.z_front - self.z) * rate
+
+    def fly_away(self):
+        """Jump back to the top-right corner, the same exit used after the
+        first talk."""
+        self._begin_fly()
+
     def update(self, frame):
         if self.phase == AsianAnimation.APPROACH:
             self._update_approach()

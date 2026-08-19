@@ -57,8 +57,9 @@ class PetsciiDemo(PygameDemo):
     SCENE_COUNT = 11
 
     def __init__(self, windowed=False, triggered=False):
-        super().__init__(Constants.WIDTH, Constants.HEIGHT, "PETSCII 3D Demo",
+        super().__init__(Constants.WIDTH, Constants.HEIGHT, "P 3D SCII  (PETSCII 3D Demo)",
                          fps=Constants.FPS, windowed=windowed, triggered=triggered)
+        self.bajtek_frame = None
         self.floor_frame = None
         self.captions_frame = None
 
@@ -130,23 +131,15 @@ class PetsciiDemo(PygameDemo):
         self.frame += 1
         self.scene_frame += 1
         if self.scene == PetsciiDemo.SCENE_WELCOME:
-            self.welcome.update(self.scene_frame)
-            if self.scene_frame > Constants.FPS * PetsciiDemo.WELCOME_SECONDS:
-                self.set_scene(PetsciiDemo.SCENE_NOISE)
+            self.update_welcome()
         elif self.scene == PetsciiDemo.SCENE_NOISE:
-            if self.scene_frame > Constants.FPS * PetsciiDemo.NOISE_SECONDS:
-                self.set_scene(PetsciiDemo.SCENE_TILT)
+            self.update_noise()
         elif self.scene == PetsciiDemo.SCENE_TILT:
-            self.tiltLeft.tilt(self.scene_progress(PetsciiDemo.TILT_SECONDS))
-            if self.scene_frame > Constants.FPS * PetsciiDemo.TILT_SECONDS:
-                self.set_scene(PetsciiDemo.SCENE_SHRINK)
+            self.update_tilt()
         elif self.scene == PetsciiDemo.SCENE_SHRINK:
-            self.tiltLeft.shrink(self.scene_progress(PetsciiDemo.SHRINK_SECONDS))
-            if self.scene_frame > Constants.FPS * PetsciiDemo.SHRINK_SECONDS:
-                self.set_scene(PetsciiDemo.SCENE_PAUSE)
+            self.update_shrink()
         elif self.scene == PetsciiDemo.SCENE_PAUSE:
-            if self.scene_frame > Constants.FPS * PetsciiDemo.PAUSE_SECONDS:
-                self.set_scene(PetsciiDemo.SCENE_NOISE2)
+            self.update_pause()
         elif self.scene == PetsciiDemo.SCENE_NOISE2:
             if self.scene_frame > Constants.FPS * PetsciiDemo.SECOND_NOISE_SECONDS:
                 self.set_scene(PetsciiDemo.SCENE_TILT2)
@@ -155,54 +148,105 @@ class PetsciiDemo(PygameDemo):
             if self.scene_frame > Constants.FPS * PetsciiDemo.TILT_SECONDS:
                 self.set_scene(PetsciiDemo.SCENE_SHRINK2)
         elif self.scene == PetsciiDemo.SCENE_SHRINK2:
-            self.tiltRight.shrink(self.scene_progress(PetsciiDemo.SHRINK_SECONDS))
-            self.c64_screen.update(self.scene_frame)
-            if self.scene_frame > Constants.FPS * PetsciiDemo.SHRINK_SECONDS:
-                self.noiseRight.stop()
-            if self.c64_screen.caption_ready and self.captions_frame is None:
-                self.captions_frame = self.frame
-            if self.captions_frame is not None:
-                if self.frame - self.captions_frame > Constants.FPS * PetsciiDemo.ASIAN_SECONDS:
-                    self.set_scene(PetsciiDemo.SCENE_ASIAN)
+            self.update_shrink2()
         elif self.scene == PetsciiDemo.SCENE_ASIAN:
-            self.asian_animation.update(self.scene_frame)
-            if self.asian_animation.finished:
-                self.c64_screen.zoom(1.1)
-            self.c64_screen.update(self.frame)
-            if self.asian_animation.finished and self.c64_screen.z >= self.c64_screen.target_z:
-                if self.encore_frame is None:
-                    self.encore_frame = self.frame
-                elif self.frame - self.encore_frame > Constants.FPS:
-                    self.set_scene(PetsciiDemo.SCENE_ENCORE)
+            self.update_asian()
         elif self.scene == PetsciiDemo.SCENE_ENCORE:
-            self.asian_animation.update(self.scene_frame)
-            self.c64_screen.update(self.frame)
-            self.c64_screen2.update(self.frame)
-            if self.c64_screen2.arrived():
-                if self.bajtek_frame is None:
-                    self.bajtek_frame = self.frame
-                elif self.frame - self.bajtek_frame > Constants.FPS * PetsciiDemo.TOP_SECRET_SECONDS:
-                    self.set_scene(PetsciiDemo.SCENE_ENCORE2)
+            self.update_encore()
         elif self.scene == PetsciiDemo.SCENE_ENCORE2:
-            self.asian_animation.update(self.scene_frame)
-            self.c64_screen.update(self.frame)
-            self.c64_screen2.update(self.frame)
-            self.c64_screen3.update(self.frame)
-            if self.captions is None and self.c64_screen3.header_written(self.frame):
-                self.captions = self._build_load_captions(self.frame + 60)
-                self.floor.initial_frame = self.frame
-            if self.captions is not None:
-                self.loading = self.loading_start <= self.frame < self.loading_end
-                self.c64_screen3.loading = self.loading
-                self.floor.update()
-                for caption in self.captions:
-                    caption.update(self.frame)
-                for caption in self.captions[:3]:
-                    caption.visible = not self.loading
-            print("Elapsed time " + str(Globals.get_duration()))
+            self.update_encore2()
+            #print("Elapsed time " + str(Globals.get_duration()))
 
         self.noiseLeft.set_intensity(self.tiltLeft.presence())
         self.noiseRight.set_intensity(self.tiltRight.presence())
+
+    def update_asian(self):
+        self.asian_animation.update(self.scene_frame)
+        if self.asian_animation.finished:
+            self.c64_screen.zoom(1.1)
+        self.c64_screen.update(self.frame)
+        if self.asian_animation.finished and self.c64_screen.z >= self.c64_screen.target_z:
+            if self.encore_frame is None:
+                self.encore_frame = self.frame
+            elif self.frame - self.encore_frame > Constants.FPS:
+                self.set_scene(PetsciiDemo.SCENE_ENCORE)
+
+    def update_shrink2(self):
+        self.tiltRight.shrink(self.scene_progress(PetsciiDemo.SHRINK_SECONDS))
+        self.c64_screen.update(self.scene_frame)
+        if self.scene_frame > Constants.FPS * PetsciiDemo.SHRINK_SECONDS:
+            self.noiseRight.stop()
+        if self.c64_screen.caption_ready and self.captions_frame is None:
+            self.captions_frame = self.frame
+        if self.captions_frame is not None:
+            if self.frame - self.captions_frame > Constants.FPS * PetsciiDemo.ASIAN_SECONDS:
+                self.set_scene(PetsciiDemo.SCENE_ASIAN)
+
+    def update_encore2(self):
+        self.asian_animation.update(self.scene_frame)
+        self.c64_screen.update(self.frame)
+        self.c64_screen2.update(self.frame)
+        self.c64_screen3.update(self.frame)
+        if self.captions is None and self.c64_screen3.header_written(self.frame):
+            self.captions = self._build_load_captions(self.frame + 60)
+            self.floor.initial_frame = self.frame
+        if self.captions is not None:
+            was_loading = self.loading
+            self.loading = self.loading_start <= self.frame < self.loading_end
+
+            if self.asian_animation.x > 0:
+                self.asian_animation.x -= 0.015
+
+            print(self.asian_animation.x, self.asian_animation.y, self.asian_animation.z)
+
+            if self.loading:
+                if self.asian_animation.z < -1.51:
+                    self.asian_animation.z += 0.13
+                    self.asian_animation.y -= 0.0251
+                elif self.asian_animation.y > 1:
+                    self.asian_animation.y -= 0.32
+                    self.asian_animation.z += 0.06
+
+
+            self.c64_screen3.loading = self.loading
+            self.floor.update()
+            for caption in self.captions:
+                caption.update(self.frame)
+            for caption in self.captions[:3]:
+                caption.visible = not self.loading
+
+    def update_encore(self):
+        self.asian_animation.update(self.scene_frame)
+        self.c64_screen.update(self.frame)
+        self.c64_screen2.update(self.frame)
+        if self.c64_screen2.arrived():
+            if self.bajtek_frame is None:
+                self.bajtek_frame = self.frame
+            elif self.frame - self.bajtek_frame > Constants.FPS * PetsciiDemo.TOP_SECRET_SECONDS:
+                self.set_scene(PetsciiDemo.SCENE_ENCORE2)
+
+    def update_pause(self):
+        if self.scene_frame > Constants.FPS * PetsciiDemo.PAUSE_SECONDS:
+            self.set_scene(PetsciiDemo.SCENE_NOISE2)
+
+    def update_shrink(self):
+        self.tiltLeft.shrink(self.scene_progress(PetsciiDemo.SHRINK_SECONDS))
+        if self.scene_frame > Constants.FPS * PetsciiDemo.SHRINK_SECONDS:
+            self.set_scene(PetsciiDemo.SCENE_PAUSE)
+
+    def update_tilt(self):
+        self.tiltLeft.tilt(self.scene_progress(PetsciiDemo.TILT_SECONDS))
+        if self.scene_frame > Constants.FPS * PetsciiDemo.TILT_SECONDS:
+            self.set_scene(PetsciiDemo.SCENE_SHRINK)
+
+    def update_noise(self):
+        if self.scene_frame > Constants.FPS * PetsciiDemo.NOISE_SECONDS:
+            self.set_scene(PetsciiDemo.SCENE_TILT)
+
+    def update_welcome(self):
+        self.welcome.update(self.scene_frame)
+        if self.scene_frame > Constants.FPS * PetsciiDemo.WELCOME_SECONDS:
+            self.set_scene(PetsciiDemo.SCENE_NOISE)
 
     def _build_load_captions(self, start_frame):
         top, left, size = 0.85, -1.51, 0.08

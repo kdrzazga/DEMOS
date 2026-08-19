@@ -15,6 +15,12 @@ class Stage1:
 		self.media_player.loop = True
 		self.active = True
 
+	def pause_music(self):
+		self.media_player.pause()
+
+	def resume_music(self):
+		self.media_player.play()
+
 	def on_draw(self, timer):
 
 		rect = Rect(

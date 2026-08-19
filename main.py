@@ -5,6 +5,7 @@ import arcade
 from demos.demo1.main import Demo1
 from demos.demo3.main import Demo3
 from demos.pc45.main import GlDemo
+from demos.pixeloveole.main import PixeloveOle
 from demos.petscii.files.petsciidemo import PetsciiDemo
 
 
@@ -24,6 +25,9 @@ def petscii_demo(windowed, triggered):
 def demo3(windowed, triggered):
     Demo3(windowed=windowed, triggered=triggered).run()
 
+def pixelove_ole(windowed, triggered):
+    PixeloveOle(windowed=windowed, triggered=triggered).run()
+
 
 # demo name -> launcher; every launcher takes the same (windowed, triggered)
 DEMOS = {
@@ -31,9 +35,10 @@ DEMOS = {
     "pc45": pc45_demo,
     "petscii": petscii_demo,
     "demo3": demo3,
+    "po": pixelove_ole,
 }
 
-DEFAULT_DEMO = "petscii"
+DEFAULT_DEMO = "po"
 
 
 if __name__ == "__main__":

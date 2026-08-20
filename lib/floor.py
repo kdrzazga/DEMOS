@@ -84,8 +84,11 @@ class JumpingLettersToCaption:
         self.initial_frame = initial_frame
         self.duration = duration
         self.letter_size = letter_size
+        self.target_y = target_y  # settled world-y, used to hide it as a stage rises past
         self.started = False
         self.letter_objects = []
+        self.visible=True
+
         for row, line in enumerate(caption.split("\n")):
             for column, char in enumerate(line):
                 if char == " ":
@@ -112,7 +115,7 @@ class JumpingLettersToCaption:
                 letter.settle()
 
     def draw(self):
-        if not self.started:
+        if not self.started or not self.visible:
             return
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
@@ -174,16 +177,7 @@ class Floor:
         self.ball_size = ball_size
         self.texture = glGenTextures(1)
         self.line_thickness = self._build_texture(char_size, color)
-        self.ball_textures = [self._build_ball_texture(char_size, ball_color, code)
-                              for code in Floor.BALL_CHARS]
         self.balls = []
-
-    def add_caption(self, caption: JumpingLettersToCaption):
-        for _ in range(len(caption.letters)):
-            x = random.uniform(1-self.half_width, self.half_width-1)
-            z = random.uniform(0.5 - self.depth, 0.2)
-            texture = random.choice(self.ball_textures)
-            self.balls.append(JumpingLetter(x, self.level_y, z, texture))
 
     def update(self):
         for ball in self.balls:
@@ -201,20 +195,6 @@ class Floor:
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface.get_width(), surface.get_height(),
                      0, GL_RGBA, GL_UNSIGNED_BYTE, data)
         return 2 * self.half_width * surface.get_height() / surface.get_width()
-
-    def _build_ball_texture(self, char_size, color, code):
-        pygame.font.init()
-        font = pygame.font.Font(Constants.FONT_PATH, char_size)
-        glyph = chr(Constants.FONT_BASE + code)
-        surface = font.render(glyph, True, color)
-        data = pygame.image.tobytes(surface, "RGBA", True)
-        texture = glGenTextures(1)
-        glBindTexture(GL_TEXTURE_2D, texture)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface.get_width(), surface.get_height(),
-                     0, GL_RGBA, GL_UNSIGNED_BYTE, data)
-        return texture
 
     def draw(self, frame):
         relative_frame = frame - self.initial_frame

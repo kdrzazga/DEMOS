@@ -33,6 +33,7 @@ from OpenGL.GL import (
     glFramebufferTexture2D,
     glGenFramebuffers,
     glGenTextures,
+    glGetIntegerv,
     glLoadIdentity,
     glMatrixMode,
     glOrtho,
@@ -41,6 +42,8 @@ from OpenGL.GL import (
     glTexParameteri,
     glTranslatef,
     glVertex3f,
+    glViewport,
+    GL_VIEWPORT,
 )
 from OpenGL.GLU import gluPerspective
 
@@ -72,6 +75,7 @@ class C64BaseScreen:
         self._pulse_phase = 0.0
         self._arrived = False
         self.rotator = None
+        self.loading = False
         self.color = list(Constants.PALETTE[11])
         self.half_width = Constants.HALF_WIDTH
         self.half_height = Constants.HALF_WIDTH * Constants.HEIGHT / Constants.WIDTH
@@ -93,6 +97,11 @@ class C64BaseScreen:
         self.mesh = PetsciiMesh(font_size)
         self.mesh_drawn = False
         self.header_start = None
+
+        # a Bruce Lee stage revealed from the bottom, gradually replacing the
+        # screen face; set with reveal_bruce_stage(), None until then
+        self.bruce_stage = None
+        self.bruce_origin = (0, 0)
 
         self.caption_color = (255, 255, 255)
         self.caption_texture = glGenTextures(1)
@@ -202,6 +211,12 @@ class C64BaseScreen:
 
     def _compose_texture(self, frame):
         glBindFramebuffer(GL_FRAMEBUFFER, self.fbo)
+        # the FBO is WIDTH x HEIGHT; match the viewport to it so the ortho content
+        # fills it exactly. Otherwise it inherits the window's viewport, which in
+        # fullscreen is the (larger) native resolution, and the top of the face
+        # overflows the FBO and is clipped away.
+        previous_viewport = glGetIntegerv(GL_VIEWPORT)
+        glViewport(0, 0, Constants.WIDTH, Constants.HEIGHT)
         glDisable(GL_DEPTH_TEST)
         glClearColor(0.0, 0.0, 0.0, 1.0)
         glClear(GL_COLOR_BUFFER_BIT)
@@ -220,14 +235,16 @@ class C64BaseScreen:
         glVertex3f(-self.half_width, -self.half_height, 0.0)
         glEnd()
 
-        self.draw_background()
-        if self.arrived():
-            self.begin_headers(frame)
-            self.start_music()
-            self.draw_header(frame)
-            self.draw_mesh(frame)
+        if not self.loading:
+            self.draw_background()
+            if self.arrived():
+                self.begin_headers(frame)
+                self.start_music()
+                self.draw_header(frame)
+                self.draw_mesh(frame)
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
+        glViewport(*previous_viewport)
         glEnable(GL_DEPTH_TEST)
 
     def _present(self):
@@ -319,14 +336,55 @@ class C64BaseScreen:
         glVertex3f(-self.inset_w, -self.inset_h, z)
         glEnd()
 
+    def reveal_bruce_stage(self, stage, surface_size):
+        """Start growing a Bruce Lee stage up from the bottom of the screen face,
+        centred horizontally and anchored to the bottom of screen_surface."""
+        stage.render_progress = 0
+        stage_width, stage_height = stage.size()
+        surface_width, surface_height = surface_size
+        self.bruce_origin = ((surface_width - stage_width) // 2,
+                             surface_height - stage_height)
+        self.bruce_stage = stage
+
+    def draw_bruce_stage(self):
+        """Advance the bottom-up reveal onto screen_surface: light-gray (colour 15)
+        fills the band it has reached, the stage is drawn over that, and everything
+        above the reveal line is left untouched."""
+        if self.bruce_stage is None:
+            return
+        self.bruce_stage.advance_reveal()
+        top_row = self.bruce_stage.revealed_top_row()
+        if top_row is None:
+            return
+        cell_height = self.bruce_stage.font(self.bruce_stage.char_size).size("W")[1]
+        top_y = max(0, self.bruce_origin[1] + top_row * cell_height)
+        self.screen_surface.fill(Constants.PALETTE[15],
+                                 pygame.Rect(0, top_y, Constants.WIDTH, Constants.HEIGHT - top_y))
+        self.bruce_stage.draw_from_bottom(self.screen_surface, origin=self.bruce_origin)
+
+    def bruce_reveal_top_y(self):
+        """World-space y of the reveal front on this screen face, or None when no
+        stage is growing -- used to hide captions the rising stage has reached."""
+        if self.bruce_stage is None:
+            return None
+        top_row = self.bruce_stage.revealed_top_row()
+        if top_row is None:
+            return None
+        cell_height = self.bruce_stage.font(self.bruce_stage.char_size).size("W")[1]
+        top_y = self.bruce_origin[1] + top_row * cell_height
+        return self.inset_h * (1 - 2 * top_y / Constants.HEIGHT)
+
     def draw_header(self, frame):
         for typer in self.header_typers:
             typer.type(frame)
 
+        self.draw_bruce_stage()
+        # the stage carries its own colours; drop the pulsing face tint over it
+        face_color = (1.0, 1.0, 1.0) if self.bruce_stage is not None else self.gl_color()
         self._upload(self.screen_surface)
         z = 0.0
         glEnable(GL_TEXTURE_2D)
-        glColor3f(*self.gl_color())
+        glColor3f(*face_color)
         glBegin(GL_QUADS)
         glTexCoord2f(0, 0); glVertex3f(-self.inset_w, self.inset_h, z)
         glTexCoord2f(1, 0); glVertex3f(self.inset_w, self.inset_h, z)

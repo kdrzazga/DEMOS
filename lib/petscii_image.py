@@ -25,6 +25,7 @@ class PetsciiImage:
         self._fonts = {}
         self._glyphs = {}
         self._corner_orders = {}
+        self._bottom_order = None
         self.render_progress = 0
         self.background_color = Constants.BACKGROUND_COLOR
         self.font_base = Constants.FONT_BASE
@@ -85,6 +86,68 @@ class PetsciiImage:
                 if transparent_space and self.is_blank(row, column):
                     continue
                 self.draw_cell(surface, char_size, cell_size, row, column, origin)
+
+    def render_from_bottom(self, surface, char_size=None, transparent_space=False,
+                           speed=Constants.REVEAL_SPEED, origin=(0, 0), clear=True):
+        """Reveal the image from the bottom upward, adding speed characters per call.
+
+        With clear (the default) the whole surface is repainted each call, so the
+        image is the only thing on it. With clear=False nothing above the reveal
+        line is touched and every revealed cell -- blanks included -- is drawn
+        opaquely, so the image grows up from the bottom, replacing whatever content
+        was already on the surface only as far as it has reached.
+        """
+        self.render_progress += speed
+        char_size = self.char_size if char_size is None else char_size
+        cell_size = self.font(char_size).size("W")
+        if clear and not transparent_space:
+            surface.fill(Constants.PALETTE[self.background_color])
+        for row, column in self.cells_from_bottom():
+            if transparent_space and self.is_blank(row, column):
+                continue
+            self.draw_cell(surface, char_size, cell_size, row, column, origin)
+
+    def draw_from_bottom(self, surface, char_size=None, origin=(0, 0)):
+        """Draw the cells revealed so far, opaquely and without advancing the reveal
+        or clearing the surface -- the caller controls progress and background."""
+        char_size = self.char_size if char_size is None else char_size
+        cell_size = self.font(char_size).size("W")
+        for row, column in self.cells_from_bottom():
+            self.draw_cell(surface, char_size, cell_size, row, column, origin)
+
+    def advance_reveal(self, speed=Constants.REVEAL_SPEED):
+        """Move the bottom-up reveal front up by speed characters."""
+        self.render_progress += speed
+
+    def revealed_top_row(self):
+        """The topmost row the bottom-up reveal has reached, or None if nothing yet."""
+        cells = self.cells_from_bottom()
+        return cells[-1][0] if cells else None
+
+    def reveal_complete(self):
+        """True once the bottom-up reveal has drawn every character."""
+        _, character_cuts = self.bottom_order()
+        return self.render_progress >= len(character_cuts)
+
+    def cells_from_bottom(self):
+        """The cells revealed so far: everything up to the newest character from the bottom."""
+        revealed = self.render_progress
+        if revealed <= 0:
+            return []
+        order, character_cuts = self.bottom_order()
+        return order[:character_cuts[min(revealed, len(character_cuts)) - 1]]
+
+    def bottom_order(self):
+        """Every cell in the order the reveal fills them, and where each character sits."""
+        if self._bottom_order is None:
+            order = []
+            for row in range(Constants.ROWS - 1, -1, -1):
+                for column in range(Constants.COLUMNS):
+                    order.append((row, column))
+            character_cuts = [index + 1 for index, cell in enumerate(order)
+                              if not self.is_blank(*cell)]
+            self._bottom_order = order, character_cuts
+        return self._bottom_order
 
     def cells_from_corner(self, corner):
         """The cells revealed so far at one corner: everything up to its newest character."""

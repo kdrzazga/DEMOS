@@ -45,6 +45,7 @@ class AsianAnimation:
     SPEAK = 2
     FLY = 3
     DONE = 4
+    APPROACH = 5
 
     FAR_PLANE = 300.0
 
@@ -60,6 +61,13 @@ class AsianAnimation:
         self.z_front = 1.2
         self.peak_y = 2.6
         self.leap_frames = int(Constants.FPS * 1.6)
+        self.land_z = self.z_front
+        self.land_y = 0.0
+        self.leap_peak = self.peak_y
+        self.leap_from_z = self.z_behind
+        self.leap_from_y = 0.0
+        self.approach_from_x = -6.0
+        self.approach_frames = int(Constants.FPS * 1.0)
         self.rotation_speed = 8.0
         self.sway_degrees = 15.0
         self.sway_period = Constants.FPS * 4.0
@@ -73,6 +81,7 @@ class AsianAnimation:
         self.phrases = ("say_all_graphics", "say_3d")
         self.phase = AsianAnimation.LEAP
         self.leap_timer = 0
+        self.approach_timer = 0
         self.sway_timer = 0
         self.speech_index = 0
         self.linger_timer = 0
@@ -90,8 +99,53 @@ class AsianAnimation:
     def finished(self):
         return self.phase == AsianAnimation.DONE
 
+    def leap_in_and_say(self, *phrases):
+        self.phrases = phrases
+        self.phase = AsianAnimation.APPROACH
+        self.approach_timer = 0
+        self.sway_timer = 0
+        self.speech_index = 0
+        self.linger_timer = 0
+        self.fly_timer = 0
+        self.angle = 0.0
+        self.x = self.approach_from_x
+        self.y = 0.0
+        self.z = self.z_behind
+        self.land_y = 2.0
+        self.land_z = 0.0
+        self.leap_peak = 3.0
+
+    def speak(self, phrase):
+        """Start a single spoken phrase (audio + lip-sync + on-screen text)
+        outside the leap/fly choreography, for the encore. Call advance_speech()
+        each frame afterwards to run the lips, then fly_away() when it ends."""
+        getattr(self.asian, phrase)()
+        self._render_asian()
+
+    def advance_speech(self):
+        """Advance the lip-sync one frame, re-rendering when the mouth changes.
+        Returns True while the phrase is still being spoken."""
+        if self.asian.talk():
+            self._render_asian()
+        return self.asian.talking
+
+    def glide_to_speak_pose(self, rate=0.08):
+        """Ease back to the centred pose the first talk spoke and flew from
+        (x=0, y=0, z=z_front). Called while speaking so the encore fly-away
+        traces the same arc instead of crossing the screen from behind."""
+        self.x += (0.0 - self.x) * rate
+        self.y += (0.0 - self.y) * rate
+        self.z += (self.z_front - self.z) * rate
+
+    def fly_away(self):
+        """Jump back to the top-right corner, the same exit used after the
+        first talk."""
+        self._begin_fly()
+
     def update(self, frame):
-        if self.phase == AsianAnimation.LEAP:
+        if self.phase == AsianAnimation.APPROACH:
+            self._update_approach()
+        elif self.phase == AsianAnimation.LEAP:
             self._update_leap()
         elif self.phase == AsianAnimation.FINISH:
             self._update_finish()
@@ -102,15 +156,27 @@ class AsianAnimation:
         elif self.phase == AsianAnimation.DONE:
             self._update_rest()
 
+    def _update_approach(self):
+        progress = min(1.0, self.approach_timer / self.approach_frames)
+        self.x = self.approach_from_x * (1.0 - progress)
+        self.approach_timer += 1
+        if progress >= 1.0:
+            self.x = 0.0
+            self.leap_from_z = self.z
+            self.leap_from_y = self.y
+            self.leap_timer = 0
+            self.phase = AsianAnimation.LEAP
+
     def _update_leap(self):
         progress = min(1.0, self.leap_timer / self.leap_frames)
-        self.z = self.z_behind + (self.z_front - self.z_behind) * progress
-        self.y = self.peak_y * math.sin(math.pi * progress)
+        self.z = self.leap_from_z + (self.land_z - self.leap_from_z) * progress
+        y_base = self.leap_from_y + (self.land_y - self.leap_from_y) * progress
+        self.y = y_base + self.leap_peak * math.sin(math.pi * progress)
         self.angle += self.rotation_speed
         self.leap_timer += 1
         if progress >= 1.0:
-            self.z = self.z_front
-            self.y = 0.0
+            self.z = self.land_z
+            self.y = self.land_y
             self.phase = AsianAnimation.FINISH
 
     def _update_finish(self):

@@ -30,6 +30,7 @@ class WindingScreen(C64BaseScreen):
     def draw_header(self, frame):
         self.screen_surface.fill((0, 0, 0))
         self.winding.draw()
+        self.draw_bruce_stage()
         self._upload(self.screen_surface)
         glEnable(GL_TEXTURE_2D)
         glColor3f(1.0, 1.0, 1.0)

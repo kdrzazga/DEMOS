@@ -56,6 +56,8 @@ class C64Screen(C64BaseScreen):
         super().__init__()
 
     def draw_mesh(self, frame):
+        if self.bruce_stage is not None:
+            return  # the Bruce stage owns the face now; drop the caption/mesh overlay
         if not self.mesh_drawn and frame > self.mesh_start_frame:
             self._upload(self.mesh.lattice_surface(), self.mesh_texture)
             self.mesh_drawn = True

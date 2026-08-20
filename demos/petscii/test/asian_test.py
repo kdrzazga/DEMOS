@@ -49,6 +49,7 @@ class Globals:
     eyes_step = 0
     graphics_said = False
     three_d_said = False
+    meet_bruce_lee_said = False
 
 
 EYE_STEPS = ((6000, "close_eyes"), (11000, "eyes_wide_open"), (15000, "eyes_default"))
@@ -163,6 +164,10 @@ def conditionally_talk(image, surface, texture):
         image.say_3d()
         Globals.three_d_said = True
         print("say_3d")
+    if not Globals.three_d_said and pygame.time.get_ticks() >= 40000:
+        image.say_meet_bruce_lee()
+        Globals.meet_bruce_lee_said = True
+        print("say meet bruce")
     if image.talk():
         image.render(surface)
         texture = upload(surface)

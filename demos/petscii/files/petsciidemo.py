@@ -87,6 +87,7 @@ class PetsciiDemo(PygameDemo):
         self.run_landed_frame = None
         self.bruce_center_revealed = False
         self.bruce_left_revealed = False
+        self.bruce_right_revealed = False
 
         glClearColor(0.0, 0.0, 0.0, 1.0)
         glEnable(GL_TEXTURE_2D)
@@ -237,7 +238,8 @@ class PetsciiDemo(PygameDemo):
 
     def reveal_bruce_stages(self):
         """After RUN lands, grow bruce_stage3 up over the central screen, then a
-        second later bruce_stage1 over the left-wall screen."""
+        second later bruce_stage1 over the left-wall screen; once the left wall is
+        fully drawn, grow bruce_stage2 up over the right-wall screen."""
         if self.run_landed_frame is None:
             return
         surface_size = (Constants.WIDTH, Constants.HEIGHT)
@@ -249,6 +251,10 @@ class PetsciiDemo(PygameDemo):
         if not self.bruce_left_revealed and self.frame >= left_frame:
             self.c64_screen.reveal_bruce_stage(self.bruce_stage1, surface_size)
             self.bruce_left_revealed = True
+        if not self.bruce_right_revealed and self.bruce_left_revealed \
+                and self.bruce_stage1.reveal_complete():
+            self.c64_screen2.reveal_bruce_stage(self.bruce_stage2, surface_size)
+            self.bruce_right_revealed = True
 
     def update_asian(self):
         self.asian_animation.update(self.scene_frame)

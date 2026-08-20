@@ -124,6 +124,11 @@ class PetsciiImage:
         cells = self.cells_from_bottom()
         return cells[-1][0] if cells else None
 
+    def reveal_complete(self):
+        """True once the bottom-up reveal has drawn every character."""
+        _, character_cuts = self.bottom_order()
+        return self.render_progress >= len(character_cuts)
+
     def cells_from_bottom(self):
         """The cells revealed so far: everything up to the newest character from the bottom."""
         revealed = self.render_progress

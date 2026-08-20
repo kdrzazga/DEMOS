@@ -107,6 +107,23 @@ class PetsciiImage:
                 continue
             self.draw_cell(surface, char_size, cell_size, row, column, origin)
 
+    def draw_from_bottom(self, surface, char_size=None, origin=(0, 0)):
+        """Draw the cells revealed so far, opaquely and without advancing the reveal
+        or clearing the surface -- the caller controls progress and background."""
+        char_size = self.char_size if char_size is None else char_size
+        cell_size = self.font(char_size).size("W")
+        for row, column in self.cells_from_bottom():
+            self.draw_cell(surface, char_size, cell_size, row, column, origin)
+
+    def advance_reveal(self, speed=Constants.REVEAL_SPEED):
+        """Move the bottom-up reveal front up by speed characters."""
+        self.render_progress += speed
+
+    def revealed_top_row(self):
+        """The topmost row the bottom-up reveal has reached, or None if nothing yet."""
+        cells = self.cells_from_bottom()
+        return cells[-1][0] if cells else None
+
     def cells_from_bottom(self):
         """The cells revealed so far: everything up to the newest character from the bottom."""
         revealed = self.render_progress

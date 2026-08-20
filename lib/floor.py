@@ -84,6 +84,7 @@ class JumpingLettersToCaption:
         self.initial_frame = initial_frame
         self.duration = duration
         self.letter_size = letter_size
+        self.target_y = target_y  # settled world-y, used to hide it as a stage rises past
         self.started = False
         self.letter_objects = []
         self.visible=True

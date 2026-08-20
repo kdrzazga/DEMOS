@@ -221,8 +221,19 @@ class PetsciiDemo(PygameDemo):
                 caption.update(self.frame)
             for caption in self.captions[:3]:
                 caption.visible = not self.loading
+            self.hide_captions_under_bruce()
 
         self.reveal_bruce_stages()
+
+    def hide_captions_under_bruce(self):
+        """As bruce_stage3 grows up the central screen, hide each caption once the
+        reveal line has risen to just below it."""
+        front_y = self.c64_screen3.bruce_reveal_top_y()
+        if front_y is None:
+            return
+        for caption in self.captions:
+            if front_y >= caption.target_y - caption.letter_size:
+                caption.visible = False
 
     def reveal_bruce_stages(self):
         """After RUN lands, grow bruce_stage3 up over the central screen, then a

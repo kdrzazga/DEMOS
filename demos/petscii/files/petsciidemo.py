@@ -20,6 +20,7 @@ from lib.pygame_demo import PygameDemo
 from demos.petscii.files.c64_screen import C64Screen
 from demos.petscii.files.petscii.dj_space_thunder import DjSpaceThunder
 from demos.petscii.files.globals import Constants
+from demos.petscii.files.petscii.bruce_lee_stage1 import BruceLeeStage1
 from demos.petscii.files.petscii.kna_logo import KnaLogo
 from demos.petscii.files.noise import Noise
 from demos.petscii.files.stage_welcome import WelcomeStage
@@ -40,6 +41,13 @@ class PetsciiDemo(PygameDemo):
     TOP_SECRET_SECONDS = 15
 
     WELCOME_SECONDS = 4
+
+    # once RUN has landed, the Bruce Lee stages grow up over the visible screens:
+    # bruce_stage3 on the central screen a second later, bruce_stage1 on the left
+    # wall a second after that
+    BRUCE_STAGE_CHAR_SIZE = Constants.HEIGHT // Constants.ROWS
+    BRUCE_CENTER_DELAY = 1  # seconds after RUN lands
+    BRUCE_LEFT_DELAY = 2    # seconds after RUN lands
 
     # a welcome caption opens the demo; then screen one appears, tilts its right edge
     # back and slides to the left edge; after a pause screen two covers it and mirrors.
@@ -76,6 +84,9 @@ class PetsciiDemo(PygameDemo):
         self.asian_speech_frame = None
         self.asian_speaking = False
         self.asian_flew_back = False
+        self.run_landed_frame = None
+        self.bruce_center_revealed = False
+        self.bruce_left_revealed = False
 
         glClearColor(0.0, 0.0, 0.0, 1.0)
         glEnable(GL_TEXTURE_2D)
@@ -99,6 +110,12 @@ class PetsciiDemo(PygameDemo):
         self.c64_screen3.target_z = TiltScreen.TILT_DEPTH
         self.floor = Floor(Constants.WIDTH, Constants.HEIGHT)
         self.welcome = WelcomeStage()
+
+        # three stages for now, all BruceLeeStage1; bruce_stage2 and bruce_stage3
+        # will later become BruceLeeStage2 / BruceLeeStage3
+        self.bruce_stage1 = BruceLeeStage1(PetsciiDemo.BRUCE_STAGE_CHAR_SIZE)
+        self.bruce_stage2 = BruceLeeStage1(PetsciiDemo.BRUCE_STAGE_CHAR_SIZE)
+        self.bruce_stage3 = BruceLeeStage1(PetsciiDemo.BRUCE_STAGE_CHAR_SIZE)
 
     def step(self):
         self.update()
@@ -205,6 +222,23 @@ class PetsciiDemo(PygameDemo):
             for caption in self.captions[:3]:
                 caption.visible = not self.loading
 
+        self.reveal_bruce_stages()
+
+    def reveal_bruce_stages(self):
+        """After RUN lands, grow bruce_stage3 up over the central screen, then a
+        second later bruce_stage1 over the left-wall screen."""
+        if self.run_landed_frame is None:
+            return
+        surface_size = (Constants.WIDTH, Constants.HEIGHT)
+        center_frame = self.run_landed_frame + PetsciiDemo.BRUCE_CENTER_DELAY * Constants.FPS
+        left_frame = self.run_landed_frame + PetsciiDemo.BRUCE_LEFT_DELAY * Constants.FPS
+        if not self.bruce_center_revealed and self.frame >= center_frame:
+            self.c64_screen3.reveal_bruce_stage(self.bruce_stage3, surface_size)
+            self.bruce_center_revealed = True
+        if not self.bruce_left_revealed and self.frame >= left_frame:
+            self.c64_screen.reveal_bruce_stage(self.bruce_stage1, surface_size)
+            self.bruce_left_revealed = True
+
     def update_asian(self):
         self.asian_animation.update(self.scene_frame)
         if self.asian_animation.finished:
@@ -301,6 +335,8 @@ class PetsciiDemo(PygameDemo):
         run.duration += 5 * gap
         self.loading_start = loading_settled + int(0.82 * Constants.FPS)
         self.loading_end = ready.initial_frame + ready.duration
+        # RUN lands when its letters stop jumping and settle into place
+        self.run_landed_frame = run.initial_frame + run.duration
         return captions
 
     def scene_progress(self, seconds):

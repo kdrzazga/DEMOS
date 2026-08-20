@@ -39,7 +39,7 @@ from OpenGL.GLU import gluPerspective
 _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 sys.path.insert(0, _ROOT)
 
-from demos.petscii.files.petscii.bruce_lee_stage1 import BruceLeeStage
+from demos.petscii.files.petscii.bruce_lee_stage1 import BruceLeeStage1
 from demos.petscii.files.petscii.bruce_lee import BruceLee
 
 CHAR_SIZE = 24
@@ -80,7 +80,7 @@ def render_scene(stage, bruce, surface):
 
 def main():
     pygame.init()
-    stage = BruceLeeStage(CHAR_SIZE)
+    stage = BruceLeeStage1(CHAR_SIZE)
     bruce = BruceLee(CHAR_SIZE)
     bruce.background_color = LIGHT_GRAY
     bruce.origin = BRUCE_ORIGIN
@@ -90,9 +90,14 @@ def main():
 
     surface = pygame.Surface((width, height))
     bruce.stand()
-    render_scene(stage, bruce, surface)
     texture = upload(surface)
     pose = 0
+
+    # total non-blank cells the bottom-up reveal has to fill before it is done
+    _, character_cuts = stage.bottom_order()
+    stage_characters = len(character_cuts)
+    revealing = True
+    animation_start = 0
 
     glClearColor(0.0, 0.0, 0.0, 1.0)
     glEnable(GL_TEXTURE_2D)
@@ -110,12 +115,22 @@ def main():
             elif event.type == KEYDOWN and event.key == K_ESCAPE:
                 running = False
 
-        step = (pygame.time.get_ticks() // POSE_MS) % len(POSES)
-        if step != pose:
-            pose = step
-            getattr(bruce, POSES[pose])()
-            render_scene(stage, bruce, surface)
+        if revealing:
+            # grow the stage upward from the bottom, re-uploading each frame
+            stage.render_from_bottom(surface)
             texture = upload(surface)
+            if stage.render_progress >= stage_characters:
+                revealing = False
+                animation_start = pygame.time.get_ticks()
+                render_scene(stage, bruce, surface)  # stage complete + Bruce standing
+                texture = upload(surface)
+        else:
+            step = ((pygame.time.get_ticks() - animation_start) // POSE_MS) % len(POSES)
+            if step != pose:
+                pose = step
+                getattr(bruce, POSES[pose])()
+                render_scene(stage, bruce, surface)
+                texture = upload(surface)
 
         sway = SWAY_DEGREES * math.sin(2 * math.pi * pygame.time.get_ticks() / SWAY_PERIOD)
 

@@ -95,6 +95,11 @@ class C64BaseScreen:
         self.mesh_drawn = False
         self.header_start = None
 
+        # a Bruce Lee stage revealed from the bottom, gradually replacing the
+        # screen face; set with reveal_bruce_stage(), None until then
+        self.bruce_stage = None
+        self.bruce_origin = (0, 0)
+
         self.caption_color = (255, 255, 255)
         self.caption_texture = glGenTextures(1)
         self.mesh_texture = glGenTextures(1)
@@ -321,10 +326,28 @@ class C64BaseScreen:
         glVertex3f(-self.inset_w, -self.inset_h, z)
         glEnd()
 
+    def reveal_bruce_stage(self, stage, surface_size):
+        """Start growing a Bruce Lee stage up from the bottom of the screen face,
+        centred horizontally and anchored to the bottom of screen_surface."""
+        stage.render_progress = 0
+        stage_width, stage_height = stage.size()
+        surface_width, surface_height = surface_size
+        self.bruce_origin = ((surface_width - stage_width) // 2,
+                             surface_height - stage_height)
+        self.bruce_stage = stage
+
+    def draw_bruce_stage(self):
+        """Advance the bottom-up reveal onto screen_surface, opaquely replacing
+        the content it has reached and leaving the rest untouched."""
+        if self.bruce_stage is not None:
+            self.bruce_stage.render_from_bottom(self.screen_surface, clear=False,
+                                                origin=self.bruce_origin)
+
     def draw_header(self, frame):
         for typer in self.header_typers:
             typer.type(frame)
 
+        self.draw_bruce_stage()
         self._upload(self.screen_surface)
         z = 0.0
         glEnable(GL_TEXTURE_2D)

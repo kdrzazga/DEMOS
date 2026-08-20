@@ -1,13 +1,13 @@
 from lib.petscii_image import PetsciiImage
 
 
-class BruceLeeStage(PetsciiImage):
+class BruceLeeStage1(PetsciiImage):
 
     LIGHT_GRAY = 15
 
     def __init__(self, char_size):
         super().__init__(char_size)
-        self.background_color = BruceLeeStage.LIGHT_GRAY
+        self.background_color = BruceLeeStage1.LIGHT_GRAY
 
     chars = (
         (32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 185, 185, 32, 32, 32, 32, 32, 32, 32, 185, 185, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32),
@@ -92,3 +92,13 @@ class BruceLeeStage(PetsciiImage):
         (0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 12, 0),
         (0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 14, 0),
     )
+
+
+class BruceLeeStage2(PetsciiImage):
+
+    LIGHT_GRAY = 15
+
+
+class BruceLeeStage3(PetsciiImage):
+
+    LIGHT_GRAY = 15

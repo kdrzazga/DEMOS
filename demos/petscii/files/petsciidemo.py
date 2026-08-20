@@ -21,6 +21,7 @@ from demos.petscii.files.c64_screen import C64Screen
 from demos.petscii.files.petscii.dj_space_thunder import DjSpaceThunder
 from demos.petscii.files.globals import Constants
 from demos.petscii.files.petscii.bruce_lee_stage1 import BruceLeeStage1
+from demos.petscii.files.petscii.bruce_sprite import BruceSprite
 from demos.petscii.files.petscii.kna_logo import KnaLogo
 from demos.petscii.files.noise import Noise
 from demos.petscii.files.stage_welcome import WelcomeStage
@@ -48,6 +49,7 @@ class PetsciiDemo(PygameDemo):
     BRUCE_STAGE_CHAR_SIZE = Constants.HEIGHT // Constants.ROWS
     BRUCE_CENTER_DELAY = 1  # seconds after RUN lands
     BRUCE_LEFT_DELAY = 2    # seconds after RUN lands
+    BRUCE_FALL_DELAY = 1    # seconds after the right-panel stage finishes drawing
 
     # a welcome caption opens the demo; then screen one appears, tilts its right edge
     # back and slides to the left edge; after a pause screen two covers it and mirrors.
@@ -88,6 +90,8 @@ class PetsciiDemo(PygameDemo):
         self.bruce_center_revealed = False
         self.bruce_left_revealed = False
         self.bruce_right_revealed = False
+        self.bruce_right_drawn_frame = None
+        self.bruce_falling_started = False
 
         glClearColor(0.0, 0.0, 0.0, 1.0)
         glEnable(GL_TEXTURE_2D)
@@ -117,6 +121,10 @@ class PetsciiDemo(PygameDemo):
         self.bruce_stage1 = BruceLeeStage1(PetsciiDemo.BRUCE_STAGE_CHAR_SIZE)
         self.bruce_stage2 = BruceLeeStage1(PetsciiDemo.BRUCE_STAGE_CHAR_SIZE)
         self.bruce_stage3 = BruceLeeStage1(PetsciiDemo.BRUCE_STAGE_CHAR_SIZE)
+
+        # a jump-pose Bruce sprite that falls into the central screen once the
+        # right-panel stage has finished drawing; same char size as the stages
+        self.bruce_sprite = BruceSprite(PetsciiDemo.BRUCE_STAGE_CHAR_SIZE)
 
     def step(self):
         self.update()
@@ -255,6 +263,22 @@ class PetsciiDemo(PygameDemo):
                 and self.bruce_stage1.reveal_complete():
             self.c64_screen2.reveal_bruce_stage(self.bruce_stage2, surface_size)
             self.bruce_right_revealed = True
+        self.drop_falling_bruce()
+
+    def drop_falling_bruce(self):
+        """Once the right-panel stage has finished drawing, wait BRUCE_FALL_DELAY
+        seconds, then let the jump-pose Bruce sprite fall into the central screen
+        (one screen to the left of the right panel)."""
+        if self.bruce_falling_started:
+            return
+        if self.bruce_right_revealed and self.bruce_stage2.reveal_complete() \
+                and self.bruce_right_drawn_frame is None:
+            self.bruce_right_drawn_frame = self.frame
+        if self.bruce_right_drawn_frame is not None \
+                and self.frame >= self.bruce_right_drawn_frame \
+                + PetsciiDemo.BRUCE_FALL_DELAY * Constants.FPS:
+            self.c64_screen3.start_falling_bruce(self.bruce_sprite)
+            self.bruce_falling_started = True
 
     def update_asian(self):
         self.asian_animation.update(self.scene_frame)

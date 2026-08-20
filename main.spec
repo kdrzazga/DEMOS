@@ -7,6 +7,10 @@ from PyInstaller.utils.hooks import collect_all, collect_submodules, copy_metada
 PROJECT_DIR = 'D:\\code\\DEMOS'
 ICON = 'D:\\code\\DEMOS\\app.ico'
 EXE_NAME = 'p3Dscii'
+EXCLUDED_DIRS = ('D:/code/DEMOS/demos/demo1', 'D:/code/DEMOS/demos/demo3')
+
+# normalize once so os.walk pruning can compare case-/separator-insensitively
+_EXCLUDED = tuple(os.path.normcase(os.path.normpath(p)) for p in EXCLUDED_DIRS)
 
 datas = []
 binaries = []
@@ -51,11 +55,20 @@ for _pkg in ("arcade", "pyglet", "pymunk", "pillow"):
 
 # the demos load their own assets by CWD-relative and __file__-relative paths;
 # bundle the whole trees so both styles resolve inside the extraction dir
+def _is_excluded(path):
+    norm = os.path.normcase(os.path.normpath(path))
+    return any(norm == ex or norm.startswith(ex + os.sep) for ex in _EXCLUDED)
+
+
 def _add_tree(top):
     out = []
     base = os.path.join(PROJECT_DIR, top)
     for root, dirs, files in os.walk(base):
-        dirs[:] = [d for d in dirs if d != "__pycache__"]
+        # prune __pycache__ and any excluded dir (with all its sub-dirs)
+        dirs[:] = [d for d in dirs
+                   if d != "__pycache__" and not _is_excluded(os.path.join(root, d))]
+        if _is_excluded(root):
+            continue
         for name in files:
             if name.endswith((".pyc", ".pyo")):
                 continue

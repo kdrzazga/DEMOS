@@ -1,5 +1,7 @@
-icon_path = "D:/code/DEMOS/p3dscii-ico.png"   # .png or .ico both work
+root = "D:/code/DEMOS/"
+icon_path = root + "p3dscii-ico.png"   # .png or .ico both work
 exe_name  = "p3Dscii"   # -> dist/<exe_name>.exe
+excluded_dirs = (root + "demos/demo1", root + "demos/demo3")
 
 """
 One-shot build script for the DEMOS launcher.
@@ -59,6 +61,10 @@ from PyInstaller.utils.hooks import collect_all, collect_submodules, copy_metada
 PROJECT_DIR = @@PROJECT@@
 ICON = @@ICON@@
 EXE_NAME = @@NAME@@
+EXCLUDED_DIRS = @@EXCLUDED@@
+
+# normalize once so os.walk pruning can compare case-/separator-insensitively
+_EXCLUDED = tuple(os.path.normcase(os.path.normpath(p)) for p in EXCLUDED_DIRS)
 
 datas = []
 binaries = []
@@ -103,11 +109,20 @@ for _pkg in ("arcade", "pyglet", "pymunk", "pillow"):
 
 # the demos load their own assets by CWD-relative and __file__-relative paths;
 # bundle the whole trees so both styles resolve inside the extraction dir
+def _is_excluded(path):
+    norm = os.path.normcase(os.path.normpath(path))
+    return any(norm == ex or norm.startswith(ex + os.sep) for ex in _EXCLUDED)
+
+
 def _add_tree(top):
     out = []
     base = os.path.join(PROJECT_DIR, top)
     for root, dirs, files in os.walk(base):
-        dirs[:] = [d for d in dirs if d != "__pycache__"]
+        # prune __pycache__ and any excluded dir (with all its sub-dirs)
+        dirs[:] = [d for d in dirs
+                   if d != "__pycache__" and not _is_excluded(os.path.join(root, d))]
+        if _is_excluded(root):
+            continue
         for name in files:
             if name.endswith((".pyc", ".pyo")):
                 continue
@@ -187,12 +202,13 @@ def _ensure_ico(src):
     return ico
 
 
-def render_spec(project, ico, name):
+def render_spec(project, ico, name, excluded):
     icon_repr = repr(ico) if ico else "None"
     return (SPEC_TEMPLATE
             .replace("@@PROJECT@@", repr(project))
             .replace("@@ICON@@", icon_repr)
-            .replace("@@NAME@@", repr(name)))
+            .replace("@@NAME@@", repr(name))
+            .replace("@@EXCLUDED@@", repr(tuple(excluded))))
 
 
 def write_build_files(ico):
@@ -200,7 +216,7 @@ def write_build_files(ico):
         f.write(RT_HOOK)
     spec = os.path.join(HERE, "main.spec")
     with open(spec, "w", encoding="utf-8") as f:
-        f.write(render_spec(HERE, ico, exe_name))
+        f.write(render_spec(HERE, ico, exe_name, excluded_dirs))
     return spec
 
 

@@ -62,9 +62,6 @@ class C64BaseScreen:
     PULSE_FAR = -2.5
     PULSE_SPEED = 0.06
     FAR_PLANE = 300.0
-    # downward acceleration of the falling Bruce, in screen_surface pixels per
-    # frame^2; sized off the face height so he drops in over ~0.8s at 25 fps
-    FALLING_BRUCE_GRAVITY = Constants.HEIGHT * 0.006
 
     HEADER2_OFFSET = 45
     HEADER3_OFFSET = 95
@@ -106,13 +103,10 @@ class C64BaseScreen:
         self.bruce_stage = None
         self.bruce_origin = (0, 0)
 
-        # a Bruce Lee pose that drops in from above the top edge and lands on the
-        # bottom of the face; set with start_falling_bruce(), None until then
+        # a Bruce Lee sprite that drops in from above and performs his routine
+        # (fall, run, kick); set with start_falling_bruce(), None until then. The
+        # sprite owns its own position and animation state.
         self.falling_bruce = None
-        self.falling_bruce_origin = (0, 0)
-        self.falling_bruce_velocity = 0.0
-        self.falling_bruce_rest_y = 0
-        self.falling_bruce_landed = False
 
         self.caption_color = (255, 255, 255)
         self.caption_texture = glGenTextures(1)
@@ -374,49 +368,18 @@ class C64BaseScreen:
         self.bruce_stage.draw_from_bottom(self.screen_surface, origin=self.bruce_origin)
 
     def start_falling_bruce(self, bruce):
-        """Drop a Bruce Lee pose in from above the top edge of the face. He falls
-        under gravity until his feet (the lowest non-blank row) rest on the bottom
-        of screen_surface -- i.e. standing atop the screen's bottom border --
-        horizontally centred, at his own char size."""
-        cell_width, cell_height = bruce.font(bruce.char_size).size("W")
-        _, bottom_row, left_column, right_column = self._sprite_bounds(bruce)
-        sprite_columns = right_column - left_column + 1
-        centred_x = (Constants.WIDTH - sprite_columns * cell_width) // 2
-        origin_x = centred_x - left_column * cell_width
-        # rest so the bottom of the lowest non-blank row sits on the face's bottom
-        # edge; start fully above the top edge so he drops in from off-screen
-        self.falling_bruce_rest_y = Constants.HEIGHT - (bottom_row + 1) * cell_height
-        start_y = -(bottom_row + 1) * cell_height
+        """Hand the screen a Bruce sprite and start his drop-in; the sprite drives
+        its own fall, run and kick from there."""
+        bruce.start_fall()
         self.falling_bruce = bruce
-        self.falling_bruce_origin = (origin_x, start_y)
-        self.falling_bruce_velocity = 0.0
-        self.falling_bruce_landed = False
-
-    def _sprite_bounds(self, image):
-        """(top_row, bottom_row, left_column, right_column) of the non-blank cells."""
-        cells = [(row, column)
-                 for row in range(Constants.ROWS)
-                 for column in range(Constants.COLUMNS)
-                 if not image.is_blank(row, column)]
-        rows = [row for row, _ in cells]
-        columns = [column for _, column in cells]
-        return min(rows), max(rows), min(columns), max(columns)
 
     def draw_falling_bruce(self):
-        """Advance the fall by one frame and draw Bruce onto screen_surface, on top
-        of whatever is already there. Once landed he keeps standing at the bottom."""
+        """Advance the Bruce sprite by one frame and draw him onto screen_surface,
+        on top of whatever is already there."""
         if self.falling_bruce is None:
             return
-        origin_x, origin_y = self.falling_bruce_origin
-        if not self.falling_bruce_landed:
-            self.falling_bruce_velocity += C64BaseScreen.FALLING_BRUCE_GRAVITY
-            origin_y += self.falling_bruce_velocity
-            if origin_y >= self.falling_bruce_rest_y:
-                origin_y = self.falling_bruce_rest_y
-                self.falling_bruce_landed = True
-            self.falling_bruce_origin = (origin_x, origin_y)
-        self.falling_bruce.render(self.screen_surface, transparent_space=True,
-                                  origin=(int(origin_x), int(origin_y)))
+        self.falling_bruce.update()
+        self.falling_bruce.render_at_origin(self.screen_surface)
 
     def bruce_reveal_top_y(self):
         """World-space y of the reveal front on this screen face, or None when no

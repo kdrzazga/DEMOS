@@ -9,8 +9,11 @@ class BruceLee(PetsciiImage):
     its hardcoded sprite at self.origin -- the top-left cell Bruce is drawn from.
     """
 
+    LIGHT_GRAY = 15
+
     def __init__(self, char_size):
         super().__init__(char_size)
+        self.background_color = BruceLee.LIGHT_GRAY
         self.origin = (0, 0)  # (row, column) top-left corner Bruce is drawn from
         self.chars = self.blank(Constants.SPACE)
         self.reversed = self.blank(0)
@@ -142,7 +145,7 @@ class BruceLee(PetsciiImage):
                 (180, 175, 170, 32, 32),
                 (109, 164, 110, 32, 32),
                 (32, 160, 32, 32, 32),
-                (32, 164, 164, 32, 32),
+                (32, 164, 32, 32, 32),
                 (32, 32, 32, 32, 32),
                 (170, 32, 181, 32, 32),
                 (190, 32, 188, 32, 32),
@@ -151,19 +154,19 @@ class BruceLee(PetsciiImage):
                 (0, 0, 0, 0, 0),
                 (0, 1, 0, 0, 0),
                 (0, 1, 0, 0, 0),
-                (0, 1, 1, 0, 0),
+                (0, 1, 0, 0, 0),
                 (0, 1, 0, 0, 0),
                 (0, 0, 0, 0, 0),
                 (1, 0, 1, 0, 0),
             ),
             (  # colors
-                (7, 7, 7, 0, 0),
+                (7, 0, 7, 0, 0),
                 (7, 7, 7, 0, 0),
                 (0, 7, 0, 0, 0),
-                (0, 7, 7, 0, 0),
                 (0, 7, 0, 0, 0),
-                (7, 0, 7, 0, 0),
-                (7, 0, 7, 0, 0),
+                (0, 0, 0, 0, 0),
+                (0, 0, 0, 0, 0),
+                (0, 0, 0, 0, 0),
             ))
 
     def paste(self, chars, reverse, colors):

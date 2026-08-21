@@ -20,7 +20,7 @@ from lib.pygame_demo import PygameDemo
 from demos.petscii.files.c64_screen import C64Screen
 from demos.petscii.files.petscii.dj_space_thunder import DjSpaceThunder
 from demos.petscii.files.globals import Constants
-from demos.petscii.files.petscii.bruce_lee_stage1 import BruceLeeStage1
+from demos.petscii.files.petscii.bruce_lee_stage1 import BruceLeeStage1, BruceLeeStage2
 from demos.petscii.files.petscii.bruce_sprite import BruceSprite
 from demos.petscii.files.petscii.kna_logo import KnaLogo
 from demos.petscii.files.noise import Noise
@@ -119,7 +119,7 @@ class PetsciiDemo(PygameDemo):
         # three stages for now, all BruceLeeStage1; bruce_stage2 and bruce_stage3
         # will later become BruceLeeStage2 / BruceLeeStage3
         self.bruce_stage1 = BruceLeeStage1(PetsciiDemo.BRUCE_STAGE_CHAR_SIZE)
-        self.bruce_stage2 = BruceLeeStage1(PetsciiDemo.BRUCE_STAGE_CHAR_SIZE)
+        self.bruce_stage2 = BruceLeeStage2(PetsciiDemo.BRUCE_STAGE_CHAR_SIZE)
         self.bruce_stage3 = BruceLeeStage1(PetsciiDemo.BRUCE_STAGE_CHAR_SIZE)
 
         # a jump-pose Bruce sprite that falls into the central screen once the
@@ -254,14 +254,14 @@ class PetsciiDemo(PygameDemo):
         center_frame = self.run_landed_frame + PetsciiDemo.BRUCE_CENTER_DELAY * Constants.FPS
         left_frame = self.run_landed_frame + PetsciiDemo.BRUCE_LEFT_DELAY * Constants.FPS
         if not self.bruce_center_revealed and self.frame >= center_frame:
-            self.c64_screen3.reveal_bruce_stage(self.bruce_stage3, surface_size)
+            self.c64_screen3.reveal_bruce_stage(self.bruce_stage2, surface_size)
             self.bruce_center_revealed = True
         if not self.bruce_left_revealed and self.frame >= left_frame:
             self.c64_screen.reveal_bruce_stage(self.bruce_stage1, surface_size)
             self.bruce_left_revealed = True
         if not self.bruce_right_revealed and self.bruce_left_revealed \
                 and self.bruce_stage1.reveal_complete():
-            self.c64_screen2.reveal_bruce_stage(self.bruce_stage2, surface_size)
+            self.c64_screen2.reveal_bruce_stage(self.bruce_stage3, surface_size)
             self.bruce_right_revealed = True
         self.drop_falling_bruce()
 

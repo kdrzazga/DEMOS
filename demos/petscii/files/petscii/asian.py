@@ -221,7 +221,7 @@ class Asian(PetsciiImage):
 
     def say_meet_bruce_lee(self):
         self._say(self.meet_bruce_lee, self.meet_bruce_lee_duration)
-        self.speech = ('Meet my legendary', 'friend Bruce Lee', 'from Hong Kong', 'in PETSCII')
+        self.speech = ('Meet my legendary', 'friend Bruce Lee', 'from Hong Kong', '(in PETSCII)')
 
     def _say(self, sound, duration):
         sound.play()

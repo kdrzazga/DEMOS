@@ -103,6 +103,11 @@ class C64BaseScreen:
         self.bruce_stage = None
         self.bruce_origin = (0, 0)
 
+        # a Bruce Lee sprite that drops in from above and performs his routine
+        # (fall, run, kick); set with start_falling_bruce(), None until then. The
+        # sprite owns its own position and animation state.
+        self.falling_bruce = None
+
         self.caption_color = (255, 255, 255)
         self.caption_texture = glGenTextures(1)
         self.mesh_texture = glGenTextures(1)
@@ -362,6 +367,20 @@ class C64BaseScreen:
                                  pygame.Rect(0, top_y, Constants.WIDTH, Constants.HEIGHT - top_y))
         self.bruce_stage.draw_from_bottom(self.screen_surface, origin=self.bruce_origin)
 
+    def start_falling_bruce(self, bruce):
+        """Hand the screen a Bruce sprite and start his drop-in; the sprite drives
+        its own fall, run and kick from there."""
+        bruce.start_fall()
+        self.falling_bruce = bruce
+
+    def draw_falling_bruce(self):
+        """Advance the Bruce sprite by one frame and draw him onto screen_surface,
+        on top of whatever is already there."""
+        if self.falling_bruce is None:
+            return
+        self.falling_bruce.update()
+        self.falling_bruce.render_at_origin(self.screen_surface)
+
     def bruce_reveal_top_y(self):
         """World-space y of the reveal front on this screen face, or None when no
         stage is growing -- used to hide captions the rising stage has reached."""
@@ -379,6 +398,7 @@ class C64BaseScreen:
             typer.type(frame)
 
         self.draw_bruce_stage()
+        self.draw_falling_bruce()
         # the stage carries its own colours; drop the pulsing face tint over it
         face_color = (1.0, 1.0, 1.0) if self.bruce_stage is not None else self.gl_color()
         self._upload(self.screen_surface)

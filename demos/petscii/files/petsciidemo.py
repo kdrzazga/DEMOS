@@ -13,6 +13,7 @@ from OpenGL.GL import (
 
 from demos.petscii.files.asian_animation import AsianAnimation
 from demos.petscii.files.bruce_lee_kick_animation import BruceLeeKickAnimation
+from demos.petscii.files.bruce_walk import BruceWalk
 from demos.petscii.files.yamo_animation import YamoAnimation
 from demos.petscii.files.c64_base_screen import C64BaseScreen
 from demos.petscii.files.petscii.asian import Asian
@@ -139,12 +140,15 @@ class PetsciiDemo(PygameDemo):
         self.bruce_kick = BruceLeeKickAnimation()
         self.yamo = YamoAnimation()
 
-        # once the 3D kick parks in the top-left, it is swapped for a static
-        # BruceLee pose stamped onto the left-wall screen as part of that scene
-        self.bruce_lee = BruceLee(PetsciiDemo.BRUCE_STAGE_CHAR_SIZE)
-        self.bruce_lee.origin = (3, 3)   # (row, column) top-left of the left stage
-        self.bruce_lee.kick()
-        self.bruce_lee_shown = False
+        # once the 3D kick parks, Bruce comes alive on the left screen: he stands,
+        # then walks across it (kicking through the middle), and on reaching the
+        # right border transfers to the left side of the central screen
+        self.bruce_walk = BruceWalk(PetsciiDemo.BRUCE_STAGE_CHAR_SIZE, row=0)
+        self.bruce_lee_center = BruceLee(PetsciiDemo.BRUCE_STAGE_CHAR_SIZE)
+        self.bruce_lee_center.origin = (0, 2)   # (row, column) left side of the central stage
+        self.bruce_lee_center.stand()
+        self.bruce_shown = False
+        self.bruce_transferred = False
 
     def step(self):
         self.update()
@@ -264,10 +268,8 @@ class PetsciiDemo(PygameDemo):
         if self.bruce_backgrounds_ready():
             self.bruce_kick.start()
         self.bruce_kick.update()
-        if self.bruce_kick.settled and not self.bruce_lee_shown:
-            # hand the parked 3D kick over to a static BruceLee on the left screen
-            self.c64_screen.show_bruce_pose(self.bruce_lee)
-            self.bruce_lee_shown = True
+        if self.bruce_kick.settled:
+            self.update_bruce_walk()
         if self.bruce_kick.moving:
             self.yamo.start()
         if self.bruce_kick.settled:
@@ -279,6 +281,21 @@ class PetsciiDemo(PygameDemo):
         """True once the last of the three screens (the right wall) has finished
         filling with the Bruce Lee game background."""
         return self.bruce_right_revealed and self.bruce_stage3.reveal_complete()
+
+    def update_bruce_walk(self):
+        """Once the 3D kick has parked, show Bruce on the left screen and walk him
+        across it; when he reaches the right border, transfer him to the left side
+        of the central screen (remove from the left screen, add to the central)."""
+        if not self.bruce_shown:
+            self.c64_screen.show_bruce_pose(self.bruce_walk.sprite)
+            self.bruce_shown = True
+        if self.bruce_transferred:
+            return
+        self.bruce_walk.update()
+        if self.bruce_walk.at_border:
+            self.c64_screen.show_bruce_pose(None)                     # remove from the left screen
+            self.c64_screen3.show_bruce_pose(self.bruce_lee_center)   # add to the central screen
+            self.bruce_transferred = True
 
     def hide_captions_under_bruce(self):
         """As bruce_stage3 grows up the central screen, hide each caption once the

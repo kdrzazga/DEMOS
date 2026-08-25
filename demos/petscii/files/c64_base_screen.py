@@ -108,6 +108,10 @@ class C64BaseScreen:
         # sprite owns its own position and animation state.
         self.falling_bruce = None
 
+        # a static Bruce Lee pose (a BruceLee picture) stamped onto the screen
+        # face as part of the scene; set with show_bruce_pose(), None until then
+        self.bruce_pose = None
+
         self.caption_color = (255, 255, 255)
         self.caption_texture = glGenTextures(1)
         self.mesh_texture = glGenTextures(1)
@@ -381,6 +385,19 @@ class C64BaseScreen:
         self.falling_bruce.update()
         self.falling_bruce.render_at_origin(self.screen_surface)
 
+    def show_bruce_pose(self, bruce):
+        """Stamp a static Bruce Lee pose (a BruceLee picture) onto this screen's
+        face as part of the scene, aligned with the stage already revealed on it."""
+        self.bruce_pose = bruce
+
+    def draw_bruce_pose(self):
+        """Draw the static Bruce pose over the stage -- only its non-blank cells,
+        at the same origin the stage sits at, so it lands on the stage's grid."""
+        if self.bruce_pose is None:
+            return
+        self.bruce_pose.render(self.screen_surface, transparent_space=True,
+                               origin=self.bruce_origin)
+
     def bruce_reveal_top_y(self):
         """World-space y of the reveal front on this screen face, or None when no
         stage is growing -- used to hide captions the rising stage has reached."""
@@ -399,6 +416,7 @@ class C64BaseScreen:
 
         self.draw_bruce_stage()
         self.draw_falling_bruce()
+        self.draw_bruce_pose()
         # the stage carries its own colours; drop the pulsing face tint over it
         face_color = (1.0, 1.0, 1.0) if self.bruce_stage is not None else self.gl_color()
         self._upload(self.screen_surface)

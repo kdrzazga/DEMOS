@@ -35,58 +35,62 @@ from OpenGL.GL import (
 from OpenGL.GLU import gluPerspective
 
 from demos.petscii.files.globals import Constants
-from demos.petscii.files.petscii.bruce_lee_kick import BruceLeeKick
+from demos.petscii.files.petscii.yamo import Yamo
 
 
-class BruceLeeKickAnimation:
-    """Bruce Lee's kick pose shown as a spinning 3D PETSCII model.
+class YamoAnimation:
+    """The Yamo PETSCII picture shown as a spinning 3D model.
 
-    The pose (a :class:`BruceLeeKick` picture) is rendered once to a texture and
-    drawn as a single textured quad, the same way :class:`AsianAnimation`
-    presents the Asian face. On :meth:`start` he flies up from just below the
-    screen and turns slowly on the spot about his vertical axis; after about two
-    and a half turns he stops side-on (parallel to the folded left-wall screen)
-    and slides up into the top-left corner, where he comes to rest.
+    Presents Yamo exactly as :class:`BruceLeeKickAnimation` presents the Bruce
+    Lee kick: rendered once to a texture and drawn as a single textured quad that
+    flies up from below the screen and turns slowly on the spot. On :meth:`settle`
+    it stops spinning and slides+shrinks to a given spot, turning to face front
+    (parallel to the central screen), where it comes to rest.
+
+    Yamo's grid is not the usual 40x25, so its real size is read from the picture
+    data rather than from :class:`Constants` -- everything else matches.
     """
 
     WAIT = 0     # off-screen, not started yet
     FLY = 1      # rising from below into the bottom centre, spinning
     SPIN = 2     # turning on the spot at the bottom centre
-    MOVE = 3     # stopped spinning, sliding to the top-left corner
-    DONE = 4     # parked in the top-left corner
+    MOVE = 3     # stopped spinning, sliding+shrinking to its settle spot
+    DONE = 4     # parked, facing front
 
     FAR_PLANE = 300.0
     EYE_TO_SCREEN = -Constants.CAMERA_Z  # positive distance from the eye to the z=0 plane
 
     def __init__(self, char_size=16):
-        self.image = BruceLeeKick(char_size)
+        self.image = Yamo(char_size)
+        self.rows = len(self.image.chars)
+        self.columns = len(self.image.chars[0])
         self.texture = glGenTextures(1)
         self.surface = self._render_pose()
         self._upload(self.surface)
 
         # tunables -- kept on the instance so the choreography is easy to nudge
-        self.rest_z = 0.3                     # how far forward he floats (sets his size)
+        self.rest_z = 0.3                     # how far forward it floats (sets its size)
         self.spin_speed = 2.0                 # degrees per frame: a slow turn at 25 fps
         self.fly_in_frames = int(Constants.FPS * 1.5)
         self.width_fraction = 0.55            # of the visible half-width, at most
         self.height_fraction = 0.62           # of the visible half-height, at most
-        self.floor_gap_fraction = 0.15        # clearance kept below him at rest
-        # he spins ~1.25 turns then stops side-on: 450 deg is 90 deg mod 360, so
-        # the flat quad ends up parallel to the folded left-wall screen
-        self.stop_angle = 450.0
+        self.floor_gap_fraction = 0.15        # clearance kept below it at rest
         self.move_frames = int(Constants.FPS * 1.5)
-        self.corner_x_fraction = 0.85         # how far toward the left edge he parks
-        self.corner_y_fraction = 0.85         # how far toward the top edge he parks
-        self.corner_scale = 0.2               # shrink to 20% (i.e. by 80%) as he parks
-        self.corner_drop_heights = 2.0        # then sit this many of his parked heights lower
+        self.settle_scale = 0.2               # shrink to 20% as it settles, like Bruce
+        self.min_spin_angle = 360.0           # complete a full turn before it may settle
+        self.settle_pixel_drop = 30           # land this many pixels below the given target
 
         self._layout()
 
-        self.phase = BruceLeeKickAnimation.WAIT
+        self.phase = YamoAnimation.WAIT
         self.fly_timer = 0
         self.move_timer = 0
         self.move_from_x = 0.0
         self.move_from_y = 0.0
+        self.move_from_angle = 0.0
+        self.target_x = 0.0
+        self.target_y = 0.0
+        self.target_angle = 0.0
         self.angle = 0.0
         self.scale = 1.0
         self.x = self.rest_x
@@ -95,9 +99,9 @@ class BruceLeeKickAnimation:
 
     # ---- placement ------------------------------------------------------
     def _layout(self):
-        """Size the quad to the figure and work out where he flies from and to."""
+        """Size the quad to the figure and work out where it flies from and to."""
         image_aspect = self.surface.get_width() / self.surface.get_height()
-        eye_distance = BruceLeeKickAnimation.EYE_TO_SCREEN - self.rest_z
+        eye_distance = YamoAnimation.EYE_TO_SCREEN - self.rest_z
         visible_half_height = eye_distance * math.tan(math.radians(Constants.FOV / 2))
         visible_half_width = visible_half_height * (Constants.WIDTH / Constants.HEIGHT)
 
@@ -106,16 +110,13 @@ class BruceLeeKickAnimation:
         self.rest_x = 0.0
         self.rest_y = -visible_half_height + self.half_height \
             + self.floor_gap_fraction * visible_half_height
-        # start fully below the bottom edge so he rises into view
+        # start fully below the bottom edge so it rises into view
         self.start_y = -(visible_half_height + 2 * self.half_height)
 
-        # where he slides to after he stops spinning: near the top-left corner,
-        # then dropped a few of his parked (shrunk) heights lower. He shrinks on
-        # the way in, so this stays comfortably on screen.
-        parked_height = 2 * self.half_height * self.corner_scale
-        self.corner_x = -self.corner_x_fraction * visible_half_width
-        self.corner_y = self.corner_y_fraction * visible_half_height \
-            - self.corner_drop_heights * parked_height
+        # the full view is Constants.HEIGHT pixels tall, so convert the pixel drop
+        # applied at the end of the settle slide into world units here
+        self.settle_world_drop = self.settle_pixel_drop \
+            * (2 * visible_half_height) / Constants.HEIGHT
 
     def _fit_to_screen(self, image_aspect, visible_half_width, visible_half_height):
         """Fit the figure into the lower screen, binding on whichever of width or
@@ -132,25 +133,13 @@ class BruceLeeKickAnimation:
     # ---- choreography ---------------------------------------------------
     @property
     def started(self):
-        return self.phase != BruceLeeKickAnimation.WAIT
-
-    @property
-    def moving(self):
-        """True from the moment he stops spinning and starts sliding to the
-        corner -- the cue for Yamo to rise from the bottom and take his place."""
-        return self.phase in (BruceLeeKickAnimation.MOVE, BruceLeeKickAnimation.DONE)
-
-    @property
-    def settled(self):
-        """True once he has finished sliding and is parked -- the cue for Yamo to
-        make the same move into the central screen."""
-        return self.phase == BruceLeeKickAnimation.DONE
+        return self.phase != YamoAnimation.WAIT
 
     def start(self):
-        """Launch him up from below; ignored once he is already on his way."""
+        """Launch it up from below; ignored once it is already on its way."""
         if self.started:
             return
-        self.phase = BruceLeeKickAnimation.FLY
+        self.phase = YamoAnimation.FLY
         self.fly_timer = 0
         self.move_timer = 0
         self.x = self.rest_x
@@ -159,18 +148,31 @@ class BruceLeeKickAnimation:
         self.angle = 0.0
         self.scale = 1.0
 
-    def update(self):
-        if self.phase in (BruceLeeKickAnimation.WAIT, BruceLeeKickAnimation.DONE):
+    def settle(self, target_x, target_y):
+        """Stop spinning and slide+shrink to (target_x, target_y), turning to
+        face front. Only takes effect once it has flown in and turned at least a
+        full rotation (so callers may call it every frame); ignored once the move
+        has begun."""
+        if self.phase != YamoAnimation.SPIN or self.angle < self.min_spin_angle:
             return
-        if self.phase == BruceLeeKickAnimation.FLY:
+        self.target_x = target_x
+        self.target_y = target_y - self.settle_world_drop   # a touch lower than the given target
+        self.target_angle = math.ceil(self.angle / 360.0) * 360.0  # forward to face front
+        self.move_timer = 0
+        self.move_from_x = self.x
+        self.move_from_y = self.y
+        self.move_from_angle = self.angle
+        self.phase = YamoAnimation.MOVE
+
+    def update(self):
+        if self.phase in (YamoAnimation.WAIT, YamoAnimation.DONE):
+            return
+        if self.phase == YamoAnimation.FLY:
             self.angle += self.spin_speed
             self._update_fly()
-        elif self.phase == BruceLeeKickAnimation.SPIN:
+        elif self.phase == YamoAnimation.SPIN:
             self.angle += self.spin_speed
-            if self.angle >= self.stop_angle:
-                self.angle = self.stop_angle   # freeze side-on, parallel to the left screen
-                self._begin_move()
-        elif self.phase == BruceLeeKickAnimation.MOVE:
+        elif self.phase == YamoAnimation.MOVE:
             self._update_move()
 
     def _update_fly(self):
@@ -180,29 +182,24 @@ class BruceLeeKickAnimation:
         self.y = self.start_y + (self.rest_y - self.start_y) * eased
         if progress >= 1.0:
             self.y = self.rest_y
-            self.phase = BruceLeeKickAnimation.SPIN
-
-    def _begin_move(self):
-        self.phase = BruceLeeKickAnimation.MOVE
-        self.move_timer = 0
-        self.move_from_x = self.x
-        self.move_from_y = self.y
+            self.phase = YamoAnimation.SPIN
 
     def _update_move(self):
         self.move_timer += 1
         progress = min(1.0, self.move_timer / self.move_frames)
         eased = progress * progress * (3 - 2 * progress)   # smoothstep ease-in-out
-        self.x = self.move_from_x + (self.corner_x - self.move_from_x) * eased
-        self.y = self.move_from_y + (self.corner_y - self.move_from_y) * eased
-        self.scale = 1.0 + (self.corner_scale - 1.0) * eased   # shrink as he parks
+        self.x = self.move_from_x + (self.target_x - self.move_from_x) * eased
+        self.y = self.move_from_y + (self.target_y - self.move_from_y) * eased
+        self.angle = self.move_from_angle + (self.target_angle - self.move_from_angle) * eased
+        self.scale = 1.0 + (self.settle_scale - 1.0) * eased
         if progress >= 1.0:
-            self.x, self.y = self.corner_x, self.corner_y
-            self.scale = self.corner_scale
-            self.phase = BruceLeeKickAnimation.DONE
+            self.x, self.y, self.angle = self.target_x, self.target_y, self.target_angle
+            self.scale = self.settle_scale
+            self.phase = YamoAnimation.DONE
 
     # ---- drawing --------------------------------------------------------
     def draw(self):
-        if self.phase == BruceLeeKickAnimation.WAIT:
+        if self.phase == YamoAnimation.WAIT:
             return
         self._begin_3d()
         glTranslatef(self.x, self.y, self.z)
@@ -228,18 +225,26 @@ class BruceLeeKickAnimation:
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
         gluPerspective(Constants.FOV, Constants.WIDTH / Constants.HEIGHT, 0.1,
-                       BruceLeeKickAnimation.FAR_PLANE)
+                       YamoAnimation.FAR_PLANE)
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
         glTranslatef(0.0, 0.0, Constants.CAMERA_Z)
 
     # ---- texture --------------------------------------------------------
     def _render_pose(self):
-        """Render the kick to a tightly cropped, transparent surface so the quad
-        is exactly the figure -- his bottom centre then lands where we place it."""
+        """Render Yamo to a tightly cropped, transparent surface so the quad is
+        exactly the figure -- its bottom centre then lands where we place it.
+
+        The cells are drawn one by one over Yamo's own grid, rather than through
+        ``PetsciiImage.render`` (which assumes the full 40x25 screen)."""
         cell_width, cell_height = self.image.font(self.image.char_size).size("W")
-        full = pygame.Surface(self.image.size(), pygame.SRCALPHA)
-        self.image.render(full, transparent_space=True)
+        cell_size = (cell_width, cell_height)
+        full = pygame.Surface((self.columns * cell_width, self.rows * cell_height),
+                              pygame.SRCALPHA)
+        for row in range(self.rows):
+            for column in range(self.columns):
+                if not self.image.is_blank(row, column):
+                    self.image.draw_cell(full, self.image.char_size, cell_size, row, column)
         top, left, bottom, right = self._content_bounds()
         rect = pygame.Rect(left * cell_width, top * cell_height,
                            (right - left + 1) * cell_width,
@@ -248,10 +253,10 @@ class BruceLeeKickAnimation:
 
     def _content_bounds(self):
         """(top, left, bottom, right) cell bounds of the non-blank figure."""
-        top, left = Constants.ROWS, Constants.COLUMNS
+        top, left = self.rows, self.columns
         bottom, right = 0, 0
-        for row in range(Constants.ROWS):
-            for column in range(Constants.COLUMNS):
+        for row in range(self.rows):
+            for column in range(self.columns):
                 if not self.image.is_blank(row, column):
                     top, bottom = min(top, row), max(bottom, row)
                     left, right = min(left, column), max(right, column)

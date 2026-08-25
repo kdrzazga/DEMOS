@@ -13,6 +13,7 @@ from OpenGL.GL import (
 
 from demos.petscii.files.asian_animation import AsianAnimation
 from demos.petscii.files.bruce_lee_kick_animation import BruceLeeKickAnimation
+from demos.petscii.files.yamo_animation import YamoAnimation
 from demos.petscii.files.c64_base_screen import C64BaseScreen
 from demos.petscii.files.petscii.asian import Asian
 from lib import Globals
@@ -21,6 +22,7 @@ from lib.pygame_demo import PygameDemo
 from demos.petscii.files.c64_screen import C64Screen
 from demos.petscii.files.petscii.dj_space_thunder import DjSpaceThunder
 from demos.petscii.files.globals import Constants
+from demos.petscii.files.petscii.bruce_lee import BruceLee
 from demos.petscii.files.petscii.bruce_lee_stage1 import BruceLeeStage1, BruceLeeStage2
 from demos.petscii.files.petscii.bruce_sprite import BruceSprite
 from demos.petscii.files.petscii.kna_logo import KnaLogo
@@ -130,9 +132,19 @@ class PetsciiDemo(PygameDemo):
         # The three screens still fill gradually with the Bruce Lee game
         # background (bruce_stage1/2/3), exactly as before. Only the falling 2D
         # Bruce sprite is replaced: once the backgrounds have finished revealing,
-        # a spinning 3D Bruce Lee kick model flies up into the bottom centre.
+        # a spinning 3D Bruce Lee kick model flies up into the bottom centre,
+        # spins ~2.5 turns, stops side-on and slides to the top-left corner. As
+        # he sets off, a spinning Yamo model rises from the bottom in his place.
         self.falling_bruce_enabled = False
         self.bruce_kick = BruceLeeKickAnimation()
+        self.yamo = YamoAnimation()
+
+        # once the 3D kick parks in the top-left, it is swapped for a static
+        # BruceLee pose stamped onto the left-wall screen as part of that scene
+        self.bruce_lee = BruceLee(PetsciiDemo.BRUCE_STAGE_CHAR_SIZE)
+        self.bruce_lee.origin = (3, 3)   # (row, column) top-left of the left stage
+        self.bruce_lee.kick()
+        self.bruce_lee_shown = False
 
     def step(self):
         self.update()
@@ -192,7 +204,7 @@ class PetsciiDemo(PygameDemo):
             self.update_encore()
         elif self.scene == PetsciiDemo.SCENE_ENCORE2:
             self.update_encore2()
-            #print("Elapsed time " + str(Globals.get_duration()))
+            print("Elapsed time " + str(Globals.get_duration()))
 
         self.noiseLeft.set_intensity(self.tiltLeft.presence())
         self.noiseRight.set_intensity(self.tiltRight.presence())
@@ -244,12 +256,24 @@ class PetsciiDemo(PygameDemo):
         self.update_bruce_kick()
 
     def update_bruce_kick(self):
-        """Once the three screens have filled with the Bruce Lee game background,
-        fly the spinning 3D kick model up into the bottom centre; from then on it
-        just keeps turning on the spot."""
+        """Choreograph the two 3D models through the finale: once the screens have
+        filled with the Bruce Lee background the kick model flies up into the
+        bottom centre and turns; after ~2.5 turns it stops side-on and slides to
+        the top-left corner, and as it sets off Yamo rises from the bottom in its
+        place, spinning."""
         if self.bruce_backgrounds_ready():
             self.bruce_kick.start()
         self.bruce_kick.update()
+        if self.bruce_kick.settled and not self.bruce_lee_shown:
+            # hand the parked 3D kick over to a static BruceLee on the left screen
+            self.c64_screen.show_bruce_pose(self.bruce_lee)
+            self.bruce_lee_shown = True
+        if self.bruce_kick.moving:
+            self.yamo.start()
+        if self.bruce_kick.settled:
+            # same height as Bruce, but centred in the central screen
+            self.yamo.settle(0.0, self.bruce_kick.corner_y)
+        self.yamo.update()
 
     def bruce_backgrounds_ready(self):
         """True once the last of the three screens (the right wall) has finished
@@ -433,7 +457,9 @@ class PetsciiDemo(PygameDemo):
         if self.scene >= PetsciiDemo.SCENE_ASIAN:
             self.asian_animation.draw()
         if self.scene >= PetsciiDemo.SCENE_ENCORE2:
-            self.bruce_kick.draw()
+            if not self.bruce_kick.settled:      # once parked, the left screen shows him instead
+                self.bruce_kick.draw()
+            self.yamo.draw()
 
     def _asian_flown(self):
         return self.scene >= PetsciiDemo.SCENE_ASIAN and self.asian_animation.finished

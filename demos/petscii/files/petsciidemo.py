@@ -12,6 +12,7 @@ from OpenGL.GL import (
 )
 
 from demos.petscii.files.asian_animation import AsianAnimation
+from demos.petscii.files.bruce_lee_kick_animation import BruceLeeKickAnimation
 from demos.petscii.files.c64_base_screen import C64BaseScreen
 from demos.petscii.files.petscii.asian import Asian
 from lib import Globals
@@ -126,6 +127,13 @@ class PetsciiDemo(PygameDemo):
         # right-panel stage has finished drawing; same char size as the stages
         self.bruce_sprite = BruceSprite(PetsciiDemo.BRUCE_STAGE_CHAR_SIZE)
 
+        # The three screens still fill gradually with the Bruce Lee game
+        # background (bruce_stage1/2/3), exactly as before. Only the falling 2D
+        # Bruce sprite is replaced: once the backgrounds have finished revealing,
+        # a spinning 3D Bruce Lee kick model flies up into the bottom centre.
+        self.falling_bruce_enabled = False
+        self.bruce_kick = BruceLeeKickAnimation()
+
     def step(self):
         self.update()
         self.draw()
@@ -233,6 +241,20 @@ class PetsciiDemo(PygameDemo):
             self.hide_captions_under_bruce()
 
         self.reveal_bruce_stages()
+        self.update_bruce_kick()
+
+    def update_bruce_kick(self):
+        """Once the three screens have filled with the Bruce Lee game background,
+        fly the spinning 3D kick model up into the bottom centre; from then on it
+        just keeps turning on the spot."""
+        if self.bruce_backgrounds_ready():
+            self.bruce_kick.start()
+        self.bruce_kick.update()
+
+    def bruce_backgrounds_ready(self):
+        """True once the last of the three screens (the right wall) has finished
+        filling with the Bruce Lee game background."""
+        return self.bruce_right_revealed and self.bruce_stage3.reveal_complete()
 
     def hide_captions_under_bruce(self):
         """As bruce_stage3 grows up the central screen, hide each caption once the
@@ -263,7 +285,8 @@ class PetsciiDemo(PygameDemo):
                 and self.bruce_stage1.reveal_complete():
             self.c64_screen2.reveal_bruce_stage(self.bruce_stage3, surface_size)
             self.bruce_right_revealed = True
-        self.drop_falling_bruce()
+        if self.falling_bruce_enabled:
+            self.drop_falling_bruce()
 
     def drop_falling_bruce(self):
         """Once the right-panel stage has finished drawing, wait BRUCE_FALL_DELAY
@@ -409,6 +432,8 @@ class PetsciiDemo(PygameDemo):
             glEnable(GL_DEPTH_TEST)
         if self.scene >= PetsciiDemo.SCENE_ASIAN:
             self.asian_animation.draw()
+        if self.scene >= PetsciiDemo.SCENE_ENCORE2:
+            self.bruce_kick.draw()
 
     def _asian_flown(self):
         return self.scene >= PetsciiDemo.SCENE_ASIAN and self.asian_animation.finished

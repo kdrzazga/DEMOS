@@ -37,6 +37,7 @@ class ConverterApp:
         top.pack(fill="x", padx=8, pady=8)
         tk.Label(top, text="Destination CLASS NAME").pack(side="left")
         self.class_name_entry = tk.Entry(top, width=24)
+        self.class_name_entry.insert(0, "Klazz")
         self.class_name_entry.pack(side="left", padx=(6, 12))
         tk.Label(top, text="Last row").pack(side="left")
         self.last_row_entry = tk.Entry(top, width=5)

@@ -5,7 +5,7 @@ import sys
 from PyInstaller.utils.hooks import collect_all, collect_submodules, copy_metadata
 
 PROJECT_DIR = 'D:\\code\\DEMOS'
-ICON = 'D:\\code\\DEMOS\\app.ico'
+ICON = 'D:\\code\\DEMOS\\icons/app.ico'
 EXE_NAME = 'Pixelove Ole'
 EXCLUDED_DIRS = ('D:/code/DEMOS/demos/demo1', 'D:/code/DEMOS/demos/demo3', 'D:/code/DEMOS/demos/pc45', 'D:/code/DEMOS/demos/petscii')
 

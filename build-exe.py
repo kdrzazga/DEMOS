@@ -1,5 +1,5 @@
 root = "D:/code/DEMOS/"
-icon_path = root + "po-ico.png"   # .png or .ico both work
+icon_path = root + "icons/" + "po-ico.png"   # .png or .ico both work
 exe_name  = "Pixelove Ole"   # -> dist/<exe_name>.exe
 excluded_dirs = (root + "demos/demo1", root + "demos/demo3", root + "demos/pc45", root + "demos/petscii")
 
@@ -194,7 +194,7 @@ def _ensure_ico(src):
         from PIL import Image
     except ImportError:
         sys.exit("Pillow is needed to convert %s to .ico  (pip install pillow)" % src)
-    ico = os.path.join(HERE, "app.ico")
+    ico = os.path.join(HERE, "icons/app.ico")
     Image.open(src).convert("RGBA").save(
         ico, format="ICO",
         sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])

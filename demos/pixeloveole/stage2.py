@@ -36,14 +36,14 @@ class Stage2:
 
     def on_draw(self, timer):
 
-        lines = ("Serdecznie zapraszamy na imprezę Pixelove Ole w mieście Oleśnica!",
+        lines = ("Serdecznie zapraszamy na imprezę Pixelove Ole w Bibliotece Miejskiej w Oleśnicy!",
                  " To wyjątkowa okazja, aby powrócić do czasów retro i zanurzyć się ",
                  "w świecie klasycznych komputerów i konsol.",
-                 " Przyjdź 23 lipca 2026 roku i spędź niezapomniany dzień pełen gier,",
+                 " Przyjdź 26 września 2026 roku i spędź niezapomniany dzień pełen gier,",
                  " muzyki i wspomnień!",
                  "", " Czekamy na Ciebie !!!")
 
-        font_size = 22
+        font_size = 21
 
         for i, line in enumerate(lines):
             font_path = "res/C64_Pro_Mono-STYLE.ttf"

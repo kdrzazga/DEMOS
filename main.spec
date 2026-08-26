@@ -6,8 +6,8 @@ from PyInstaller.utils.hooks import collect_all, collect_submodules, copy_metada
 
 PROJECT_DIR = 'D:\\code\\DEMOS'
 ICON = 'D:\\code\\DEMOS\\app.ico'
-EXE_NAME = 'p3Dscii'
-EXCLUDED_DIRS = ('D:/code/DEMOS/demos/demo1', 'D:/code/DEMOS/demos/demo3')
+EXE_NAME = 'Pixelove Ole'
+EXCLUDED_DIRS = ('D:/code/DEMOS/demos/demo1', 'D:/code/DEMOS/demos/demo3', 'D:/code/DEMOS/demos/pc45', 'D:/code/DEMOS/demos/petscii')
 
 # normalize once so os.walk pruning can compare case-/separator-insensitively
 _EXCLUDED = tuple(os.path.normcase(os.path.normpath(p)) for p in EXCLUDED_DIRS)

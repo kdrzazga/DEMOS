@@ -1,7 +1,7 @@
 root = "D:/code/DEMOS/"
-icon_path = root + "p3dscii-ico.png"   # .png or .ico both work
-exe_name  = "p3Dscii"   # -> dist/<exe_name>.exe
-excluded_dirs = (root + "demos/demo1", root + "demos/demo3")
+icon_path = root + "po-ico.png"   # .png or .ico both work
+exe_name  = "Pixelove Ole"   # -> dist/<exe_name>.exe
+excluded_dirs = (root + "demos/demo1", root + "demos/demo3", root + "demos/pc45", root + "demos/petscii")
 
 """
 One-shot build script for the DEMOS launcher.

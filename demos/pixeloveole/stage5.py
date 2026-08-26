@@ -68,15 +68,16 @@ class Stage5:
 
 		elif 2 + 9*duration + 2 < t < 12.5 * duration:
 			arcade.draw_text("Pixelove OLE", x, y-10, color=BLACK, font_size=77, anchor_x="center")
-			arcade.draw_text("23.07.2026", x, Globals.HEIGHT - 202, color=BLACK, font_size=99
+			arcade.draw_text("26.09.2026", x, Globals.HEIGHT - 202, color=BLACK, font_size=99
 			                 , anchor_x="center")
-			arcade.draw_text("Lotnisko w Spalicach", x, Globals.HEIGHT // 2.5, color=BLACK
-			                 , font_size=66,anchor_x="center")
+			arcade.draw_text("Biblioteka Miejska w Oleśnicy", x, Globals.HEIGHT // 2.5, color=BLACK
+			                 , font_size=64,anchor_x="center")
 
 		elif t > 13*duration:
 			dur = datetime.now() - Globals.start
 			print("Invitro duration: " + str(dur))
 
+			#sys.exit(0)
 			print("Restarting...")
 			python = sys.executable
 			os.execl(python, python, *sys.argv)

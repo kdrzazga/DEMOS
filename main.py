@@ -38,7 +38,7 @@ DEMOS = {
     "po": pixelove_ole, #cannot be built to exe, due to execution loop
 }
 
-DEFAULT_DEMO = "po"
+DEFAULT_DEMO = "petscii"
 
 
 if __name__ == "__main__":

@@ -44,7 +44,7 @@ from demos.petscii.files.globals import Constants
 from demos.petscii.files.petscii.green_guy import GreenGuy
 
 CHAR_SIZE = 24
-FRAME_MS = 500            # each head+torso combination is held for half a second
+FRAME_MS = 200            # each head+torso combination is held for half a second
 GUY_WIDTH, GUY_HEIGHT = 13, 16  # cells the guy is stamped over
 CAMERA_FIT = 1.4          # camera distance as a multiple of the surface -- fits it fully in view
 SWAY_DEGREES = 10.0       # peak left/right tilt of the sway

@@ -144,12 +144,16 @@ class GreenGuy(PetsciiImage):
         corners of one of the 7x8 faces on the sheet. The guy is stamped first
         (torso plus its default head); the chosen head is then pasted over the
         guy's head slot, replacing the default head and leaving the torso intact.
+        The head's bottom-left cell is skipped so the torso's red "=" label,
+        which sits under that corner, stays visible.
         """
         self.draw_guy()
         origin_row, origin_column = self.origin
         anchor_row, anchor_column = self.head_anchor
+        last_row = head_bottom_right[1] - head_top_left[1]  # head's bottom row, in paste offsets
         self.paste(head_top_left, head_bottom_right,
-                   (origin_row + anchor_row, origin_column + anchor_column))
+                   (origin_row + anchor_row, origin_column + anchor_column),
+                   skip=((last_row, 0),))
 
     def stamp(self, top_left, bottom_right):
         """Clear the picture and paste one rectangle of the sheet at self.origin."""
@@ -158,19 +162,23 @@ class GreenGuy(PetsciiImage):
         self.colors = self.blank(0)
         self.paste(top_left, bottom_right, self.origin)
 
-    def paste(self, top_left, bottom_right, destination):
+    def paste(self, top_left, bottom_right, destination, skip=()):
         """Paste an inclusive (column, row) rectangle of the sheet onto the
         picture, its top-left landing on destination (row, column). Nothing is
         cleared first, so a later paste overlays an earlier one; the right and
-        bottom edges are clamped to the sheet.
+        bottom edges are clamped to the sheet. skip lists (delta_row,
+        delta_column) offsets within the rectangle to leave untouched.
         """
         left, top = top_left
         right, bottom = bottom_right
         right = min(right, len(GreenGuy.chars[0]) - 1)
         bottom = min(bottom, len(GreenGuy.chars) - 1)
         dest_row, dest_column = destination
+        skip = set(skip)
         for delta_row, source_row in enumerate(range(top, bottom + 1)):
             for delta_column, source_column in enumerate(range(left, right + 1)):
+                if (delta_row, delta_column) in skip:
+                    continue
                 self.chars[dest_row + delta_row][dest_column + delta_column] = GreenGuy.chars[source_row][source_column]
                 self.reversed[dest_row + delta_row][dest_column + delta_column] = GreenGuy.reversed[source_row][source_column]
                 self.colors[dest_row + delta_row][dest_column + delta_column] = GreenGuy.colors[source_row][source_column]

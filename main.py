@@ -33,12 +33,26 @@ def pixelove_ole(windowed, triggered):
 DEMOS = {
     "kna": kna_demo,
     "pc45": pc45_demo,
-    "petscii": petscii_demo,
+    "p3dscii": petscii_demo,
     "demo3": demo3,
     "po": pixelove_ole, #cannot be built to exe, due to execution loop
 }
 
-DEFAULT_DEMO = "petscii"
+DEFAULT_DEMO = "p3dscii"
+
+
+def close_boot_splash():
+    """Dismiss the PyInstaller 'DECRUNCHING' boot splash. The module only exists
+    inside a frozen build that was bundled with a splash, so it's a no-op when
+    running from source."""
+    try:
+        import pyi_splash  # injected by PyInstaller when the exe has a splash
+    except ImportError:
+        return
+    try:
+        pyi_splash.close()
+    except Exception:
+        pass
 
 
 if __name__ == "__main__":
@@ -46,4 +60,7 @@ if __name__ == "__main__":
     triggered = any(arg in ("t", "trigger", "triggered") for arg in args)
     windowed = any(arg in ("w", "window", "windowed") for arg in args)
     name = next((arg for arg in args if arg in DEMOS), DEFAULT_DEMO)
+    # extraction + the heavy arcade/pyglet imports above are done; the demo window
+    # opens next, so drop the splash now.
+    close_boot_splash()
     DEMOS[name](windowed, triggered)

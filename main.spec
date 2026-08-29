@@ -6,8 +6,9 @@ from PyInstaller.utils.hooks import collect_all, collect_submodules, copy_metada
 
 PROJECT_DIR = 'D:\\code\\DEMOS'
 ICON = 'D:\\code\\DEMOS\\icons/app.ico'
-EXE_NAME = 'Pixelove Ole'
-EXCLUDED_DIRS = ('D:/code/DEMOS/demos/demo1', 'D:/code/DEMOS/demos/demo3', 'D:/code/DEMOS/demos/pc45', 'D:/code/DEMOS/demos/petscii')
+EXE_NAME = 'P3DSCII - PETSCII 3D DEMO'
+EXCLUDED_DIRS = ('D:/code/DEMOS/demos/demo1', 'D:/code/DEMOS/demos/demo3', 'D:/code/DEMOS/demos/pc45')
+SPLASH_IMAGE = 'D:\\code\\DEMOS\\screens\\splash.png'
 
 # normalize once so os.walk pruning can compare case-/separator-insensitively
 _EXCLUDED = tuple(os.path.normcase(os.path.normpath(p)) for p in EXCLUDED_DIRS)
@@ -103,9 +104,34 @@ a.datas = [d for d in a.datas if not os.path.normpath(d[0]).startswith(_bad)]
 
 pyz = PYZ(a.pure)
 
+# --- boot splash: shown by the C bootloader DURING one-file extraction --------
+# The one-file exe must unpack ~0.5 GB to a temp dir before Python even starts;
+# that is the multi-second "nothing happens" gap on launch. The splash's tiny Tk
+# deps are unpacked FIRST, so the "DECRUNCHING" image appears almost immediately
+# and stays up through the rest of extraction + the heavy arcade/pyglet imports.
+# main.py calls pyi_splash.close() once it is about to open the demo window.
+splash = None
+if SPLASH_IMAGE and os.path.isfile(SPLASH_IMAGE):
+    try:
+        splash = Splash(
+            SPLASH_IMAGE,
+            binaries=a.binaries,
+            datas=a.datas,
+            always_on_top=True,
+        )
+    except Exception as exc:
+        print("[spec] splash disabled: %s" % exc)
+        splash = None
+else:
+    print("[spec] no splash image at %r -- building without splash" % (SPLASH_IMAGE,))
+
+# in one-file mode both the splash target and its binaries belong in EXE
+_splash_args = [splash, splash.binaries] if splash is not None else []
+
 exe = EXE(
     pyz,
     a.scripts,
+    *_splash_args,
     a.binaries,
     a.datas,
     [],
@@ -114,7 +140,10 @@ exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    upx_exclude=[],
+    # keep UPX away from the splash's Tk runtime -- UPX can corrupt these DLLs
+    # and the splash then silently fails to show
+    upx_exclude=["vcruntime140.dll", "tcl86t.dll", "tk86t.dll",
+                 "tcl86.dll", "tk86.dll"],
     runtime_tmpdir=None,
     console=True,
     disable_windowed_traceback=False,

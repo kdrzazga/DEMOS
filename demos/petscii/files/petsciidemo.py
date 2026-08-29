@@ -29,6 +29,7 @@ from demos.petscii.files.petscii.bruce_lee_stage1 import BruceLeeStage1, BruceLe
 from demos.petscii.files.petscii.bruce_sprite import BruceSprite
 from demos.petscii.files.petscii.kna_logo import KnaLogo
 from demos.petscii.files.noise import Noise
+from demos.petscii.files.outro import Outro
 from demos.petscii.files.stage_welcome import WelcomeStage
 from demos.petscii.files.tilt_screen import TiltScreen
 from demos.petscii.files.winding_screen import WindingScreen
@@ -78,6 +79,7 @@ class PetsciiDemo(PygameDemo):
     FINALE_KICK_STUB = 1
     FINALE_CLEAR = 2
     FINALE_ASTERISKS = 3
+    FINALE_OUTRO = 4
 
     KICK_STUB_SECONDS = 4          # hold before the zoom-out: the (not-yet-built) reach + kick on Yamo
     SCREEN_RECEDE_SPEED = 3.0      # world units/frame the screens zoom away (fast)
@@ -172,6 +174,8 @@ class PetsciiDemo(PygameDemo):
         self.floor_drop_speed = 0.0
         self.asterisks = AsteriskAnimation()
         self.asterisks_played = False
+        # the outro plays in this same window once the asterisks finish
+        self.outro = Outro()
 
     def step(self):
         self.update()
@@ -298,8 +302,16 @@ class PetsciiDemo(PygameDemo):
             if not self.asterisks_played:
                 self.asterisks_played = True
                 self.asterisks.animate()               # blocking: plays the whole thing
-                if not self.asterisks.running:         # ESC during the asterisks quits the demo
-                    self.running = False
+                if self.asterisks.running:
+                    # the main show is over; hand off to the outro in this same
+                    # window (its own music replaces the show's)
+                    pygame.mixer.stop()
+                    self.outro.begin()
+                    self.finale_phase = PetsciiDemo.FINALE_OUTRO
+                else:
+                    self.running = False               # ESC'd out of the asterisks -> quit
+        elif self.finale_phase == PetsciiDemo.FINALE_OUTRO:
+            self.outro.update()
 
     def start_clear(self):
         """Begin zooming the three screens out and dropping the floor away."""
@@ -517,6 +529,9 @@ class PetsciiDemo(PygameDemo):
             return
         if self.finale_phase == PetsciiDemo.FINALE_ASTERISKS:
             return   # the asterisk animation, driven from update(), owns the screen now
+        if self.finale_phase == PetsciiDemo.FINALE_OUTRO:
+            self.outro.draw()
+            return
         if not self.c64_screen.folded_past(PetsciiDemo.NOISE_HIDE_FOLD):
             self.draw_first_screen()
         if self.scene >= PetsciiDemo.SCENE_NOISE2:

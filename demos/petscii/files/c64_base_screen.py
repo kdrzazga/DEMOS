@@ -74,6 +74,8 @@ class C64BaseScreen:
         self._pulsing = False
         self._pulse_phase = 0.0
         self._arrived = False
+        self.receding = False
+        self.recede_speed = 0.0
         self.rotator = None
         self.loading = False
         self.color = list(Constants.PALETTE[11])
@@ -149,6 +151,9 @@ class C64BaseScreen:
                                     for t in self.header_typers)
 
     def update(self, frame):
+        if self.receding:
+            self.z -= self.recede_speed   # zoom straight away from the camera, off-screen
+            return
         if self._pulsing:
             self._pulse_phase += C64BaseScreen.PULSE_SPEED
             center = (C64BaseScreen.TARGET_Z + C64BaseScreen.PULSE_FAR) / 2
@@ -176,6 +181,14 @@ class C64BaseScreen:
     def zoom_to_front(self, speed=None):
         self.target_z = 0.0
         self.zoom_speed = speed if speed is not None else C64BaseScreen.FINALE_ZOOM_SPEED
+        self.pulse = False
+        self._pulsing = False
+
+    def recede(self, speed):
+        """Zoom the screen straight away from the camera at `speed` world units per
+        frame, overriding the normal zoom until it is far off-screen."""
+        self.receding = True
+        self.recede_speed = speed
         self.pulse = False
         self._pulsing = False
 

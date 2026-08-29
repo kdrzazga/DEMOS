@@ -108,7 +108,7 @@ class AsteriskAnimation:
         self.swarm_seconds = 2.4       # roughly how long a speck takes to cross
         self.swarm_depth_range = (27.0, 130.0)   # deeper = smaller, farther specks
         self.swarm_speed_jitter = (0.7, 1.5)
-        self.swarm_lead_stagger = 2.8  # specks start up to this*width off the right edge
+        self.swarm_lead_stagger = 1.8  # specks start up to this*width off the right edge (shortens the tail)
         self.swarm_to_right = False    # False: swarm streams LEFT, chasing the leader
         self.swarm = []
 

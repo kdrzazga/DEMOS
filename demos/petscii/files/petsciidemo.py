@@ -12,6 +12,7 @@ from OpenGL.GL import (
 )
 
 from demos.petscii.files.asian_animation import AsianAnimation
+from demos.petscii.files.asterisk_animation import AsteriskAnimation
 from demos.petscii.files.bruce_lee_kick_animation import BruceLeeKickAnimation
 from demos.petscii.files.bruce_walk import BruceWalk
 from demos.petscii.files.yamo_animation import YamoAnimation
@@ -69,6 +70,21 @@ class PetsciiDemo(PygameDemo):
     SCENE_ENCORE = 9
     SCENE_ENCORE2 = 10
     SCENE_COUNT = 11
+
+    # closing sequence, once Bruce has transferred onto the central screen: a
+    # stubbed "Bruce reaches Yamo and kicks him", then the three screens zoom out
+    # fast while the floor drops away, and finally the asterisk animation
+    FINALE_OFF = 0
+    FINALE_KICK_STUB = 1
+    FINALE_CLEAR = 2
+    FINALE_ASTERISKS = 3
+
+    KICK_STUB_SECONDS = 4          # hold before the zoom-out: the (not-yet-built) reach + kick on Yamo
+    SCREEN_RECEDE_SPEED = 3.0      # world units/frame the screens zoom away (fast)
+    SCREEN_GONE_Z = -60.0          # a screen this far back counts as gone
+    FLOOR_DROP_START_SPEED = 0.1   # initial floor fall speed, world units/frame
+    FLOOR_DROP_GRAVITY = 0.03      # floor fall acceleration, world units/frame^2
+    FLOOR_GONE_Y = -8.0            # the floor this far down counts as gone
 
     def __init__(self, windowed=False, triggered=False):
         super().__init__(Constants.WIDTH, Constants.HEIGHT, "P 3D SCII  (PETSCII 3D Demo)",
@@ -149,6 +165,13 @@ class PetsciiDemo(PygameDemo):
         self.bruce_lee_center.stand()
         self.bruce_shown = False
         self.bruce_transferred = False
+
+        # closing sequence state (see the FINALE_* constants)
+        self.finale_phase = PetsciiDemo.FINALE_OFF
+        self.finale_timer = 0
+        self.floor_drop_speed = 0.0
+        self.asterisks = AsteriskAnimation()
+        self.asterisks_played = False
 
     def step(self):
         self.update()
@@ -258,6 +281,43 @@ class PetsciiDemo(PygameDemo):
 
         self.reveal_bruce_stages()
         self.update_bruce_kick()
+        self.update_finale()
+
+    def update_finale(self):
+        """After Bruce reaches the central screen: hold for the (stubbed) kick on
+        Yamo, then zoom the three screens out fast while the floor drops away, and
+        once they are gone play the closing asterisk animation."""
+        if self.finale_phase == PetsciiDemo.FINALE_KICK_STUB:
+            # STUB: Bruce walks up to Yamo and kicks him -- not built yet, just hold.
+            self.finale_timer += 1
+            if self.finale_timer >= PetsciiDemo.KICK_STUB_SECONDS * Constants.FPS:
+                self.start_clear()
+        elif self.finale_phase == PetsciiDemo.FINALE_CLEAR:
+            self.update_clear()
+        elif self.finale_phase == PetsciiDemo.FINALE_ASTERISKS:
+            if not self.asterisks_played:
+                self.asterisks_played = True
+                self.asterisks.animate()               # blocking: plays the whole thing
+                if not self.asterisks.running:         # ESC during the asterisks quits the demo
+                    self.running = False
+
+    def start_clear(self):
+        """Begin zooming the three screens out and dropping the floor away."""
+        for screen in (self.c64_screen, self.c64_screen2, self.c64_screen3):
+            screen.recede(PetsciiDemo.SCREEN_RECEDE_SPEED)
+        self.floor_drop_speed = PetsciiDemo.FLOOR_DROP_START_SPEED
+        self.finale_phase = PetsciiDemo.FINALE_CLEAR
+
+    def update_clear(self):
+        """The screens recede via their own update(); here the floor accelerates
+        downward. Once both the screens and the floor are off-screen, hand over to
+        the closing asterisk animation."""
+        self.floor_drop_speed += PetsciiDemo.FLOOR_DROP_GRAVITY
+        self.floor.level_y -= self.floor_drop_speed
+        screens_gone = all(screen.z < PetsciiDemo.SCREEN_GONE_Z
+                           for screen in (self.c64_screen, self.c64_screen2, self.c64_screen3))
+        if screens_gone and self.floor.level_y < PetsciiDemo.FLOOR_GONE_Y:
+            self.finale_phase = PetsciiDemo.FINALE_ASTERISKS
 
     def update_bruce_kick(self):
         """Choreograph the two 3D models through the finale: once the screens have
@@ -296,6 +356,8 @@ class PetsciiDemo(PygameDemo):
             self.c64_screen.show_bruce_pose(None)                     # remove from the left screen
             self.c64_screen3.show_bruce_pose(self.bruce_lee_center)   # add to the central screen
             self.bruce_transferred = True
+            self.finale_phase = PetsciiDemo.FINALE_KICK_STUB          # kick off the closing sequence
+            self.finale_timer = 0
 
     def hide_captions_under_bruce(self):
         """As bruce_stage3 grows up the central screen, hide each caption once the
@@ -453,6 +515,8 @@ class PetsciiDemo(PygameDemo):
         if self.scene == PetsciiDemo.SCENE_WELCOME:
             self.welcome.draw()
             return
+        if self.finale_phase == PetsciiDemo.FINALE_ASTERISKS:
+            return   # the asterisk animation, driven from update(), owns the screen now
         if not self.c64_screen.folded_past(PetsciiDemo.NOISE_HIDE_FOLD):
             self.draw_first_screen()
         if self.scene >= PetsciiDemo.SCENE_NOISE2:

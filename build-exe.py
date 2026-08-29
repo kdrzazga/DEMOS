@@ -1,7 +1,19 @@
 root = "D:/code/DEMOS/"
-icon_path = root + "po-ico.png"   # .png or .ico both work
-exe_name  = "Pixelove Ole"   # -> dist/<exe_name>.exe
-excluded_dirs = (root + "demos/demo1", root + "demos/demo3", root + "demos/pc45", root + "demos/petscii")
+icon_path = root + "icons/" + "p3dscii-ico.png"   # .png or .ico both work
+exe_name  = "P3DSCII - PETSCII 3D DEMO"   # -> dist/<exe_name>.exe
+excluded_dirs = (root + "demos/demo1", root + "demos/demo3", root + "demos/pc45")
+
+# Text baked onto the boot splash that shows IMMEDIATELY while the one-file exe
+# unpacks itself to a temp dir (the multi-second "nothing happens" gap on start).
+# Edit these two lines and re-run this script to change the message.
+splash_line1 = "Please be patient . . . . ."
+splash_line2 = "DECRUNCHING"
+
+# Boot splash IMAGE. Point this at your own picture to use a CUSTOM splash --
+# an opaque PNG, sized how you want it to appear on screen (GIF/BMP also work).
+# If the file is missing, one is auto-generated from the two lines above.
+# Set to None to always auto-generate and never look for a custom image.
+splash_image = root + "screens/splash.png"
 
 """
 One-shot build script for the DEMOS launcher.
@@ -62,6 +74,7 @@ PROJECT_DIR = @@PROJECT@@
 ICON = @@ICON@@
 EXE_NAME = @@NAME@@
 EXCLUDED_DIRS = @@EXCLUDED@@
+SPLASH_IMAGE = @@SPLASH@@
 
 # normalize once so os.walk pruning can compare case-/separator-insensitively
 _EXCLUDED = tuple(os.path.normcase(os.path.normpath(p)) for p in EXCLUDED_DIRS)
@@ -157,9 +170,34 @@ a.datas = [d for d in a.datas if not os.path.normpath(d[0]).startswith(_bad)]
 
 pyz = PYZ(a.pure)
 
+# --- boot splash: shown by the C bootloader DURING one-file extraction --------
+# The one-file exe must unpack ~0.5 GB to a temp dir before Python even starts;
+# that is the multi-second "nothing happens" gap on launch. The splash's tiny Tk
+# deps are unpacked FIRST, so the "DECRUNCHING" image appears almost immediately
+# and stays up through the rest of extraction + the heavy arcade/pyglet imports.
+# main.py calls pyi_splash.close() once it is about to open the demo window.
+splash = None
+if SPLASH_IMAGE and os.path.isfile(SPLASH_IMAGE):
+    try:
+        splash = Splash(
+            SPLASH_IMAGE,
+            binaries=a.binaries,
+            datas=a.datas,
+            always_on_top=True,
+        )
+    except Exception as exc:
+        print("[spec] splash disabled: %s" % exc)
+        splash = None
+else:
+    print("[spec] no splash image at %r -- building without splash" % (SPLASH_IMAGE,))
+
+# in one-file mode both the splash target and its binaries belong in EXE
+_splash_args = [splash, splash.binaries] if splash is not None else []
+
 exe = EXE(
     pyz,
     a.scripts,
+    *_splash_args,
     a.binaries,
     a.datas,
     [],
@@ -168,7 +206,10 @@ exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    upx_exclude=[],
+    # keep UPX away from the splash's Tk runtime -- UPX can corrupt these DLLs
+    # and the splash then silently fails to show
+    upx_exclude=["vcruntime140.dll", "tcl86t.dll", "tk86t.dll",
+                 "tcl86.dll", "tk86.dll"],
     runtime_tmpdir=None,
     console=True,
     disable_windowed_traceback=False,
@@ -194,7 +235,7 @@ def _ensure_ico(src):
         from PIL import Image
     except ImportError:
         sys.exit("Pillow is needed to convert %s to .ico  (pip install pillow)" % src)
-    ico = os.path.join(HERE, "app.ico")
+    ico = os.path.join(HERE, "icons/app.ico")
     Image.open(src).convert("RGBA").save(
         ico, format="ICO",
         sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
@@ -202,22 +243,89 @@ def _ensure_ico(src):
     return ico
 
 
-def render_spec(project, ico, name, excluded):
+def _ensure_splash():
+    """Generate screens/splash_po.png -- the image the bootloader shows during one-file
+    extraction. Returns its path, or None (the build then proceeds with no splash)."""
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+    except ImportError:
+        print("[build-exe] Pillow missing -- building without splash screen")
+        return None
+
+    W, H = 560, 300
+    bg, border = (10, 12, 22), (0, 200, 180)
+    title_c, line1_c, crunch_c, foot_c = (
+        (232, 232, 244), (200, 200, 214), (120, 255, 140), (110, 110, 130))
+
+    fonts_dir = os.path.join(os.environ.get("WINDIR", r"C:\Windows"), "Fonts")
+
+    def font(px, bold=False):
+        names = (["impact.ttf", "arialbd.ttf", "segoeuib.ttf"] if bold
+                 else ["arial.ttf", "segoeui.ttf"])
+        for name in names:
+            for cand in (os.path.join(fonts_dir, name), name):
+                try:
+                    return ImageFont.truetype(cand, px)
+                except OSError:
+                    continue
+        return ImageFont.load_default()
+
+    img = Image.new("RGB", (W, H), bg)
+    d = ImageDraw.Draw(img)
+    d.rectangle([6, 6, W - 7, H - 7], outline=border, width=2)
+
+    def centered(text, y, fnt, fill):
+        left, _, right, _ = d.textbbox((0, 0), text, font=fnt)
+        d.text(((W - (right - left)) / 2 - left, y), text, font=fnt, fill=fill)
+
+    centered(exe_name.upper(), 42, font(46, bold=True), title_c)
+    centered(splash_line1, 150, font(24), line1_c)
+    centered(splash_line2, 184, font(52, bold=True), crunch_c)
+    centered("unpacking bundled data - first launch is the slow one",
+             H - 44, font(15), foot_c)
+
+    out = os.path.join(HERE, "screens", "splash_po.png")
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    try:
+        img.save(out, format="PNG")
+    except OSError as exc:
+        print("[build-exe] could not write splash image: %s" % exc)
+        return None
+    print("[build-exe] splash: %s -> splash_po.png" % (splash_line2,))
+    return out
+
+
+def render_spec(project, ico, name, excluded, splash):
     icon_repr = repr(ico) if ico else "None"
+    splash_repr = repr(splash) if splash else "None"
     return (SPEC_TEMPLATE
             .replace("@@PROJECT@@", repr(project))
             .replace("@@ICON@@", icon_repr)
             .replace("@@NAME@@", repr(name))
-            .replace("@@EXCLUDED@@", repr(tuple(excluded))))
+            .replace("@@EXCLUDED@@", repr(tuple(excluded)))
+            .replace("@@SPLASH@@", splash_repr))
 
 
-def write_build_files(ico):
+def write_build_files(ico, splash):
     with open(os.path.join(HERE, "rt_hook_chdir.py"), "w", encoding="utf-8") as f:
         f.write(RT_HOOK)
     spec = os.path.join(HERE, "main.spec")
     with open(spec, "w", encoding="utf-8") as f:
-        f.write(render_spec(HERE, ico, exe_name, excluded_dirs))
+        f.write(render_spec(HERE, ico, exe_name, excluded_dirs, splash))
     return spec
+
+
+def _resolve_splash():
+    """Pick the splash image to bake in: the custom `splash_image` if that file
+    exists, otherwise an auto-generated one. Generation is never removed -- it is
+    the fallback. Returns a path, or None to build with no splash."""
+    if splash_image:
+        custom = os.path.abspath(splash_image)
+        if os.path.isfile(custom):
+            print("[build-exe] splash: custom image %s" % custom)
+            return custom
+        print("[build-exe] no custom splash at %s -- generating one instead" % custom)
+    return _ensure_splash()
 
 
 def main():
@@ -225,7 +333,8 @@ def main():
         sys.exit("main.py must sit next to build-exe.py (looked in %s)" % HERE)
 
     ico = _ensure_ico(icon_path)
-    spec = write_build_files(ico)
+    splash = _resolve_splash()
+    spec = write_build_files(ico, splash)
 
     try:
         import PyInstaller.__main__ as pyi

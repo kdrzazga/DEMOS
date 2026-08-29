@@ -51,9 +51,8 @@ class Stage2:
 
             #print(timer)
 
-            arcade.draw_text(line, 0.5 * Globals.WIDTH, y, color=CYAN,
-                             font_size=font_size
-                             , font_name=font_path, anchor_x="center")
+            arcade.draw_text(line, 0.5 * Globals.WIDTH, y, color=CYAN, font_size=font_size, font_name=font_path
+                             , anchor_x="center")
 
         self.sprite_list.draw()
         self.sprite_list[0].center_x -= 0.6

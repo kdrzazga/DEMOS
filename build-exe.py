@@ -328,6 +328,27 @@ def _resolve_splash():
     return _ensure_splash()
 
 
+def _clear_splash_cache(workpath, spec):
+    """Delete PyInstaller's cached Splash resource so the current splash image is
+    always re-embedded. PyInstaller does not reliably notice when the splash image
+    changes at the same path -- it bumps the cache's mtime without regenerating the
+    picture -- so it will otherwise bake a stale splash into the exe."""
+    spec_base = os.path.splitext(os.path.basename(spec))[0]
+    cache_dir = os.path.join(workpath, spec_base)
+    if not os.path.isdir(cache_dir):
+        return
+    removed = []
+    for name in os.listdir(cache_dir):
+        if name.startswith("Splash-"):
+            try:
+                os.remove(os.path.join(cache_dir, name))
+                removed.append(name)
+            except OSError as exc:
+                print("[build-exe] could not clear %s: %s" % (name, exc))
+    if removed:
+        print("[build-exe] cleared stale splash cache: %s" % ", ".join(sorted(removed)))
+
+
 def main():
     if not os.path.isfile(os.path.join(HERE, "main.py")):
         sys.exit("main.py must sit next to build-exe.py (looked in %s)" % HERE)
@@ -343,6 +364,7 @@ def main():
 
     dist = os.path.join(HERE, "dist")
     work = os.path.join(HERE, "build")
+    _clear_splash_cache(work, spec)
     print("[build-exe] building %s.exe (a few minutes)..." % exe_name)
     pyi.run([spec, "--noconfirm", "--distpath", dist, "--workpath", work])
 

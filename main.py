@@ -7,6 +7,7 @@ from demos.demo3.main import Demo3
 from demos.pc45.main import GlDemo
 from demos.pixeloveole.main import PixeloveOle
 from demos.petscii.files.petsciidemo import PetsciiDemo
+from demos.petscii.files.outro import Outro
 
 
 def kna_demo(windowed, triggered):
@@ -24,6 +25,7 @@ def petscii_demo(windowed, triggered):
 
 def demo3(windowed, triggered):
     Demo3(windowed=windowed, triggered=triggered).run()
+
 
 def pixelove_ole(windowed, triggered):
     PixeloveOle(windowed=windowed, triggered=triggered).run()

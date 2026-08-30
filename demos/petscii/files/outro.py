@@ -43,6 +43,8 @@ if _ROOT not in sys.path:
 
 from demos.petscii.files.globals import Constants
 from demos.petscii.files.petscii.green_guy import GreenGuy
+from lib.helix import PetsciiHelix
+from lib.cequals import Cequals
 
 
 class Outro:
@@ -57,8 +59,21 @@ class Outro:
     standalone loop that opens its own window for previewing.
     """
 
-    # every head+torso combination, shown in turn
     FRAMES = (
+        "mouth_wide_open",
+        "mouth_left",
+        "mouth0",
+        "mouth_wide_open",
+        "mouth_left",
+        "mouth_wide_open",
+        "mouth_left",
+        "mouth0",
+        "mouth_o",
+        "smile",
+    )
+
+    # every head+torso combination, shown in turn
+    FRAMES2 = (
         "draw_guy",
         "mouth_wide_open",
         "mouth_left",
@@ -71,6 +86,10 @@ class Outro:
     )
 
     def __init__(self, fps=60):
+
+        self.credits = ('Music: Wodnik & Ramos', 'K&A+ PETSCII logo: tom3000'
+                     , 'Other PETSCII graphics: KD', 'Code: KD')
+
         # animation config (instance attributes, easy to nudge)
         self.char_size = 24
         self.frame_ms = 200          # each head+torso combination is held this long
@@ -90,6 +109,8 @@ class Outro:
         self.volume_step_ms = 100
         self.max_volume = 1.0
 
+        self.helix_speed = 0.03
+
         # runtime state (filled in begin())
         self.guy = None
         self.surface = None
@@ -98,6 +119,7 @@ class Outro:
         self.sway = 0.0
         self.z = 0.0
         self.running = False
+        self.helix = None
 
     # ---- embedded lifecycle (runs in the caller's window/context) -----------
     def begin(self):
@@ -126,6 +148,12 @@ class Outro:
         self.start_ms = pygame.time.get_ticks()
         self._start_music()
 
+        width, height = pygame.display.get_surface().get_size()
+        eye = -Constants.CAMERA_Z
+        visible_half_width = eye * math.tan(math.radians(Constants.FOV / 2)) * (width / height)
+        self.helix = PetsciiHelix(-0.7 * visible_half_width, self.helix_speed, Cequals(32),
+                                  z_stretch=5.0, x_flatten=0.5)
+
     def update(self):
         """Advance one frame: cycle the expression, sway, zoom, and fade the music."""
         now = pygame.time.get_ticks()
@@ -142,6 +170,7 @@ class Outro:
             self.z, self._zoom_step = self.z_near, self.zoom_step
 
         self._fade_in_music()
+        self.helix.update()
 
     def draw(self):
         """Draw the guy into whatever window is current, sized to its own aspect
@@ -154,6 +183,7 @@ class Outro:
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
         glTranslatef(0.0, 0.0, -self.z)
+        glTranslatef(3 * self.guy_w / Constants.COLUMNS, 0.0, 0.0)
         glRotatef(self.sway, 0.0, 1.0, 0.0)
 
         glColor3f(1.0, 1.0, 1.0)
@@ -165,6 +195,8 @@ class Outro:
         glTexCoord2f(1, 1); glVertex3f(half_width, -half_height, 0)
         glTexCoord2f(0, 1); glVertex3f(-half_width, -half_height, 0)
         glEnd()
+
+        self.helix.draw()
 
     def stop_music(self):
         pygame.mixer.music.stop()

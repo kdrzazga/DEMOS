@@ -47,12 +47,11 @@ from demos.petscii.files.petscii.images.caption5 import Caption5
 from lib.multi_petscii_image import MultiPetsciiImage
 
 
-
 class MultiPetsciiImageManager:
 
     SPEED = 0.0015
 
-    def __init__(self, char_size=24, sweep=math.pi / 2, segments=80, window=0.4, radius=None):
+    def __init__(self, char_size=24, sweep=math.pi / 2, segments=80, radius=None):
         self.captions = MultiPetsciiImage(
             (Caption1(char_size), Caption2(char_size), Caption3(char_size), Caption4(char_size), Caption5(char_size)))
         self.tex_w, self.tex_h = self.captions.size()
@@ -62,16 +61,33 @@ class MultiPetsciiImageManager:
 
         self.sweep = sweep
         self.segments = segments
-        self.radius = window * self.tex_w / self.sweep if radius is None else radius
-        self.window = self.radius * self.sweep / self.tex_w
+        self.radius = Constants.WIDTH if radius is None else radius
         self.half_height = self.tex_h / 2.0
         self.camera_distance = (Constants.HEIGHT / 2.0) / math.tan(math.radians(Constants.FOV / 2))
         self.far_plane = 100000.0
+
+        self.bend_end_x = Constants.WIDTH - self.radius * (1.0 - math.cos(sweep))
+        self.bend_end_z = -self.radius * math.sin(sweep)
+        tan_h = math.tan(math.radians(Constants.FOV / 2)) * (Constants.WIDTH / Constants.HEIGHT)
+        self.left_x = Constants.WIDTH / 2.0 - (self.camera_distance - self.bend_end_z) * tan_h
+        bend_len = self.radius * sweep
+        flat_len = max(0.0, self.bend_end_x - self.left_x)
+        track_len = bend_len + flat_len
+        self.bend_fraction = bend_len / track_len
+        self.window = track_len / self.tex_w
         self.scroll = -self.window
 
     def update(self):
         if self.scroll < 1.0:
             self.scroll = min(1.0, self.scroll + MultiPetsciiImageManager.SPEED)
+
+    def _curve_point(self, s):
+        if s <= self.bend_fraction:
+            theta = (s / self.bend_fraction) * self.sweep
+            return (Constants.WIDTH - self.radius * (1.0 - math.cos(theta)),
+                    -self.radius * math.sin(theta))
+        p = (s - self.bend_fraction) / (1.0 - self.bend_fraction)
+        return (self.bend_end_x + p * (self.left_x - self.bend_end_x), self.bend_end_z)
 
     def draw(self):
         window_width, window_height = pygame.display.get_surface().get_size()
@@ -92,9 +108,7 @@ class MultiPetsciiImageManager:
         glBegin(GL_QUAD_STRIP)
         for i in range(self.segments + 1):
             s = i / self.segments
-            theta = s * self.sweep
-            x = Constants.WIDTH - self.radius * (1.0 - math.cos(theta))
-            z = -self.radius * math.sin(theta)
+            x, z = self._curve_point(s)
             u = self.scroll + (1.0 - s) * self.window
             glTexCoord2f(u, 0.0); glVertex3f(x, center_y + self.half_height, z)
             glTexCoord2f(u, 1.0); glVertex3f(x, center_y - self.half_height, z)

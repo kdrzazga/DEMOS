@@ -45,6 +45,7 @@ from demos.petscii.files.globals import Constants
 from demos.petscii.files.petscii.green_guy import GreenGuy
 from lib.helix import PetsciiHelix
 from lib.cequals import Cequals
+from demos.petscii.files.petscii.images.multi_petscii_image_manager import MultiPetsciiImageManager
 
 
 class Outro:
@@ -139,6 +140,7 @@ class Outro:
         self.guy_far_z = 0.0
         self.outro_sound = None
         self.speech_ended = False
+        self.captions_manager = None
 
     # ---- embedded lifecycle (runs in the caller's window/context) -----------
     def begin(self):
@@ -177,6 +179,7 @@ class Outro:
         visible_half_width = eye * math.tan(math.radians(Constants.FOV / 2)) * (width / height)
         self.helix = PetsciiHelix(-0.7 * visible_half_width, self.helix_speed, Cequals(32),
                                   z_stretch=5.0, x_flatten=0.5)
+        self.captions_manager = MultiPetsciiImageManager()
 
     def update(self):
         now = pygame.time.get_ticks()
@@ -222,6 +225,7 @@ class Outro:
             self.z, self._zoom_step = self.z_far, -self.zoom_step
         elif self.z <= self.z_near:
             self.z, self._zoom_step = self.z_near, self.zoom_step
+        self.captions_manager.update()
 
     @property
     def main_finished(self):
@@ -254,6 +258,8 @@ class Outro:
             glEnd()
 
         self.helix.draw()
+        if self.arrived:
+            self.captions_manager.draw()
 
     def stop_music(self):
         pygame.mixer.music.stop()

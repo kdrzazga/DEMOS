@@ -23,6 +23,7 @@ from OpenGL.GL import (
     glBindTexture,
     glBlendFunc,
     glColor3f,
+    glDepthRange,
     glDisable,
     glEnable,
     glEnd,
@@ -44,6 +45,8 @@ from demos.petscii.files.petscii.images.caption2 import Caption2
 from demos.petscii.files.petscii.images.caption3 import Caption3
 from demos.petscii.files.petscii.images.caption4 import Caption4
 from demos.petscii.files.petscii.images.caption5 import Caption5
+from demos.petscii.files.petscii.images.caption6 import Caption6
+from demos.petscii.files.petscii.images.caption7 import Caption7
 from lib.multi_petscii_image import MultiPetsciiImage
 
 
@@ -53,7 +56,8 @@ class MultiPetsciiImageManager:
 
     def __init__(self, char_size=24, sweep=math.pi / 2, segments=80, radius=None):
         self.captions = MultiPetsciiImage(
-            (Caption1(char_size), Caption2(char_size), Caption3(char_size), Caption4(char_size), Caption5(char_size)))
+            (Caption1(char_size), Caption2(char_size), Caption3(char_size), Caption4(char_size)
+             , Caption5(char_size), Caption6(char_size), Caption7(char_size)))
         self.tex_w, self.tex_h = self.captions.size()
         surface = pygame.Surface((self.tex_w, self.tex_h), pygame.SRCALPHA)
         self.captions.render(surface, transparent_space=True)
@@ -101,7 +105,8 @@ class MultiPetsciiImageManager:
         glEnable(GL_TEXTURE_2D)
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-        glDisable(GL_DEPTH_TEST)
+        glEnable(GL_DEPTH_TEST)
+        glDepthRange(0.999, 1.0)
         glColor3f(1.0, 1.0, 1.0)
         glBindTexture(GL_TEXTURE_2D, self.texture)
         center_y = Constants.HEIGHT / 2.0
@@ -113,7 +118,7 @@ class MultiPetsciiImageManager:
             glTexCoord2f(u, 0.0); glVertex3f(x, center_y + self.half_height, z)
             glTexCoord2f(u, 1.0); glVertex3f(x, center_y - self.half_height, z)
         glEnd()
-        glEnable(GL_DEPTH_TEST)
+        glDepthRange(0.0, 1.0)
         glDisable(GL_BLEND)
 
     def _upload(self, surface):

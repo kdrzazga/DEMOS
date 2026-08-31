@@ -110,13 +110,14 @@ class MultiPetsciiImageManager:
         glColor3f(1.0, 1.0, 1.0)
         glBindTexture(GL_TEXTURE_2D, self.texture)
         center_y = Constants.HEIGHT / 2.0
+        yy = center_y - 6*24
         glBegin(GL_QUAD_STRIP)
         for i in range(self.segments + 1):
             s = i / self.segments
             x, z = self._curve_point(s)
             u = self.scroll + (1.0 - s) * self.window
-            glTexCoord2f(u, 0.0); glVertex3f(x, center_y + self.half_height, z)
-            glTexCoord2f(u, 1.0); glVertex3f(x, center_y - self.half_height, z)
+            glTexCoord2f(u, 0.0); glVertex3f(x, yy + self.half_height, z)
+            glTexCoord2f(u, 1.0); glVertex3f(x, yy - self.half_height, z)
         glEnd()
         glDepthRange(0.0, 1.0)
         glDisable(GL_BLEND)

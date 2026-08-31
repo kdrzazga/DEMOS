@@ -102,7 +102,6 @@ class Outro:
         # animation config (instance attributes, easy to nudge)
         self.char_size = 24
         self.frame_ms = 200          # each head+torso combination is held this long
-        self.guy_width, self.guy_height = 13, 16
         self.camera_fit = 1.4        # camera distance as a multiple of the surface
         self.sway_degrees = 10.0
         self.sway_period = 5000.0    # ms for a full left-right-left sway
@@ -151,11 +150,9 @@ class Outro:
 
         if self.guy is None:
             self.guy = GreenGuy(self.char_size)
-            # centre the 13x16 guy in the 40x25 screen; the head paste follows origin
-            self.guy.origin = ((Constants.ROWS - self.guy_height) // 2,
-                               (Constants.COLUMNS - self.guy_width) // 2)
         self.guy_w, self.guy_h = self.guy.size()
-        self.surface = pygame.Surface((self.guy_w, self.guy_h))
+        self.fig_w, self.fig_h = self.guy.figure_size()
+        self.surface = pygame.Surface((self.fig_w, self.fig_h))
         self.texture = None
         self.frame = -1
         self.texture = self._render_frame("smile")
@@ -244,12 +241,12 @@ class Outro:
             glMatrixMode(GL_MODELVIEW)
             glLoadIdentity()
             glTranslatef(0.0, 0.0, -self.z)
-            glTranslatef(3 * self.guy_w / Constants.COLUMNS, 0.0, 0.0)
+            glTranslatef(3 * self.guy_w / Constants.COLUMNS, 2 * self.guy_h / Constants.ROWS, 0.0)
             glRotatef(self.sway, 0.0, 1.0, 0.0)
 
             glColor3f(1.0, 1.0, 1.0)
             glBindTexture(GL_TEXTURE_2D, self.texture)
-            half_width, half_height = self.guy_w / 2, self.guy_h / 2
+            half_width, half_height = self.fig_w / 2, self.fig_h / 2
             glBegin(GL_QUADS)
             glTexCoord2f(0, 0); glVertex3f(-half_width, half_height, 0)
             glTexCoord2f(1, 0); glVertex3f(half_width, half_height, 0)
@@ -272,8 +269,6 @@ class Outro:
         pygame.mixer.init()
 
         self.guy = GreenGuy(self.char_size)
-        self.guy.origin = ((Constants.ROWS - self.guy_height) // 2,
-                           (Constants.COLUMNS - self.guy_width) // 2)
         width, height = self.guy.size()
         pygame.display.set_mode((width, height), DOUBLEBUF | OPENGL)
         pygame.display.set_caption("Outro - Green Guy")
@@ -300,7 +295,7 @@ class Outro:
         path = os.path.join(os.path.dirname(__file__), "resources", self.music_file)
         pygame.mixer.music.load(path)
         pygame.mixer.music.set_volume(self.start_volume)
-        pygame.mixer.music.play(-1)
+        pygame.mixer.music.play()
         self.current_volume = self.start_volume
         self.music_start_ms = pygame.time.get_ticks()
 
@@ -324,7 +319,7 @@ class Outro:
         """Build one head+torso combination and upload it as a fresh texture,
         deleting the previous one."""
         getattr(self.guy, name)()
-        self.guy.render(self.surface)
+        self.guy.render_figure(self.surface)
         if self.texture is not None:
             glDeleteTextures([self.texture])
         data = pygame.image.tobytes(self.surface, "RGBA")

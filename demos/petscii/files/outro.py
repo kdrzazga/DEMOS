@@ -254,9 +254,9 @@ class Outro:
             glTexCoord2f(0, 1); glVertex3f(-half_width, -half_height, 0)
             glEnd()
 
-        self.helix.draw()
         if self.arrived:
             self.captions_manager.draw()
+        self.helix.draw()
 
     def stop_music(self):
         pygame.mixer.music.stop()

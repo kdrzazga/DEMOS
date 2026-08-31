@@ -47,17 +47,23 @@ from demos.petscii.files.petscii.images.caption4 import Caption4
 from demos.petscii.files.petscii.images.caption5 import Caption5
 from demos.petscii.files.petscii.images.caption6 import Caption6
 from demos.petscii.files.petscii.images.caption7 import Caption7
+from demos.petscii.files.petscii.images.caption8 import Caption8
+from demos.petscii.files.petscii.images.caption9 import Caption9
+from demos.petscii.files.petscii.images.caption10 import Caption10
+from demos.petscii.files.petscii.images.caption11 import Caption11
 from lib.multi_petscii_image import MultiPetsciiImage
 
 
 class MultiPetsciiImageManager:
 
-    SPEED = 0.0015
+    SPEED = 0.0015 * 3
 
     def __init__(self, char_size=24, sweep=math.pi / 2, segments=80, radius=None):
         self.captions = MultiPetsciiImage(
             (Caption1(char_size), Caption2(char_size), Caption3(char_size), Caption4(char_size)
-             , Caption5(char_size), Caption6(char_size), Caption7(char_size)))
+             , Caption5(char_size), Caption6(char_size), Caption7(char_size), Caption8(char_size), Caption9(char_size)
+             , Caption10(char_size), Caption11(char_size)
+             ))
         self.tex_w, self.tex_h = self.captions.size()
         surface = pygame.Surface((self.tex_w, self.tex_h), pygame.SRCALPHA)
         self.captions.render(surface, transparent_space=True)

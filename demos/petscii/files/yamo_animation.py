@@ -70,7 +70,7 @@ class YamoAnimation:
 
         # tunables -- kept on the instance so the choreography is easy to nudge
         self.rest_z = 0.3                     # how far forward it floats (sets its size)
-        self.spin_speed = 2.0                 # degrees per frame: a slow turn at 25 fps
+        self.spin_speed = 4.0                 # degrees per frame at 25 fps
         self.fly_in_frames = int(Constants.FPS * 1.5)
         self.width_fraction = 0.55            # of the visible half-width, at most
         self.height_fraction = 0.62           # of the visible half-height, at most

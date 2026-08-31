@@ -9,11 +9,11 @@ class BruceLee(PetsciiImage):
     its hardcoded sprite at self.origin -- the top-left cell Bruce is drawn from.
     """
 
-    LIGHT_GRAY = 15
+    GRAY = 13
 
     def __init__(self, char_size):
         super().__init__(char_size)
-        self.background_color = BruceLee.LIGHT_GRAY
+        self.background_color = BruceLee.GRAY
         self.origin = (0, 0)  # (row, column) top-left corner Bruce is drawn from
         self.chars = self.blank(Constants.SPACE)
         self.reversed = self.blank(0)

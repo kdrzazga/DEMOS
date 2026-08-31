@@ -43,6 +43,8 @@ from OpenGL.GL import (
 )
 from OpenGL.GLU import gluPerspective
 
+from lib import Globals
+
 _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
@@ -131,10 +133,10 @@ class Outro:
         self.guy_far_factor = 8.0
 
         # credits typed in the lower-left once the speech ends
-        self.credits_font_size = 22
+        self.credits_font_size = 20
         self.credits_origin = (470, 470)  # (x, y) top-left of the credits block, screen pixels
-        self.credits_line_gap = 16         # extra pixels between credit lines
-        self.credits_pause_ms = 900       # pause after each caption is written
+        self.credits_line_gap = 13         # extra pixels between credit lines
+        self.credits_pause_ms = 100       # pause after each caption is written
 
         self.helix_speed = 0.03
 
@@ -235,7 +237,7 @@ class Outro:
         if main_elapsed >= self.main_ms:
             if not self.speech_ended:
                 self.speech_ended = True
-                self.texture = self._render_frame("draw_guy")
+                self.texture = self._render_frame("smile")
                 self._begin_credits()
         else:
             step = (main_elapsed // self.frame_ms) % len(Outro.FRAMES)
@@ -375,6 +377,7 @@ class Outro:
             clock.tick(self.fps)
 
         self.stop_music()
+        print("Elapsed time " + str(Globals.get_duration()))
         pygame.quit()
 
     # ---- music --------------------------------------------------------------

@@ -313,6 +313,8 @@ class PetsciiDemo(PygameDemo):
                     self.running = False               # ESC'd out of the asterisks -> quit
         elif self.finale_phase == PetsciiDemo.FINALE_OUTRO:
             self.outro.update()
+            if self.outro.finished:
+                self.running = False
 
     def start_clear(self):
         """Begin zooming the three screens out and dropping the floor away."""

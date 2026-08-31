@@ -14,6 +14,9 @@ class GreenGuy(PetsciiImage):
     as inclusive (column, row) corners.
     """
 
+    FIGURE_COLUMNS = 13
+    FIGURE_ROWS = 16
+
     def __init__(self, char_size=16):
         super().__init__(char_size)
         self.origin = (0, 0)  # (row, column) top-left cell a sprite is stamped from
@@ -108,6 +111,16 @@ class GreenGuy(PetsciiImage):
 
     def blank(self, value):
         return [[value] * Constants.COLUMNS for _ in range(Constants.ROWS)]
+
+    def figure_size(self, char_size=None):
+        cell_width, cell_height = self.font(char_size).size("W")
+        return GreenGuy.FIGURE_COLUMNS * cell_width, GreenGuy.FIGURE_ROWS * cell_height
+
+    def render_figure(self, surface, char_size=None, transparent_space=False):
+        cell_width, cell_height = self.font(char_size).size("W")
+        origin_row, origin_column = self.origin
+        self.render(surface, char_size, transparent_space,
+                    (-origin_column * cell_width, -origin_row * cell_height))
 
     def draw_guy(self):
         """The whole figure: the guy's default head sitting on its torso."""

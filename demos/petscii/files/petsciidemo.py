@@ -96,6 +96,7 @@ class PetsciiDemo(PygameDemo):
         self.captions_frame = None
 
     def setup(self):
+        pygame.mouse.set_visible(False)
         self.frame = 0
         self.scene_frame = 0
         self.scene = PetsciiDemo.SCENE_WELCOME

@@ -43,22 +43,38 @@ if _ROOT not in sys.path:
 
 from demos.petscii.files.globals import Constants
 from demos.petscii.files.petscii.green_guy import GreenGuy
+from lib.helix import PetsciiHelix
+from lib.cequals import Cequals
+from demos.petscii.files.petscii.images.multi_petscii_image_manager import MultiPetsciiImageManager
 
 
 class Outro:
-    """The demo's outro: the Green Guy cycling through his expressions while the
-    whole picture sways and zooms in and out (exactly as green_guy_test.py does),
-    over AspirationRamos.mp3 fading up from 10% to 100% volume in 1% steps every
-    100 ms.
+    """The demo's outro: after a short delay the Green Guy flies in from far away
+    (smiling), and once he arrives the expression/sway/zoom animation runs for
+    exactly 19 seconds. The AspirationRamos chiptune plays underneath the whole
+    time (fading in), with outro.mp3 layered over the 19-second stretch. A rainbow
+    PETSCII helix spirals on the left throughout.
 
-    It carries its own animation + music but no window: :meth:`begin` /
-    :meth:`update` / :meth:`draw` run it inside a caller's existing OpenGL context
-    (so the main demo can play it in the same window), while :meth:`run` is a
+    begin() / update() / draw() are frame-driven and never block, so a caller can
+    run this and other animations together in one OpenGL context; run() is a
     standalone loop that opens its own window for previewing.
     """
 
-    # every head+torso combination, shown in turn
     FRAMES = (
+        "mouth_wide_open",
+        "mouth_left",
+        "mouth0",
+        "mouth_wide_open",
+        "mouth_left",
+        "mouth_wide_open",
+        "mouth_left",
+        "mouth0",
+        "mouth_o",
+        "smile",
+    )
+
+    # every head+torso combination, shown in turn
+    FRAMES2 = (
         "draw_guy",
         "mouth_wide_open",
         "mouth_left",
@@ -70,11 +86,22 @@ class Outro:
         "mouth_o",
     )
 
+    DELAY = 0
+    ARRIVE = 1
+    MAIN = 2
+
     def __init__(self, fps=60):
+
+        self.credits = ('Music: Wodnik & Ramos', 'K&A+ PETSCII logo: tom3000'
+                     , 'Other PETSCII graphics: KD', 'Code: KD')
+        self.talk = ('For the past 40+ years, PETSCII art has showcased the creativity of Commodore computers like '
+                     'the C64. Similar to ASCII art, it uses simple characters to create expressive images, '
+                     'but with a distinct retro style and limited palette. Even nowadays, it celebrates the '
+                     'ingenuity of early digital artists and the legacy of vintage computing.')
+
         # animation config (instance attributes, easy to nudge)
         self.char_size = 24
         self.frame_ms = 200          # each head+torso combination is held this long
-        self.guy_width, self.guy_height = 13, 16
         self.camera_fit = 1.4        # camera distance as a multiple of the surface
         self.sway_degrees = 10.0
         self.sway_period = 5000.0    # ms for a full left-right-left sway
@@ -83,12 +110,19 @@ class Outro:
         self.zoom_far = 1.4          # farthest camera distance, fraction of the fit distance
         self.fps = fps
 
-        # music config: start quiet and fade up
         self.music_file = "AspirationRamos.mp3"
         self.start_volume = 0.10
         self.volume_step = 0.01
         self.volume_step_ms = 100
         self.max_volume = 1.0
+        self.outro_sound_file = "outro.mp3"
+
+        self.delay_ms = 2000
+        self.arrive_ms = 2500
+        self.main_ms = 19000
+        self.guy_far_factor = 8.0
+
+        self.helix_speed = 0.03
 
         # runtime state (filled in begin())
         self.guy = None
@@ -98,6 +132,14 @@ class Outro:
         self.sway = 0.0
         self.z = 0.0
         self.running = False
+        self.helix = None
+        self.phase = Outro.DELAY
+        self.arrived = False
+        self.main_start_ms = None
+        self.guy_far_z = 0.0
+        self.outro_sound = None
+        self.speech_ended = False
+        self.captions_manager = None
 
     # ---- embedded lifecycle (runs in the caller's window/context) -----------
     def begin(self):
@@ -108,66 +150,118 @@ class Outro:
 
         if self.guy is None:
             self.guy = GreenGuy(self.char_size)
-            # centre the 13x16 guy in the 40x25 screen; the head paste follows origin
-            self.guy.origin = ((Constants.ROWS - self.guy_height) // 2,
-                               (Constants.COLUMNS - self.guy_width) // 2)
         self.guy_w, self.guy_h = self.guy.size()
-        self.surface = pygame.Surface((self.guy_w, self.guy_h))
+        self.fig_w, self.fig_h = self.guy.figure_size()
+        self.surface = pygame.Surface((self.fig_w, self.fig_h))
         self.texture = None
-        self.frame = 0
-        self.texture = self._render_frame(Outro.FRAMES[self.frame])
+        self.frame = -1
+        self.texture = self._render_frame("smile")
 
         self.base_distance = max(self.guy_w, self.guy_h) * self.camera_fit
-        self.z = self.base_distance
+        self.guy_far_z = self.base_distance * self.guy_far_factor
+        self.z = self.guy_far_z
         self.z_near = self.base_distance * self.zoom_near
         self.z_far = self.base_distance * self.zoom_far
         self._zoom_step = self.zoom_step
 
+        self.phase = Outro.DELAY
+        self.arrived = False
+        self.main_start_ms = None
+        self.speech_ended = False
         self.start_ms = pygame.time.get_ticks()
         self._start_music()
 
-    def update(self):
-        """Advance one frame: cycle the expression, sway, zoom, and fade the music."""
-        now = pygame.time.get_ticks()
-        step = ((now - self.start_ms) // self.frame_ms) % len(Outro.FRAMES)
-        if step != self.frame:
-            self.frame = step
-            self.texture = self._render_frame(Outro.FRAMES[self.frame])
+        width, height = pygame.display.get_surface().get_size()
+        eye = -Constants.CAMERA_Z
+        visible_half_width = eye * math.tan(math.radians(Constants.FOV / 2)) * (width / height)
+        self.helix = PetsciiHelix(-0.7 * visible_half_width, self.helix_speed, Cequals(32),
+                                  z_stretch=5.0, x_flatten=0.5)
+        self.captions_manager = MultiPetsciiImageManager()
 
+    def update(self):
+        now = pygame.time.get_ticks()
+        self.helix.update()
+        self._fade_in_music()
+        elapsed = now - self.start_ms
+        if elapsed < self.delay_ms:
+            self.phase = Outro.DELAY
+            return
+        if not self.arrived:
+            self.phase = Outro.ARRIVE
+            self._update_arrival(now, elapsed)
+        else:
+            self.phase = Outro.MAIN
+            self._update_main(now)
+
+    def _update_arrival(self, now, elapsed):
+        progress = min(1.0, (elapsed - self.delay_ms) / self.arrive_ms)
+        eased = 1.0 - (1.0 - progress) ** 3
+        self.z = self.guy_far_z + (self.base_distance - self.guy_far_z) * eased
+        self.sway = self.sway_degrees * math.sin(2 * math.pi * now / self.sway_period)
+        if progress >= 1.0:
+            self.arrived = True
+            self.main_start_ms = now
+            self.z = self.base_distance
+            self._zoom_step = self.zoom_step
+            self._play_outro_music()
+
+    def _update_main(self, now):
+        main_elapsed = now - self.main_start_ms
+        if main_elapsed >= self.main_ms:
+            if not self.speech_ended:
+                self.speech_ended = True
+                self.texture = self._render_frame("draw_guy")
+        else:
+            step = (main_elapsed // self.frame_ms) % len(Outro.FRAMES)
+            if step != self.frame:
+                self.frame = step
+                self.texture = self._render_frame(Outro.FRAMES[self.frame])
         self.sway = self.sway_degrees * math.sin(2 * math.pi * now / self.sway_period)
         self.z += self._zoom_step
         if self.z >= self.z_far:
             self.z, self._zoom_step = self.z_far, -self.zoom_step
         elif self.z <= self.z_near:
             self.z, self._zoom_step = self.z_near, self.zoom_step
+        self.captions_manager.update()
 
-        self._fade_in_music()
+    @property
+    def main_finished(self):
+        return self.arrived and self.main_start_ms is not None \
+            and pygame.time.get_ticks() - self.main_start_ms >= self.main_ms
 
     def draw(self):
         """Draw the guy into whatever window is current, sized to its own aspect
         and centred (the projection uses the live window aspect, so it is correct
         in the demo's window or a standalone one alike)."""
-        window_width, window_height = pygame.display.get_surface().get_size()
-        glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()
-        gluPerspective(45, window_width / window_height, 1.0, 10000.0)
-        glMatrixMode(GL_MODELVIEW)
-        glLoadIdentity()
-        glTranslatef(0.0, 0.0, -self.z)
-        glRotatef(self.sway, 0.0, 1.0, 0.0)
+        if self.phase != Outro.DELAY:
+            window_width, window_height = pygame.display.get_surface().get_size()
+            glMatrixMode(GL_PROJECTION)
+            glLoadIdentity()
+            gluPerspective(45, window_width / window_height, 1.0, 100000.0)
+            glMatrixMode(GL_MODELVIEW)
+            glLoadIdentity()
+            glTranslatef(0.0, 0.0, -self.z)
+            glTranslatef(3 * self.guy_w / Constants.COLUMNS, 2 * self.guy_h / Constants.ROWS, 0.0)
+            glRotatef(self.sway, 0.0, 1.0, 0.0)
 
-        glColor3f(1.0, 1.0, 1.0)
-        glBindTexture(GL_TEXTURE_2D, self.texture)
-        half_width, half_height = self.guy_w / 2, self.guy_h / 2
-        glBegin(GL_QUADS)
-        glTexCoord2f(0, 0); glVertex3f(-half_width, half_height, 0)
-        glTexCoord2f(1, 0); glVertex3f(half_width, half_height, 0)
-        glTexCoord2f(1, 1); glVertex3f(half_width, -half_height, 0)
-        glTexCoord2f(0, 1); glVertex3f(-half_width, -half_height, 0)
-        glEnd()
+            glColor3f(1.0, 1.0, 1.0)
+            glBindTexture(GL_TEXTURE_2D, self.texture)
+            half_width, half_height = self.fig_w / 2, self.fig_h / 2
+            glBegin(GL_QUADS)
+            glTexCoord2f(0, 0); glVertex3f(-half_width, half_height, 0)
+            glTexCoord2f(1, 0); glVertex3f(half_width, half_height, 0)
+            glTexCoord2f(1, 1); glVertex3f(half_width, -half_height, 0)
+            glTexCoord2f(0, 1); glVertex3f(-half_width, -half_height, 0)
+            glEnd()
+
+        self.helix.draw()
+        if self.arrived:
+            self.captions_manager.draw()
 
     def stop_music(self):
         pygame.mixer.music.stop()
+        if self.outro_sound is not None:
+            self.outro_sound.stop()
 
     # ---- standalone loop (opens its own window) -----------------------------
     def run(self):
@@ -175,8 +269,6 @@ class Outro:
         pygame.mixer.init()
 
         self.guy = GreenGuy(self.char_size)
-        self.guy.origin = ((Constants.ROWS - self.guy_height) // 2,
-                           (Constants.COLUMNS - self.guy_width) // 2)
         width, height = self.guy.size()
         pygame.display.set_mode((width, height), DOUBLEBUF | OPENGL)
         pygame.display.set_caption("Outro - Green Guy")
@@ -203,13 +295,11 @@ class Outro:
         path = os.path.join(os.path.dirname(__file__), "resources", self.music_file)
         pygame.mixer.music.load(path)
         pygame.mixer.music.set_volume(self.start_volume)
-        pygame.mixer.music.play(-1)          # loop underneath the outro
+        pygame.mixer.music.play()
         self.current_volume = self.start_volume
         self.music_start_ms = pygame.time.get_ticks()
 
     def _fade_in_music(self):
-        """Raise the volume one step (1%) every volume_step_ms (100 ms) until it
-        reaches full volume. Derived from elapsed time so it stays on schedule."""
         if self.current_volume >= self.max_volume:
             return
         elapsed = pygame.time.get_ticks() - self.music_start_ms
@@ -219,12 +309,17 @@ class Outro:
             self.current_volume = target
             pygame.mixer.music.set_volume(target)
 
+    def _play_outro_music(self):
+        path = os.path.join(os.path.dirname(__file__), "resources", self.outro_sound_file)
+        self.outro_sound = pygame.mixer.Sound(path)
+        self.outro_sound.play()
+
     # ---- rendering ----------------------------------------------------------
     def _render_frame(self, name):
         """Build one head+torso combination and upload it as a fresh texture,
         deleting the previous one."""
         getattr(self.guy, name)()
-        self.guy.render(self.surface)
+        self.guy.render_figure(self.surface)
         if self.texture is not None:
             glDeleteTextures([self.texture])
         data = pygame.image.tobytes(self.surface, "RGBA")

@@ -5,9 +5,12 @@ import sys
 import pygame
 from pygame.locals import DOUBLEBUF, KEYDOWN, K_ESCAPE, OPENGL, QUIT
 from OpenGL.GL import (
+    GL_BLEND,
     GL_COLOR_BUFFER_BIT,
     GL_DEPTH_BUFFER_BIT,
     GL_DEPTH_TEST,
+    GL_ONE_MINUS_SRC_ALPHA,
+    GL_SRC_ALPHA,
     GL_MODELVIEW,
     GL_NEAREST,
     GL_PROJECTION,
@@ -19,15 +22,18 @@ from OpenGL.GL import (
     GL_UNSIGNED_BYTE,
     glBegin,
     glBindTexture,
+    glBlendFunc,
     glClear,
     glClearColor,
     glColor3f,
     glDeleteTextures,
+    glDisable,
     glEnable,
     glEnd,
     glGenTextures,
     glLoadIdentity,
     glMatrixMode,
+    glOrtho,
     glRotatef,
     glTexCoord2f,
     glTexImage2D,
@@ -36,6 +42,8 @@ from OpenGL.GL import (
     glVertex3f,
 )
 from OpenGL.GLU import gluPerspective
+
+from lib import Globals
 
 _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 if _ROOT not in sys.path:
@@ -46,6 +54,7 @@ from demos.petscii.files.petscii.green_guy import GreenGuy
 from lib.helix import PetsciiHelix
 from lib.cequals import Cequals
 from demos.petscii.files.petscii.images.multi_petscii_image_manager import MultiPetsciiImageManager
+from demos.petscii.files.typer import Typer
 
 
 class Outro:
@@ -89,6 +98,7 @@ class Outro:
     DELAY = 0
     ARRIVE = 1
     MAIN = 2
+    CREDITS = 3
 
     def __init__(self, fps=60):
 
@@ -122,6 +132,12 @@ class Outro:
         self.main_ms = 19000
         self.guy_far_factor = 8.0
 
+        # credits typed in the lower-left once the speech ends
+        self.credits_font_size = 20
+        self.credits_origin = (470, 470)  # (x, y) top-left of the credits block, screen pixels
+        self.credits_line_gap = 13         # extra pixels between credit lines
+        self.credits_pause_ms = 100       # pause after each caption is written
+
         self.helix_speed = 0.03
 
         # runtime state (filled in begin())
@@ -140,6 +156,13 @@ class Outro:
         self.outro_sound = None
         self.speech_ended = False
         self.captions_manager = None
+        self.credits_surface = None
+        self.credits_typers = ()
+        self.credits_texture = None
+        self.credits_frame = 0
+        self.credits_end_frame = 0
+        self.mute_start_volume = 0.0
+        self.finished = False
 
     # ---- embedded lifecycle (runs in the caller's window/context) -----------
     def begin(self):
@@ -181,7 +204,8 @@ class Outro:
     def update(self):
         now = pygame.time.get_ticks()
         self.helix.update()
-        self._fade_in_music()
+        if not self.speech_ended:
+            self._fade_in_music()
         elapsed = now - self.start_ms
         if elapsed < self.delay_ms:
             self.phase = Outro.DELAY
@@ -189,9 +213,12 @@ class Outro:
         if not self.arrived:
             self.phase = Outro.ARRIVE
             self._update_arrival(now, elapsed)
-        else:
+        elif not self.speech_ended:
             self.phase = Outro.MAIN
             self._update_main(now)
+        else:
+            self.phase = Outro.CREDITS
+            self._update_credits(now)
 
     def _update_arrival(self, now, elapsed):
         progress = min(1.0, (elapsed - self.delay_ms) / self.arrive_ms)
@@ -210,7 +237,8 @@ class Outro:
         if main_elapsed >= self.main_ms:
             if not self.speech_ended:
                 self.speech_ended = True
-                self.texture = self._render_frame("draw_guy")
+                self.texture = self._render_frame("smile")
+                self._begin_credits()
         else:
             step = (main_elapsed // self.frame_ms) % len(Outro.FRAMES)
             if step != self.frame:
@@ -223,6 +251,33 @@ class Outro:
         elif self.z <= self.z_near:
             self.z, self._zoom_step = self.z_near, self.zoom_step
         self.captions_manager.update()
+
+    def _begin_credits(self):
+        self.credits_surface = pygame.Surface((Constants.WIDTH, Constants.HEIGHT), pygame.SRCALPHA)
+        font = pygame.font.Font(Constants.FONT_PATH, self.credits_font_size)
+        line_height = font.get_height() + self.credits_line_gap
+        x, y = self.credits_origin
+        pause = round(self.credits_pause_ms * self.fps / 1000)
+        typers = []
+        start = 0
+        for index, line in enumerate(self.credits):
+            typers.append(Typer(start, line, self.credits_surface, x, y + index * line_height,
+                                self.credits_font_size))
+            start += len(line) + pause
+        self.credits_typers = tuple(typers)
+        self.credits_end_frame = start+100
+        self.credits_frame = 0
+        self.mute_start_volume = self.current_volume
+
+    def _update_credits(self, now):
+        self.credits_frame += 1
+        self._fade_out_music()
+        self.sway = self.sway_degrees * math.sin(2 * math.pi * now / self.sway_period)
+        self.credits_surface.fill((0, 0, 0, 0))
+        for typer in self.credits_typers:
+            typer.type(self.credits_frame, beeping=True)
+        if self.credits_frame >= self.credits_end_frame:
+            self.finished = True
 
     @property
     def main_finished(self):
@@ -254,9 +309,43 @@ class Outro:
             glTexCoord2f(0, 1); glVertex3f(-half_width, -half_height, 0)
             glEnd()
 
-        self.helix.draw()
         if self.arrived:
             self.captions_manager.draw()
+        self.helix.draw()
+        if self.credits_surface is not None:
+            self._draw_credits()
+
+    def _draw_credits(self):
+        """Blit the typed credits as a flat 2D overlay (not tilted)."""
+        if self.credits_texture is None:
+            self.credits_texture = glGenTextures(1)
+        data = pygame.image.tobytes(self.credits_surface, "RGBA")
+        glBindTexture(GL_TEXTURE_2D, self.credits_texture)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, self.credits_surface.get_width(),
+                     self.credits_surface.get_height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, data)
+
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        glOrtho(0, Constants.WIDTH, Constants.HEIGHT, 0, -1.0, 1.0)
+        glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()
+
+        glEnable(GL_TEXTURE_2D)
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        glDisable(GL_DEPTH_TEST)
+        glColor3f(1.0, 1.0, 1.0)
+        glBindTexture(GL_TEXTURE_2D, self.credits_texture)
+        glBegin(GL_QUADS)
+        glTexCoord2f(0, 0); glVertex3f(0, 0, 0)
+        glTexCoord2f(1, 0); glVertex3f(Constants.WIDTH, 0, 0)
+        glTexCoord2f(1, 1); glVertex3f(Constants.WIDTH, Constants.HEIGHT, 0)
+        glTexCoord2f(0, 1); glVertex3f(0, Constants.HEIGHT, 0)
+        glEnd()
+        glEnable(GL_DEPTH_TEST)
+        glDisable(GL_BLEND)
 
     def stop_music(self):
         pygame.mixer.music.stop()
@@ -277,7 +366,7 @@ class Outro:
         self.begin()
         clock = pygame.time.Clock()
         self.running = True
-        while self.running:
+        while self.running and not self.finished:
             for event in pygame.event.get():
                 if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
                     self.running = False
@@ -288,6 +377,7 @@ class Outro:
             clock.tick(self.fps)
 
         self.stop_music()
+        print("Elapsed time " + str(Globals.get_duration()))
         pygame.quit()
 
     # ---- music --------------------------------------------------------------
@@ -308,6 +398,10 @@ class Outro:
         if target != self.current_volume:
             self.current_volume = target
             pygame.mixer.music.set_volume(target)
+
+    def _fade_out_music(self):
+        fade = max(0.0, 1.0 - self.credits_frame / self.credits_end_frame)
+        pygame.mixer.music.set_volume(self.mute_start_volume * fade)
 
     def _play_outro_music(self):
         path = os.path.join(os.path.dirname(__file__), "resources", self.outro_sound_file)

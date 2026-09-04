@@ -31,7 +31,6 @@ class ScreenWindingAnim:
         secret_service_image = self._load_image("logo-secret-service.txt", background_color=2)
         secret_service_description = self._load_image("secret-service.txt", background_color=2)
         kna_image = self._load_image("kna.txt", background_color=0)
-        mosaic_image = self._load_image("mosaic.txt", background_color=0)
         self.font = market_image.font(char_size)
         self.cell_width, self.cell_height = self.font.size("W")
         self.frame = self._build_frame(border_color, background_color)

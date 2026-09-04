@@ -1,13 +1,135 @@
+import json
 import os
 import shutil
 import subprocess
 
-import cv2
 import numpy as np
 import pygame
 from OpenGL.GL import *
 
 from demos.demo3.files.base_stage import BaseStage
+
+
+# ffmpeg is frequently unpacked outside PATH on Windows; these dirs are tried
+# only after an explicit env var (FFMPEG/FFPROBE) and PATH both come up empty.
+_FFMPEG_FALLBACK_DIRS = (
+    r"D:\ffmpeg\bin",
+    r"C:\ffmpeg\bin",
+)
+
+
+def _find_tool(name, env_var):
+    """Locate an ffmpeg-family executable, preferring an explicit env var, then
+    PATH, then the common install dirs above. Falls back to the bare name so
+    subprocess raises a clear 'file not found' if it is genuinely absent."""
+    override = os.environ.get(env_var)
+    if override:
+        return override
+    on_path = shutil.which(name)
+    if on_path:
+        return on_path
+    for directory in _FFMPEG_FALLBACK_DIRS:
+        candidate = os.path.join(directory, name + ".exe")
+        if os.path.exists(candidate):
+            return candidate
+    return name
+
+
+class FfmpegFrameReader:
+    """Decodes a video into raw RGB frames with ffmpeg, replacing OpenCV.
+
+    ffprobe supplies the geometry (fps, frame count, size) up front, then ffmpeg
+    streams the picture as rgb24 to a pipe. Each ``read`` returns the next frame
+    as a ``(height, width, 3)`` uint8 array already in RGB order, so it can go
+    straight to the GL texture with no colour swap.
+    """
+
+    def __init__(self, video_path, ffmpeg=None, ffprobe=None):
+        self.video_path = video_path
+        self.ffmpeg = ffmpeg or _find_tool("ffmpeg", "FFMPEG")
+        self.ffprobe = ffprobe or _find_tool("ffprobe", "FFPROBE")
+        self.fps, self.frame_count, self.width, self.height = self._probe()
+        self._frame_bytes = self.width * self.height * 3
+        self._process = self._open_stream()
+
+    def _probe(self):
+        command = [self.ffprobe, "-v", "error", "-select_streams", "v:0",
+                   "-show_entries",
+                   "stream=r_frame_rate,nb_frames,width,height,duration"
+                   ":format=duration",
+                   "-of", "json", self.video_path]
+        info = json.loads(subprocess.run(
+            command, capture_output=True, text=True, check=True).stdout)
+        stream = info["streams"][0]
+        width = int(stream["width"])
+        height = int(stream["height"])
+        fps = self._parse_fraction(stream.get("r_frame_rate")) or 30.0
+        frame_count = self._count_frames(stream, info.get("format", {}), fps)
+        return fps, frame_count, width, height
+
+    @staticmethod
+    def _parse_fraction(text):
+        """Turn ffprobe's ``"30000/1001"`` rate into a float; 0.0 if unusable."""
+        if not text:
+            return 0.0
+        numerator, _, denominator = text.partition("/")
+        try:
+            den = float(denominator) if denominator else 1.0
+            return float(numerator) / den if den else 0.0
+        except ValueError:
+            return 0.0
+
+    @staticmethod
+    def _count_frames(stream, container, fps):
+        """Prefer the stored frame count; if the container did not record one,
+        derive it from the duration and the frame rate."""
+        stored = stream.get("nb_frames")
+        if stored and stored != "N/A":
+            try:
+                return int(stored)
+            except ValueError:
+                pass
+        duration = stream.get("duration") or container.get("duration")
+        try:
+            return int(round(float(duration) * fps)) if duration else 0
+        except (TypeError, ValueError):
+            return 0
+
+    def _open_stream(self):
+        command = [self.ffmpeg, "-loglevel", "error", "-i", self.video_path,
+                   "-f", "rawvideo", "-pix_fmt", "rgb24", "-"]
+        return subprocess.Popen(command, stdout=subprocess.PIPE,
+                                stderr=subprocess.DEVNULL)
+
+    def read(self):
+        """Return the next frame as an RGB array, or None at end of stream."""
+        raw = self._read_exact(self._frame_bytes)
+        if raw is None:
+            return None
+        return np.frombuffer(raw, np.uint8).reshape(self.height, self.width, 3)
+
+    def _read_exact(self, size):
+        chunks = []
+        remaining = size
+        while remaining > 0:
+            chunk = self._process.stdout.read(remaining)
+            if not chunk:
+                return None            # EOF before a full frame -> end of video
+            chunks.append(chunk)
+            remaining -= len(chunk)
+        return b"".join(chunks)
+
+    def release(self):
+        if self._process is None:
+            return
+        if self._process.stdout is not None:
+            self._process.stdout.close()
+        self._process.terminate()
+        try:
+            self._process.wait(timeout=1.0)
+        except subprocess.TimeoutExpired:
+            self._process.kill()
+        self._process = None
 
 
 class Intro(BaseStage):
@@ -17,7 +139,7 @@ class Intro(BaseStage):
     frame is uploaded to a single GL texture and drawn on a screen-filling quad,
     so the hand-off to the 3D Stage1 is just the next frame in the same context.
 
-    OpenCV decodes only the picture, so the soundtrack is played separately
+    ffmpeg decodes only the picture, so the soundtrack is played separately
     through ``pygame.mixer`` from a WAV sibling of the movie (``iny.wav``). The
     video is then clocked off the *audio* position, which keeps picture and
     sound locked together and lets the render loop run at whatever rate it can;
@@ -33,9 +155,9 @@ class Intro(BaseStage):
         self.fade_ms = 500          # fade the tail of the clip to black
         self.background = (0.0, 0.0, 0.0)
 
-        self.capture = cv2.VideoCapture(os.path.join(res_path, self.movie))
-        self.video_fps = self.capture.get(cv2.CAP_PROP_FPS) or 30.0
-        frame_count = self.capture.get(cv2.CAP_PROP_FRAME_COUNT) or 0.0
+        self.capture = self._open_video(os.path.join(res_path, self.movie))
+        self.video_fps = self.capture.fps if self.capture else 30.0
+        frame_count = self.capture.frame_count if self.capture else 0
         self.duration_ms = frame_count / self.video_fps * 1000.0
 
         self.audio_path = os.path.join(res_path, self.audio)
@@ -44,8 +166,18 @@ class Intro(BaseStage):
         self.texture = self.make_texture()
         self._start_ms = None       # set on the first rendered frame
         self._next_index = 0        # index of the next frame to decode
-        self._last_frame = None     # most recently decoded frame (BGR)
-        self._exhausted = False
+        self._last_frame = None     # most recently decoded frame (RGB)
+        self._exhausted = self.capture is None
+
+    @staticmethod
+    def _open_video(path):
+        """Build the frame reader, or None if ffmpeg/ffprobe or the movie are
+        unavailable - in which case the intro shows black and skips through,
+        exactly as it did before when a clip could not be opened."""
+        try:
+            return FfmpegFrameReader(path)
+        except (OSError, subprocess.SubprocessError, ValueError, KeyError):
+            return None
 
     # ---- audio ----------------------------------------------------------
     def _init_audio(self):
@@ -65,9 +197,7 @@ class Intro(BaseStage):
     def _ensure_audio(self):
         if os.path.exists(self.audio_path):
             return True
-        ffmpeg = os.environ.get("FFMPEG") or shutil.which("ffmpeg")
-        if not ffmpeg:
-            return False
+        ffmpeg = _find_tool("ffmpeg", "FFMPEG")
         try:
             subprocess.run([ffmpeg, "-y", "-loglevel", "error",
                             "-i", os.path.join(self.res_path, self.movie),
@@ -120,8 +250,8 @@ class Intro(BaseStage):
         target = int(elapsed_ms / 1000.0 * self.video_fps)
         stepped = False
         while not self._exhausted and self._next_index <= target:
-            ok, frame = self.capture.read()
-            if not ok:
+            frame = self.capture.read()
+            if frame is None:
                 self._exhausted = True
                 break
             self._last_frame = frame
@@ -130,8 +260,8 @@ class Intro(BaseStage):
         if stepped:
             self._upload(self._last_frame)
 
-    def _upload(self, frame_bgr):
-        rgb = np.ascontiguousarray(cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB))
+    def _upload(self, frame_rgb):
+        rgb = np.ascontiguousarray(frame_rgb)
         h, w = rgb.shape[:2]
         glBindTexture(GL_TEXTURE_2D, self.texture)
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1)   # rows are not 4-byte aligned

@@ -1,0 +1,9 @@
+# D:\code\DEMOS\venv\Scripts\python -m pip install -r D:\code\DEMOS\requirements.txt   (Python 3.14)
+arcade==4.0.0.dev7   # 4.x drops pymunk (no 3.14 wheel); unpinned arcade pulls 3.3.3 and fails to build
+pygame-ce
+PyOpenGL
+Pillow
+numpy
+pyautogui
+sounddevice
+pyinstaller

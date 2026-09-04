@@ -56,6 +56,7 @@ class PetsciiDemo(PygameDemo):
     BRUCE_CENTER_DELAY = 1  # seconds after RUN lands
     BRUCE_LEFT_DELAY = 2    # seconds after RUN lands
     BRUCE_FALL_DELAY = 1    # seconds after the right-panel stage finishes drawing
+    BRUCE_JUMP_DELAY = 0.13  # seconds after the right-panel stage STARTS drawing, before the kick flies in
 
     # a welcome caption opens the demo; then screen one appears, tilts its right edge
     # back and slides to the left edge; after a pause screen two covers it and mirrors.
@@ -113,6 +114,7 @@ class PetsciiDemo(PygameDemo):
         self.bruce_center_revealed = False
         self.bruce_left_revealed = False
         self.bruce_right_revealed = False
+        self.bruce_right_started_frame = None
         self.bruce_right_drawn_frame = None
         self.bruce_falling_started = False
 
@@ -162,7 +164,7 @@ class PetsciiDemo(PygameDemo):
         # once the 3D kick parks, Bruce comes alive on the left screen: he stands,
         # then walks across it (kicking through the middle), and on reaching the
         # right border transfers to the left side of the central screen
-        self.bruce_walk = BruceWalk(PetsciiDemo.BRUCE_STAGE_CHAR_SIZE, row=-1)
+        self.bruce_walk = BruceWalk(PetsciiDemo.BRUCE_STAGE_CHAR_SIZE, row=0)
         self.bruce_lee_center = BruceLee(PetsciiDemo.BRUCE_STAGE_CHAR_SIZE)
         self.bruce_lee_center.origin = (-1, 0)   # (row, column) left side of the central stage
         self.bruce_lee_center.stand()
@@ -236,7 +238,6 @@ class PetsciiDemo(PygameDemo):
             self.update_encore()
         elif self.scene == PetsciiDemo.SCENE_ENCORE2:
             self.update_encore2()
-            print("Elapsed time " + str(Globals.get_duration()))
 
         self.noiseLeft.set_intensity(self.tiltLeft.presence())
         self.noiseRight.set_intensity(self.tiltRight.presence())
@@ -313,6 +314,8 @@ class PetsciiDemo(PygameDemo):
                     self.running = False               # ESC'd out of the asterisks -> quit
         elif self.finale_phase == PetsciiDemo.FINALE_OUTRO:
             self.outro.update()
+            if self.outro.finished:
+                self.running = False
 
     def start_clear(self):
         """Begin zooming the three screens out and dropping the floor away."""
@@ -338,7 +341,9 @@ class PetsciiDemo(PygameDemo):
         bottom centre and turns; after ~2.5 turns it stops side-on and slides to
         the top-left corner, and as it sets off Yamo rises from the bottom in its
         place, spinning."""
-        if self.bruce_backgrounds_ready():
+        if self.bruce_right_started_frame is not None \
+                and self.frame >= self.bruce_right_started_frame \
+                + PetsciiDemo.BRUCE_JUMP_DELAY * Constants.FPS:
             self.bruce_kick.start()
         self.bruce_kick.update()
         if self.bruce_kick.settled:
@@ -401,6 +406,7 @@ class PetsciiDemo(PygameDemo):
                 and self.bruce_stage1.reveal_complete():
             self.c64_screen2.reveal_bruce_stage(self.bruce_stage3, surface_size)
             self.bruce_right_revealed = True
+            self.bruce_right_started_frame = self.frame
         if self.falling_bruce_enabled:
             self.drop_falling_bruce()
 

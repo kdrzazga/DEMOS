@@ -164,7 +164,7 @@ class PetsciiDemo(PygameDemo):
         # once the 3D kick parks, Bruce comes alive on the left screen: he stands,
         # then walks across it (kicking through the middle), and on reaching the
         # right border transfers to the left side of the central screen
-        self.bruce_walk = BruceWalk(PetsciiDemo.BRUCE_STAGE_CHAR_SIZE, row=-1)
+        self.bruce_walk = BruceWalk(PetsciiDemo.BRUCE_STAGE_CHAR_SIZE, row=0)
         self.bruce_lee_center = BruceLee(PetsciiDemo.BRUCE_STAGE_CHAR_SIZE)
         self.bruce_lee_center.origin = (-1, 0)   # (row, column) left side of the central stage
         self.bruce_lee_center.stand()

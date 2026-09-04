@@ -22,8 +22,8 @@ One-shot build script for the DEMOS launcher.
 
 Produces a self-contained one-file  dist/<exe_name>.exe  with every fix we need:
 
-  * collects arcade / pyglet / pymunk / pytiled_parser / sounddevice data files,
-    native libs (chipmunk, PortAudio) and metadata  -> fixes the original
+  * collects arcade / pyglet / pytiled_parser / sounddevice data files,
+    native libs (PortAudio) and metadata  -> fixes the original
     "Unable to load version number via ...arcade\\VERSION" crash;
   * drops the bad 'arcade/VERSION/VERSION' entry that arcade's own PyInstaller
     hook creates (it declares the VERSION *file*'s destination as a *directory*),
@@ -97,7 +97,7 @@ def _collect(pkg):
 
 
 # arcade & friends ship data files / native libs / lazily-imported submodules
-for _pkg in ("arcade", "pyglet", "pymunk", "pytiled_parser", "sounddevice",
+for _pkg in ("arcade", "pyglet", "pytiled_parser", "sounddevice",
              "OpenGL", "OpenGL_accelerate"):
     _collect(_pkg)
 
@@ -113,7 +113,7 @@ if not _gl:
 hiddenimports += _gl
 
 # runtime importlib.metadata.version(...) lookups
-for _pkg in ("arcade", "pyglet", "pymunk", "pillow"):
+for _pkg in ("arcade", "pyglet", "pillow"):
     try:
         datas += copy_metadata(_pkg)
     except Exception as exc:

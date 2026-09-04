@@ -4,8 +4,8 @@ import arcade
 import numpy as np
 from arcade.gl import BufferDescription
 from arcade.types import Color
+from OpenGL.GL import GL_DEPTH_BUFFER_BIT, glClear
 from PIL import Image
-from pyglet import gl as pgl
 
 from demos.demo1 import Constants, Globals
 from demos.demo1.base import Demo1Base
@@ -237,7 +237,7 @@ class Outro(Demo1Base):
 
 		ctx.enable(ctx.BLEND)
 		ctx.enable(ctx.DEPTH_TEST)             # so wave folds overlap correctly
-		pgl.glClear(pgl.GL_DEPTH_BUFFER_BIT)   # scissor-clipped to this world
+		glClear(GL_DEPTH_BUFFER_BIT)           # scissor-clipped to this world
 
 		# Push-in: the flag moves forward as its z distance decreases. The zoom
 		# finishes right as the screen starts to dim, so the closest view is

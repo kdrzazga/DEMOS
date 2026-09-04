@@ -1,12 +1,14 @@
-Bajtek was one of the first popular
-magazines devoted to computer science
-in Poland.
-Its title was a reference to the
-computer term byte and to the American
-magazine Byte.
+Designed by Chuck Peddle and Leonard Tramiel
+and first appearing on the Commodore PET in 1977,
+it partially overlaps with ASCII but adds a distinctive
+library of geometric and semi-graphic
+symbols: lines, corners, circles, checkerboards,
+and card-suit shapes.
 
-The founder was Waldemar Siwinski.
-It was published between 1985 and 1996.
-The sponsor of Bajtek was Polish
-Socialist Youth Union which is also
-known as ZSMP.
+On the Commodore 64 specifically, those
+ symbols got a thicker stroke weight,
+ likely to stay legible on a TV
+ screen. This is the character set
+ most people associate with the term
+ "PETSCII," and it's the one this
+ study focuses on.

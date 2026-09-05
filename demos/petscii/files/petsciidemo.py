@@ -59,11 +59,6 @@ class PetsciiDemo(PygameDemo):
     BRUCE_FALL_DELAY = 1    # seconds after the right-panel stage finishes drawing
     BRUCE_JUMP_DELAY = 0.13  # seconds after the right-panel stage STARTS drawing, before the kick flies in
 
-    # where the PETSCII Yamo lands on the central screen once the 3D Yamo parks:
-    # (row, column) cell offset from the stage origin. Row 0 puts its base on the
-    # same grid row as Bruce's feet; column ~18 centres the 4-cell-wide figure.
-    YAMO_POSE_CELL = (0, 18)
-
     # a welcome caption opens the demo; then screen one appears, tilts its right edge
     # back and slides to the left edge; after a pause screen two covers it and mirrors.
     SCENE_WELCOME = 0
@@ -172,7 +167,7 @@ class PetsciiDemo(PygameDemo):
         # right border transfers to the left side of the central screen
         self.bruce_walk = BruceWalk(PetsciiDemo.BRUCE_STAGE_CHAR_SIZE, row=0)
         self.bruce_lee_center = BruceLee(PetsciiDemo.BRUCE_STAGE_CHAR_SIZE)
-        self.bruce_lee_center.origin = (-1, 0)   # (row, column) left side of the central stage
+        self.bruce_lee_center.origin = (0, 0)   # (row, column) left side of the central stage
         self.bruce_lee_center.stand()
         self.bruce_shown = False
         self.bruce_transferred = False
@@ -181,6 +176,9 @@ class PetsciiDemo(PygameDemo):
         # model parks there; light grey so it blends into the stage like Bruce
         self.petscii_yamo = PetsciiYamo(PetsciiDemo.BRUCE_STAGE_CHAR_SIZE)
         self.petscii_yamo.background_color = 15
+        # (row, column) where it lands on the central screen; row 0 puts its base
+        # on the same grid row as Bruce's feet, column 18 centres the 4-cell figure
+        self.yamo_pose_cell = (1, 18)
         self.yamo_transferred = False
 
         # closing sequence state (see the FINALE_* constants)
@@ -368,7 +366,7 @@ class PetsciiDemo(PygameDemo):
         self.yamo.update()
         if self.yamo.settled and not self.yamo_transferred:
             # reached the central screen: swap the 3D model for a PETSCII Yamo
-            self.screen_center.show_yamo_pose(self.petscii_yamo, PetsciiDemo.YAMO_POSE_CELL)
+            self.screen_center.show_yamo_pose(self.petscii_yamo, self.yamo_pose_cell)
             self.yamo_transferred = True
 
     def bruce_backgrounds_ready(self):

@@ -27,6 +27,7 @@ from demos.petscii.files.globals import Constants
 from demos.petscii.files.petscii.bruce_lee import BruceLee
 from demos.petscii.files.petscii.bruce_lee_stage1 import BruceLeeStage1, BruceLeeStage2
 from demos.petscii.files.petscii.bruce_sprite import BruceSprite
+from demos.petscii.files.petscii.yamo_petscii import PetsciiYamo
 from demos.petscii.files.petscii.kna_logo import KnaLogo
 from demos.petscii.files.noise import Noise
 from demos.petscii.files.outro import Outro
@@ -57,6 +58,11 @@ class PetsciiDemo(PygameDemo):
     BRUCE_LEFT_DELAY = 2    # seconds after RUN lands
     BRUCE_FALL_DELAY = 1    # seconds after the right-panel stage finishes drawing
     BRUCE_JUMP_DELAY = 0.13  # seconds after the right-panel stage STARTS drawing, before the kick flies in
+
+    # where the PETSCII Yamo lands on the central screen once the 3D Yamo parks:
+    # (row, column) cell offset from the stage origin. Row 0 puts its base on the
+    # same grid row as Bruce's feet; column ~18 centres the 4-cell-wide figure.
+    YAMO_POSE_CELL = (0, 18)
 
     # a welcome caption opens the demo; then screen one appears, tilts its right edge
     # back and slides to the left edge; after a pause screen two covers it and mirrors.
@@ -170,6 +176,12 @@ class PetsciiDemo(PygameDemo):
         self.bruce_lee_center.stand()
         self.bruce_shown = False
         self.bruce_transferred = False
+
+        # the small PETSCII Yamo stamped onto the central screen once the 3D Yamo
+        # model parks there; light grey so it blends into the stage like Bruce
+        self.petscii_yamo = PetsciiYamo(PetsciiDemo.BRUCE_STAGE_CHAR_SIZE)
+        self.petscii_yamo.background_color = 15
+        self.yamo_transferred = False
 
         # closing sequence state (see the FINALE_* constants)
         self.finale_phase = PetsciiDemo.FINALE_OFF
@@ -354,6 +366,10 @@ class PetsciiDemo(PygameDemo):
             # same height as Bruce, but centred in the central screen
             self.yamo.settle(0.0, self.bruce_kick.corner_y)
         self.yamo.update()
+        if self.yamo.settled and not self.yamo_transferred:
+            # reached the central screen: swap the 3D model for a PETSCII Yamo
+            self.screen_center.show_yamo_pose(self.petscii_yamo, PetsciiDemo.YAMO_POSE_CELL)
+            self.yamo_transferred = True
 
     def bruce_backgrounds_ready(self):
         """True once the last of the three screens (the right wall) has finished
@@ -562,7 +578,8 @@ class PetsciiDemo(PygameDemo):
         if self.scene >= PetsciiDemo.SCENE_ENCORE2:
             if not self.bruce_kick.settled:      # once parked, the left screen shows him instead
                 self.bruce_kick.draw()
-            self.yamo.draw()
+            if not self.yamo.settled:            # once parked, the central screen shows him instead
+                self.yamo.draw()
 
     def _asian_flown(self):
         return self.scene >= PetsciiDemo.SCENE_ASIAN and self.asian_animation.finished

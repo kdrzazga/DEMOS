@@ -114,6 +114,11 @@ class C64BaseScreen:
         # face as part of the scene; set with show_bruce_pose(), None until then
         self.bruce_pose = None
 
+        # a small PETSCII Yamo stamped onto the face once the 3D Yamo model has
+        # flown in and parked; set with show_yamo_pose(), None until then
+        self.yamo_pose = None
+        self.yamo_pose_cell = (0, 0)   # (row, column) offset from the stage origin
+
         self.caption_color = (255, 255, 255)
         self.caption_texture = glGenTextures(1)
         self.mesh_texture = glGenTextures(1)
@@ -414,6 +419,30 @@ class C64BaseScreen:
         self.bruce_pose.render(self.screen_surface, transparent_space=True,
                                origin=self.bruce_origin)
 
+    def show_yamo_pose(self, yamo, cell):
+        """Stamp a small Yamo picture onto this screen's face at the given
+        (row, column) cell, measured from the same origin the stage and Bruce
+        pose use -- so it shares Bruce's grid and baseline."""
+        self.yamo_pose = yamo
+        self.yamo_pose_cell = cell
+
+    def draw_yamo_pose(self):
+        """Draw the small PETSCII Yamo over the stage, cell by cell (its grid is
+        smaller than the full 40x25), offset from the stage origin so it lands on
+        the same baseline as the Bruce pose."""
+        if self.yamo_pose is None:
+            return
+        yamo = self.yamo_pose
+        cell_size = yamo.font(yamo.char_size).size("W")
+        base_row, base_column = self.yamo_pose_cell
+        origin = (self.bruce_origin[0] + base_column * cell_size[0],
+                  self.bruce_origin[1] + base_row * cell_size[1])
+        for row in range(len(yamo.chars)):
+            for column in range(len(yamo.chars[0])):
+                if not yamo.is_blank(row, column):
+                    yamo.draw_cell(self.screen_surface, yamo.char_size, cell_size,
+                                   row, column, origin)
+
     def bruce_reveal_top_y(self):
         """World-space y of the reveal front on this screen face, or None when no
         stage is growing -- used to hide captions the rising stage has reached."""
@@ -433,6 +462,7 @@ class C64BaseScreen:
         self.draw_bruce_stage()
         self.draw_falling_bruce()
         self.draw_bruce_pose()
+        self.draw_yamo_pose()
         # the stage carries its own colours; drop the pulsing face tint over it
         face_color = (1.0, 1.0, 1.0) if self.bruce_stage is not None else self.gl_color()
         self._upload(self.screen_surface)

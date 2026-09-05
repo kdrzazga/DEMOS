@@ -31,7 +31,7 @@ def _collect(pkg):
 
 
 # arcade & friends ship data files / native libs / lazily-imported submodules
-for _pkg in ("arcade", "pyglet", "pymunk", "pytiled_parser", "sounddevice",
+for _pkg in ("arcade", "pyglet", "pytiled_parser", "sounddevice",
              "OpenGL", "OpenGL_accelerate"):
     _collect(_pkg)
 
@@ -47,7 +47,7 @@ if not _gl:
 hiddenimports += _gl
 
 # runtime importlib.metadata.version(...) lookups
-for _pkg in ("arcade", "pyglet", "pymunk", "pillow"):
+for _pkg in ("arcade", "pyglet", "pillow"):
     try:
         datas += copy_metadata(_pkg)
     except Exception as exc:

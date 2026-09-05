@@ -28,12 +28,14 @@ def main():
     pygame.display.set_mode((Constants.WIDTH, Constants.HEIGHT), DOUBLEBUF | OPENGL)
     pygame.display.set_caption("Yamo PETSCII 3D")
 
-    glClearColor(0.0, 0.0, 0.0, 1.0)
+    glClearColor(0.5, 0.1, 0.1, 1.0)
     glEnable(GL_TEXTURE_2D)
     glEnable(GL_DEPTH_TEST)
 
     yamo = YamoAnimation()
     yamo.start()
+
+    frames = 0
 
     clock = pygame.time.Clock()
     running = True
@@ -52,6 +54,16 @@ def main():
         yamo.draw()
         pygame.display.flip()
         clock.tick(Constants.FPS)
+
+        if frames % 200 == 99:
+            yamo.image.fall()
+            yamo.refresh_pose()
+        if frames % 200 == 199:
+            yamo.image.stand()
+            yamo.refresh_pose()
+
+        frames += 1
+        print(frames)
     pygame.quit()
 
 

@@ -1,3 +1,5 @@
+import os
+
 import pygame
 from pygame.locals import KEYDOWN, K_SPACE
 from OpenGL.GL import (
@@ -15,6 +17,7 @@ from demos.petscii.files.asian_animation import AsianAnimation
 from demos.petscii.files.asterisk_animation import AsteriskAnimation
 from demos.petscii.files.bruce_lee_kick_animation import BruceLeeKickAnimation
 from demos.petscii.files.bruce_walk import BruceWalk
+from demos.petscii.files.bruce_charge import BruceCharge
 from demos.petscii.files.yamo_animation import YamoAnimation
 from demos.petscii.files.c64_base_screen import C64BaseScreen
 from demos.petscii.files.petscii.asian import Asian
@@ -83,7 +86,7 @@ class PetsciiDemo(PygameDemo):
     FINALE_ASTERISKS = 3
     FINALE_OUTRO = 4
 
-    KICK_STUB_SECONDS = 4          # hold before the zoom-out: the (not-yet-built) reach + kick on Yamo
+    KICK_STUB_SECONDS = 4          # hold on the landed kick before the screens zoom out
     SCREEN_RECEDE_SPEED = 3.0      # world units/frame the screens zoom away (fast)
     SCREEN_GONE_Z = -60.0          # a screen this far back counts as gone
     FLOOR_DROP_START_SPEED = 0.1   # initial floor fall speed, world units/frame
@@ -171,6 +174,13 @@ class PetsciiDemo(PygameDemo):
         self.bruce_lee_center.stand()
         self.bruce_shown = False
         self.bruce_transferred = False
+
+        # the closing move on the central screen: Bruce runs 7 cells, then flies a
+        # kick across the next 6, landing right next to Yamo (drives the pose above)
+        self.bruce_charge = BruceCharge(self.bruce_lee_center, run_cells=7, kick_cells=6)
+        self.chuja = pygame.mixer.Sound(
+            os.path.join(os.path.dirname(__file__), "resources", "chuja.mp3"))
+        self.chuja_played = False
 
         # the small PETSCII Yamo stamped onto the central screen once the 3D Yamo
         # model parks there; light grey so it blends into the stage like Bruce
@@ -304,10 +314,15 @@ class PetsciiDemo(PygameDemo):
         Yamo, then zoom the three screens out fast while the floor drops away, and
         once they are gone play the closing asterisk animation."""
         if self.finale_phase == PetsciiDemo.FINALE_KICK_STUB:
-            # STUB: Bruce walks up to Yamo and kicks him -- not built yet, just hold.
-            self.finale_timer += 1
-            if self.finale_timer >= PetsciiDemo.KICK_STUB_SECONDS * Constants.FPS:
-                self.start_clear()
+            # Bruce runs up to Yamo and flies a kick at him; the hit lands "chuja"
+            self.bruce_charge.update()
+            if self.bruce_charge.finished:
+                if not self.chuja_played:
+                    self.chuja.play()
+                    self.chuja_played = True
+                self.finale_timer += 1
+                if self.finale_timer >= PetsciiDemo.KICK_STUB_SECONDS * Constants.FPS:
+                    self.start_clear()
         elif self.finale_phase == PetsciiDemo.FINALE_CLEAR:
             self.update_clear()
         elif self.finale_phase == PetsciiDemo.FINALE_ASTERISKS:

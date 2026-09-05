@@ -132,7 +132,7 @@ class Outro:
 
         self.delay_ms = 2000
         self.arrive_ms = 2500
-        self.main_ms = 19000
+        self.main_ms = 22000   # talk phase length; long enough that the credits don't start mid-speech
         self.guy_far_factor = 8.0
 
         # credits typed in the lower-left once the speech ends

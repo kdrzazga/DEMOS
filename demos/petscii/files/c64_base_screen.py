@@ -96,7 +96,7 @@ class C64BaseScreen:
                                    self.screen_surface, Constants.WIDTH*0.006, 5*font_size, font_size)
         self.texture = glGenTextures(1)
 
-        self.mesh = PetsciiMesh(font_size)
+        self.mesh = PetsciiMesh(font_size, caption_rows=8)   # captions span cells 2..8
         self.mesh_drawn = False
         self.header_start = None
 

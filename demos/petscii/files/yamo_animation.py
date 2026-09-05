@@ -62,8 +62,6 @@ class YamoAnimation:
 
     def __init__(self, char_size=16):
         self.image = Yamo(char_size)
-        self.rows = len(self.image.chars)
-        self.columns = len(self.image.chars[0])
         self.texture = glGenTextures(1)
         self.surface = self._render_pose()
         self._upload(self.surface)
@@ -154,6 +152,15 @@ class YamoAnimation:
         self.angle = 0.0
         self.scale = 1.0
 
+    def refresh_pose(self):
+        """Re-render the current image onto the texture -- call after switching the
+        Yamo form (image.stand() / image.fall()); without it the model keeps the
+        pose it was built with. The new pose may be a different shape, so the quad
+        is re-fitted to it (position/spin/scale are left untouched)."""
+        self.surface = self._render_pose()
+        self._upload(self.surface)
+        self._layout()
+
     def settle(self, target_x, target_y):
         """Stop spinning and slide+shrink to (target_x, target_y), turning to
         face front. Only takes effect once it has flown in and turned at least a
@@ -243,12 +250,13 @@ class YamoAnimation:
 
         The cells are drawn one by one over Yamo's own grid, rather than through
         ``PetsciiImage.render`` (which assumes the full 40x25 screen)."""
+        rows = len(self.image.chars)
+        columns = len(self.image.chars[0])
         cell_width, cell_height = self.image.font(self.image.char_size).size("W")
         cell_size = (cell_width, cell_height)
-        full = pygame.Surface((self.columns * cell_width, self.rows * cell_height),
-                              pygame.SRCALPHA)
-        for row in range(self.rows):
-            for column in range(self.columns):
+        full = pygame.Surface((columns * cell_width, rows * cell_height), pygame.SRCALPHA)
+        for row in range(rows):
+            for column in range(columns):
                 if not self.image.is_blank(row, column):
                     self.image.draw_cell(full, self.image.char_size, cell_size, row, column)
         top, left, bottom, right = self._content_bounds()
@@ -258,11 +266,14 @@ class YamoAnimation:
         return full.subsurface(rect).copy()
 
     def _content_bounds(self):
-        """(top, left, bottom, right) cell bounds of the non-blank figure."""
-        top, left = self.rows, self.columns
+        """(top, left, bottom, right) cell bounds of the non-blank figure, read
+        from the live image so it follows a pose change (stand/fall differ)."""
+        rows = len(self.image.chars)
+        columns = len(self.image.chars[0])
+        top, left = rows, columns
         bottom, right = 0, 0
-        for row in range(self.rows):
-            for column in range(self.columns):
+        for row in range(rows):
+            for column in range(columns):
                 if not self.image.is_blank(row, column):
                     top, bottom = min(top, row), max(bottom, row)
                     left, right = min(left, column), max(right, column)

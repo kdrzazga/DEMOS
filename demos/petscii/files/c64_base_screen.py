@@ -419,10 +419,10 @@ class C64BaseScreen:
         self.bruce_pose.render(self.screen_surface, transparent_space=True,
                                origin=self.bruce_origin)
 
-    def show_yamo_pose(self, yamo, cell):
+    def show_yamo_pose(self, yamo, cell=(0, 0)):
         """Stamp a small Yamo picture onto this screen's face at the given
         (row, column) cell, measured from the same origin the stage and Bruce
-        pose use -- so it shares Bruce's grid and baseline."""
+        pose use -- so it shares Bruce's grid and baseline. Pass None to clear it."""
         self.yamo_pose = yamo
         self.yamo_pose_cell = cell
 

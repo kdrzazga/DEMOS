@@ -86,7 +86,7 @@ class PetsciiDemo(PygameDemo):
     FINALE_ASTERISKS = 3
     FINALE_OUTRO = 4
 
-    KICK_STUB_SECONDS = 4          # hold on the landed kick before the screens zoom out
+    KICK_STUB_SECONDS = 1          # short beat on the landed kick before the clear starts
     SCREEN_RECEDE_SPEED = 3.0      # world units/frame the screens zoom away (fast)
     SCREEN_GONE_Z = -60.0          # a screen this far back counts as gone
     FLOOR_DROP_START_SPEED = 0.1   # initial floor fall speed, world units/frame
@@ -195,6 +195,12 @@ class PetsciiDemo(PygameDemo):
         self.finale_phase = PetsciiDemo.FINALE_OFF
         self.finale_timer = 0
         self.floor_drop_speed = 0.0
+        # as the screens leave, the 3D Bruce/Yamo models come back (Yamo in his
+        # fall pose) and glide to model_exit_target_z, then stop being drawn
+        self.models_exiting = False
+        self.models_gone = False
+        self.model_exit_target_z = -1.0   # z the models reach before they vanish
+        self.model_exit_speed = 0.03      # z units per frame (slow glide)
         self.asterisks = AsteriskAnimation()
         self.asterisks_played = False
         # the outro plays in this same window once the asterisks finish
@@ -343,21 +349,60 @@ class PetsciiDemo(PygameDemo):
                 self.running = False
 
     def start_clear(self):
-        """Begin zooming the three screens out and dropping the floor away."""
+        """Begin zooming the three screens out and dropping the floor away, and at
+        the same time bring the 3D Bruce/Yamo models back and glide them out."""
         for screen in (self.screen_left, self.screen_right, self.screen_center):
             screen.recede(PetsciiDemo.SCREEN_RECEDE_SPEED)
         self.floor_drop_speed = PetsciiDemo.FLOOR_DROP_START_SPEED
+        self.begin_model_exit()
         self.finale_phase = PetsciiDemo.FINALE_CLEAR
+
+    def begin_model_exit(self):
+        """Stop showing the PETSCII Bruce/Yamo on the central screen and bring the
+        3D models back instead -- Yamo dropped into his fall pose -- then let them
+        glide toward model_exit_target_z (see advance_model_exit)."""
+        self.screen_center.show_bruce_pose(None)
+        self.screen_center.show_yamo_pose(None)
+        self.yamo.image.fall()
+        self.yamo.refresh_pose()
+        # Bruce parked in the top-left corner (over the LEFT screen); for the exit
+        # bring him to the centre, right beside Yamo, in front of the CENTRAL screen
+        gap = (self.bruce_kick.half_width * self.bruce_kick.scale
+               + self.yamo.half_width * self.yamo.scale)
+        self.bruce_kick.x = self.yamo.x - gap
+        self.bruce_kick.y = self.yamo.y
+        self.bruce_kick.angle = 0.0   # face front, parallel to the central screen (was side-on)
+        self.models_exiting = True
+
+    def advance_model_exit(self):
+        """Glide both 3D models toward model_exit_target_z; once both arrive they
+        stop being drawn (models_gone)."""
+        if not self.models_exiting:
+            return
+        target, speed = self.model_exit_target_z, self.model_exit_speed
+        self.bruce_kick.z = self._step_toward(self.bruce_kick.z, target, speed)
+        self.yamo.z = self._step_toward(self.yamo.z, target, speed)
+        if self.bruce_kick.z == target and self.yamo.z == target:
+            self.models_exiting = False
+            self.models_gone = True
+
+    @staticmethod
+    def _step_toward(value, target, speed):
+        if value < target:
+            return min(target, value + speed)
+        return max(target, value - speed)
 
     def update_clear(self):
         """The screens recede via their own update(); here the floor accelerates
-        downward. Once both the screens and the floor are off-screen, hand over to
-        the closing asterisk animation."""
+        downward and the 3D models glide out. Once the screens, the floor and the
+        models are all gone, hand over to the closing asterisk animation."""
         self.floor_drop_speed += PetsciiDemo.FLOOR_DROP_GRAVITY
         self.floor.level_y -= self.floor_drop_speed
+        self.advance_model_exit()
         screens_gone = all(screen.z < PetsciiDemo.SCREEN_GONE_Z
                            for screen in (self.screen_left, self.screen_right, self.screen_center))
-        if screens_gone and self.floor.level_y < PetsciiDemo.FLOOR_GONE_Y:
+        if screens_gone and self.floor.level_y < PetsciiDemo.FLOOR_GONE_Y \
+                and self.models_gone:
             self.finale_phase = PetsciiDemo.FINALE_ASTERISKS
 
     def update_bruce_kick(self):
@@ -589,9 +634,11 @@ class PetsciiDemo(PygameDemo):
         if self.scene >= PetsciiDemo.SCENE_ASIAN:
             self.asian_animation.draw()
         if self.scene >= PetsciiDemo.SCENE_ENCORE2:
-            if not self.bruce_kick.settled:      # once parked, the left screen shows him instead
+            # while parked, the screens show the PETSCII poses instead; the models
+            # are drawn again during their final glide-out (models_exiting)
+            if not self.bruce_kick.settled or self.models_exiting:
                 self.bruce_kick.draw()
-            if not self.yamo.settled:            # once parked, the central screen shows him instead
+            if not self.yamo.settled or self.models_exiting:
                 self.yamo.draw()
 
     def _asian_flown(self):

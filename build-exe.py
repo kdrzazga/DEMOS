@@ -2,18 +2,13 @@ root = "D:/code/DEMOS/"
 icon_path = root + "icons/" + "p3dscii-ico.png"   # .png or .ico both work
 exe_name  = "P3DSCII - PETSCII 3D DEMO"   # -> dist/<exe_name>.exe
 excluded_dirs = (root + "demos/demo1", root + "demos/demo3", root + "demos/pc45")
+splash_image = root + "screens/splash_p3dscii.png"
 
 # Text baked onto the boot splash that shows IMMEDIATELY while the one-file exe
 # unpacks itself to a temp dir (the multi-second "nothing happens" gap on start).
 # Edit these two lines and re-run this script to change the message.
 splash_line1 = "Please be patient . . . . ."
 splash_line2 = "DECRUNCHING"
-
-# Boot splash IMAGE. Point this at your own picture to use a CUSTOM splash --
-# an opaque PNG, sized how you want it to appear on screen (GIF/BMP also work).
-# If the file is missing, one is auto-generated from the two lines above.
-# Set to None to always auto-generate and never look for a custom image.
-splash_image = root + "screens/splash.png"
 
 """
 One-shot build script for the DEMOS launcher.

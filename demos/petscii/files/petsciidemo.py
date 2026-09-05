@@ -1,3 +1,5 @@
+import os
+
 import pygame
 from pygame.locals import KEYDOWN, K_SPACE
 from OpenGL.GL import (
@@ -15,6 +17,7 @@ from demos.petscii.files.asian_animation import AsianAnimation
 from demos.petscii.files.asterisk_animation import AsteriskAnimation
 from demos.petscii.files.bruce_lee_kick_animation import BruceLeeKickAnimation
 from demos.petscii.files.bruce_walk import BruceWalk
+from demos.petscii.files.bruce_charge import BruceCharge
 from demos.petscii.files.yamo_animation import YamoAnimation
 from demos.petscii.files.c64_base_screen import C64BaseScreen
 from demos.petscii.files.petscii.asian import Asian
@@ -27,6 +30,7 @@ from demos.petscii.files.globals import Constants
 from demos.petscii.files.petscii.bruce_lee import BruceLee
 from demos.petscii.files.petscii.bruce_lee_stage1 import BruceLeeStage1, BruceLeeStage2
 from demos.petscii.files.petscii.bruce_sprite import BruceSprite
+from demos.petscii.files.petscii.yamo_petscii import PetsciiYamo
 from demos.petscii.files.petscii.kna_logo import KnaLogo
 from demos.petscii.files.noise import Noise
 from demos.petscii.files.outro import Outro
@@ -82,7 +86,7 @@ class PetsciiDemo(PygameDemo):
     FINALE_ASTERISKS = 3
     FINALE_OUTRO = 4
 
-    KICK_STUB_SECONDS = 4          # hold before the zoom-out: the (not-yet-built) reach + kick on Yamo
+    KICK_STUB_SECONDS = 4          # hold on the landed kick before the screens zoom out
     SCREEN_RECEDE_SPEED = 3.0      # world units/frame the screens zoom away (fast)
     SCREEN_GONE_Z = -60.0          # a screen this far back counts as gone
     FLOOR_DROP_START_SPEED = 0.1   # initial floor fall speed, world units/frame
@@ -131,13 +135,13 @@ class PetsciiDemo(PygameDemo):
         self.asian_animation = AsianAnimation()
         self.tiltLeft = TiltScreen(Constants.WIDTH, Constants.HEIGHT)
         self.tiltRight = TiltScreen(Constants.WIDTH, Constants.HEIGHT)
-        self.c64_screen = C64Screen()
-        self.c64_screen2 = WindingScreen()
-        self.c64_screen2.pulse = True
-        self.c64_screen2.music_started = True
-        self.c64_screen3 = C64BaseScreen()
-        self.c64_screen3.music_started = True
-        self.c64_screen3.target_z = TiltScreen.TILT_DEPTH
+        self.screen_left = C64Screen()
+        self.screen_right = WindingScreen()
+        self.screen_right.pulse = True
+        self.screen_right.music_started = True
+        self.screen_center = C64BaseScreen()
+        self.screen_center.music_started = True
+        self.screen_center.target_z = TiltScreen.TILT_DEPTH
         self.floor = Floor(Constants.WIDTH, Constants.HEIGHT)
         self.welcome = WelcomeStage()
 
@@ -166,10 +170,26 @@ class PetsciiDemo(PygameDemo):
         # right border transfers to the left side of the central screen
         self.bruce_walk = BruceWalk(PetsciiDemo.BRUCE_STAGE_CHAR_SIZE, row=0)
         self.bruce_lee_center = BruceLee(PetsciiDemo.BRUCE_STAGE_CHAR_SIZE)
-        self.bruce_lee_center.origin = (-1, 0)   # (row, column) left side of the central stage
+        self.bruce_lee_center.origin = (0, 0)   # (row, column) left side of the central stage
         self.bruce_lee_center.stand()
         self.bruce_shown = False
         self.bruce_transferred = False
+
+        # the closing move on the central screen: Bruce runs 7 cells, then flies a
+        # kick across the next 6, landing right next to Yamo (drives the pose above)
+        self.bruce_charge = BruceCharge(self.bruce_lee_center, run_cells=7, kick_cells=6)
+        self.chuja = pygame.mixer.Sound(
+            os.path.join(os.path.dirname(__file__), "resources", "chuja.mp3"))
+        self.chuja_played = False
+
+        # the small PETSCII Yamo stamped onto the central screen once the 3D Yamo
+        # model parks there; light grey so it blends into the stage like Bruce
+        self.petscii_yamo = PetsciiYamo(PetsciiDemo.BRUCE_STAGE_CHAR_SIZE)
+        self.petscii_yamo.background_color = 15
+        # (row, column) where it lands on the central screen; row 0 puts its base
+        # on the same grid row as Bruce's feet, column 18 centres the 4-cell figure
+        self.yamo_pose_cell = (1, 18)
+        self.yamo_transferred = False
 
         # closing sequence state (see the FINALE_* constants)
         self.finale_phase = PetsciiDemo.FINALE_OFF
@@ -202,12 +222,12 @@ class PetsciiDemo(PygameDemo):
         elif scene == PetsciiDemo.SCENE_TILT2:
             self.tiltRight.reset()
         elif scene == PetsciiDemo.SCENE_ENCORE:
-            self.c64_screen.zoom_to_front()
-            self.c64_screen.fold_to_left_wall(TiltScreen.TILT_DEPTH,
+            self.screen_left.zoom_to_front()
+            self.screen_left.fold_to_left_wall(TiltScreen.TILT_DEPTH,
                                               PetsciiDemo.LEAN_SECONDS, Constants.FPS)
         elif scene == PetsciiDemo.SCENE_ENCORE2:
-            self.c64_screen2.zoom_to_front()
-            self.c64_screen2.fold_to_right_wall(TiltScreen.TILT_DEPTH,
+            self.screen_right.zoom_to_front()
+            self.screen_right.fold_to_right_wall(TiltScreen.TILT_DEPTH,
                                                 PetsciiDemo.LEAN_SECONDS, Constants.FPS)
 
     def update(self):
@@ -244,10 +264,10 @@ class PetsciiDemo(PygameDemo):
 
     def update_shrink2(self):
         self.tiltRight.shrink(self.scene_progress(PetsciiDemo.SHRINK_SECONDS))
-        self.c64_screen.update(self.scene_frame)
+        self.screen_left.update(self.scene_frame)
         if self.scene_frame > Constants.FPS * PetsciiDemo.SHRINK_SECONDS:
             self.noiseRight.stop()
-        if self.c64_screen.caption_ready and self.captions_frame is None:
+        if self.screen_left.caption_ready and self.captions_frame is None:
             self.captions_frame = self.frame
         if self.captions_frame is not None:
             if self.frame - self.captions_frame > Constants.FPS * PetsciiDemo.ASIAN_SECONDS:
@@ -255,10 +275,10 @@ class PetsciiDemo(PygameDemo):
 
     def update_encore2(self):
         self.asian_animation.update(self.scene_frame)
-        self.c64_screen.update(self.frame)
-        self.c64_screen2.update(self.frame)
-        self.c64_screen3.update(self.frame)
-        if self.captions is None and self.c64_screen3.header_written(self.frame):
+        self.screen_left.update(self.frame)
+        self.screen_right.update(self.frame)
+        self.screen_center.update(self.frame)
+        if self.captions is None and self.screen_center.header_written(self.frame):
             self.captions = self._build_load_captions(self.frame + 60)
             self.floor.initial_frame = self.frame
         if self.captions is not None:
@@ -277,7 +297,7 @@ class PetsciiDemo(PygameDemo):
 
             self.advance_asian_speech()
 
-            self.c64_screen3.loading = self.loading
+            self.screen_center.loading = self.loading
             self.floor.update()
             for caption in self.captions:
                 caption.update(self.frame)
@@ -294,10 +314,15 @@ class PetsciiDemo(PygameDemo):
         Yamo, then zoom the three screens out fast while the floor drops away, and
         once they are gone play the closing asterisk animation."""
         if self.finale_phase == PetsciiDemo.FINALE_KICK_STUB:
-            # STUB: Bruce walks up to Yamo and kicks him -- not built yet, just hold.
-            self.finale_timer += 1
-            if self.finale_timer >= PetsciiDemo.KICK_STUB_SECONDS * Constants.FPS:
-                self.start_clear()
+            # Bruce runs up to Yamo and flies a kick at him; the hit lands "chuja"
+            self.bruce_charge.update()
+            if self.bruce_charge.finished:
+                if not self.chuja_played:
+                    self.chuja.play()
+                    self.chuja_played = True
+                self.finale_timer += 1
+                if self.finale_timer >= PetsciiDemo.KICK_STUB_SECONDS * Constants.FPS:
+                    self.start_clear()
         elif self.finale_phase == PetsciiDemo.FINALE_CLEAR:
             self.update_clear()
         elif self.finale_phase == PetsciiDemo.FINALE_ASTERISKS:
@@ -319,7 +344,7 @@ class PetsciiDemo(PygameDemo):
 
     def start_clear(self):
         """Begin zooming the three screens out and dropping the floor away."""
-        for screen in (self.c64_screen, self.c64_screen2, self.c64_screen3):
+        for screen in (self.screen_left, self.screen_right, self.screen_center):
             screen.recede(PetsciiDemo.SCREEN_RECEDE_SPEED)
         self.floor_drop_speed = PetsciiDemo.FLOOR_DROP_START_SPEED
         self.finale_phase = PetsciiDemo.FINALE_CLEAR
@@ -331,7 +356,7 @@ class PetsciiDemo(PygameDemo):
         self.floor_drop_speed += PetsciiDemo.FLOOR_DROP_GRAVITY
         self.floor.level_y -= self.floor_drop_speed
         screens_gone = all(screen.z < PetsciiDemo.SCREEN_GONE_Z
-                           for screen in (self.c64_screen, self.c64_screen2, self.c64_screen3))
+                           for screen in (self.screen_left, self.screen_right, self.screen_center))
         if screens_gone and self.floor.level_y < PetsciiDemo.FLOOR_GONE_Y:
             self.finale_phase = PetsciiDemo.FINALE_ASTERISKS
 
@@ -354,6 +379,10 @@ class PetsciiDemo(PygameDemo):
             # same height as Bruce, but centred in the central screen
             self.yamo.settle(0.0, self.bruce_kick.corner_y)
         self.yamo.update()
+        if self.yamo.settled and not self.yamo_transferred:
+            # reached the central screen: swap the 3D model for a PETSCII Yamo
+            self.screen_center.show_yamo_pose(self.petscii_yamo, self.yamo_pose_cell)
+            self.yamo_transferred = True
 
     def bruce_backgrounds_ready(self):
         """True once the last of the three screens (the right wall) has finished
@@ -365,14 +394,14 @@ class PetsciiDemo(PygameDemo):
         across it; when he reaches the right border, transfer him to the left side
         of the central screen (remove from the left screen, add to the central)."""
         if not self.bruce_shown:
-            self.c64_screen.show_bruce_pose(self.bruce_walk.sprite)
+            self.screen_left.show_bruce_pose(self.bruce_walk.sprite)
             self.bruce_shown = True
         if self.bruce_transferred:
             return
         self.bruce_walk.update()
         if self.bruce_walk.at_border:
-            self.c64_screen.show_bruce_pose(None)                     # remove from the left screen
-            self.c64_screen3.show_bruce_pose(self.bruce_lee_center)   # add to the central screen
+            self.screen_left.show_bruce_pose(None)                     # remove from the left screen
+            self.screen_center.show_bruce_pose(self.bruce_lee_center)   # add to the central screen
             self.bruce_transferred = True
             self.finale_phase = PetsciiDemo.FINALE_KICK_STUB          # kick off the closing sequence
             self.finale_timer = 0
@@ -380,7 +409,7 @@ class PetsciiDemo(PygameDemo):
     def hide_captions_under_bruce(self):
         """As bruce_stage3 grows up the central screen, hide each caption once the
         reveal line has risen to just below it."""
-        front_y = self.c64_screen3.bruce_reveal_top_y()
+        front_y = self.screen_center.bruce_reveal_top_y()
         if front_y is None:
             return
         for caption in self.captions:
@@ -397,14 +426,14 @@ class PetsciiDemo(PygameDemo):
         center_frame = self.run_landed_frame + PetsciiDemo.BRUCE_CENTER_DELAY * Constants.FPS
         left_frame = self.run_landed_frame + PetsciiDemo.BRUCE_LEFT_DELAY * Constants.FPS
         if not self.bruce_center_revealed and self.frame >= center_frame:
-            self.c64_screen3.reveal_bruce_stage(self.bruce_stage2, surface_size)
+            self.screen_center.reveal_bruce_stage(self.bruce_stage2, surface_size)
             self.bruce_center_revealed = True
         if not self.bruce_left_revealed and self.frame >= left_frame:
-            self.c64_screen.reveal_bruce_stage(self.bruce_stage1, surface_size)
+            self.screen_left.reveal_bruce_stage(self.bruce_stage1, surface_size)
             self.bruce_left_revealed = True
         if not self.bruce_right_revealed and self.bruce_left_revealed \
                 and self.bruce_stage1.reveal_complete():
-            self.c64_screen2.reveal_bruce_stage(self.bruce_stage3, surface_size)
+            self.screen_right.reveal_bruce_stage(self.bruce_stage3, surface_size)
             self.bruce_right_revealed = True
             self.bruce_right_started_frame = self.frame
         if self.falling_bruce_enabled:
@@ -422,15 +451,15 @@ class PetsciiDemo(PygameDemo):
         if self.bruce_right_drawn_frame is not None \
                 and self.frame >= self.bruce_right_drawn_frame \
                 + PetsciiDemo.BRUCE_FALL_DELAY * Constants.FPS:
-            self.c64_screen3.start_falling_bruce(self.bruce_sprite)
+            self.screen_center.start_falling_bruce(self.bruce_sprite)
             self.bruce_falling_started = True
 
     def update_asian(self):
         self.asian_animation.update(self.scene_frame)
         if self.asian_animation.finished:
-            self.c64_screen.zoom(1.1)
-        self.c64_screen.update(self.frame)
-        if self.asian_animation.finished and self.c64_screen.z >= self.c64_screen.target_z:
+            self.screen_left.zoom(1.1)
+        self.screen_left.update(self.frame)
+        if self.asian_animation.finished and self.screen_left.z >= self.screen_left.target_z:
             if self.encore_frame is None:
                 self.encore_frame = self.frame
             elif self.frame - self.encore_frame > Constants.FPS:
@@ -464,9 +493,9 @@ class PetsciiDemo(PygameDemo):
 
     def update_encore(self):
         self.asian_animation.update(self.scene_frame)
-        self.c64_screen.update(self.frame)
-        self.c64_screen2.update(self.frame)
-        if self.c64_screen2.arrived():
+        self.screen_left.update(self.frame)
+        self.screen_right.update(self.frame)
+        if self.screen_right.arrived():
             if self.bajtek_frame is None:
                 self.bajtek_frame = self.frame
             elif self.frame - self.bajtek_frame > Constants.FPS * PetsciiDemo.TOP_SECRET_SECONDS:
@@ -539,18 +568,18 @@ class PetsciiDemo(PygameDemo):
         if self.finale_phase == PetsciiDemo.FINALE_OUTRO:
             self.outro.draw()
             return
-        if not self.c64_screen.folded_past(PetsciiDemo.NOISE_HIDE_FOLD):
+        if not self.screen_left.folded_past(PetsciiDemo.NOISE_HIDE_FOLD):
             self.draw_first_screen()
         if self.scene >= PetsciiDemo.SCENE_NOISE2:
             glClear(GL_DEPTH_BUFFER_BIT)  # let the second screen cover the first
-            if not self.c64_screen2.folded_past(PetsciiDemo.NOISE_HIDE_FOLD):
+            if not self.screen_right.folded_past(PetsciiDemo.NOISE_HIDE_FOLD):
                 self.draw_second_screen()
         if self.scene >= PetsciiDemo.SCENE_SHRINK2:
-            self.c64_screen.render(self.frame)
+            self.screen_left.render(self.frame)
         if self.scene >= PetsciiDemo.SCENE_ENCORE:
-            self.c64_screen2.render(self.frame)
+            self.screen_right.render(self.frame)
         if self.scene >= PetsciiDemo.SCENE_ENCORE2:
-            self.c64_screen3.render(self.frame)
+            self.screen_center.render(self.frame)
         if self.captions is not None:
             self.floor.draw(self.frame)
             glDisable(GL_DEPTH_TEST)
@@ -562,7 +591,8 @@ class PetsciiDemo(PygameDemo):
         if self.scene >= PetsciiDemo.SCENE_ENCORE2:
             if not self.bruce_kick.settled:      # once parked, the left screen shows him instead
                 self.bruce_kick.draw()
-            self.yamo.draw()
+            if not self.yamo.settled:            # once parked, the central screen shows him instead
+                self.yamo.draw()
 
     def _asian_flown(self):
         return self.scene >= PetsciiDemo.SCENE_ASIAN and self.asian_animation.finished

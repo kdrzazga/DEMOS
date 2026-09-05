@@ -135,6 +135,12 @@ class YamoAnimation:
     def started(self):
         return self.phase != YamoAnimation.WAIT
 
+    @property
+    def settled(self):
+        """True once it has parked on the central screen -- the cue to swap the 3D
+        model for the small PETSCII Yamo stamped on that screen."""
+        return self.phase == YamoAnimation.DONE
+
     def start(self):
         """Launch it up from below; ignored once it is already on its way."""
         if self.started:

@@ -125,11 +125,14 @@ class Outro:
         self.volume_step = 0.01
         self.volume_step_ms = 100
         self.max_volume = 1.0
-        self.outro_sound_file = "outro.mp3"
+        self.outro_sound_files = ("outro1.mp3", "outro2.mp3", "outro3.mp3")
+        # silence after each clip before the next one starts: (after clip 1,
+        # after clip 2). Tune each to fit the speech pacing of its clip.
+        self.outro_gaps_ms = (333, 333)
 
         self.delay_ms = 2000
         self.arrive_ms = 2500
-        self.main_ms = 19000
+        self.main_ms = 22000   # talk phase length; long enough that the credits don't start mid-speech
         self.guy_far_factor = 8.0
 
         # credits typed in the lower-left once the speech ends
@@ -144,7 +147,7 @@ class Outro:
         self.guy = None
         self.surface = None
         self.texture = None
-        self.frame = 0
+        self.current_frame_name = None
         self.sway = 0.0
         self.z = 0.0
         self.running = False
@@ -153,7 +156,10 @@ class Outro:
         self.arrived = False
         self.main_start_ms = None
         self.guy_far_z = 0.0
-        self.outro_sound = None
+        self.outro_sounds = ()
+        self.outro_index = 0
+        self.outro_channel = None
+        self.outro_resume_ms = None
         self.speech_ended = False
         self.captions_manager = None
         self.credits_surface = None
@@ -177,8 +183,8 @@ class Outro:
         self.fig_w, self.fig_h = self.guy.figure_size()
         self.surface = pygame.Surface((self.fig_w, self.fig_h))
         self.texture = None
-        self.frame = -1
-        self.texture = self._render_frame("smile")
+        self.current_frame_name = None
+        self._set_face("smile")
 
         self.base_distance = max(self.guy_w, self.guy_h) * self.camera_fit
         self.guy_far_z = self.base_distance * self.guy_far_factor
@@ -204,6 +210,7 @@ class Outro:
     def update(self):
         now = pygame.time.get_ticks()
         self.helix.update()
+        self._update_outro_music(now)
         if not self.speech_ended:
             self._fade_in_music()
         elapsed = now - self.start_ms
@@ -237,13 +244,13 @@ class Outro:
         if main_elapsed >= self.main_ms:
             if not self.speech_ended:
                 self.speech_ended = True
-                self.texture = self._render_frame("smile")
+                self._set_face("smile")
                 self._begin_credits()
-        else:
+        elif self._outro_playing():
             step = (main_elapsed // self.frame_ms) % len(Outro.FRAMES)
-            if step != self.frame:
-                self.frame = step
-                self.texture = self._render_frame(Outro.FRAMES[self.frame])
+            self._set_face(Outro.FRAMES[step])
+        else:
+            self._set_face("smile")   # between clips nothing is playing: rest on the smile
         self.sway = self.sway_degrees * math.sin(2 * math.pi * now / self.sway_period)
         self.z += self._zoom_step
         if self.z >= self.z_far:
@@ -349,8 +356,8 @@ class Outro:
 
     def stop_music(self):
         pygame.mixer.music.stop()
-        if self.outro_sound is not None:
-            self.outro_sound.stop()
+        for sound in self.outro_sounds:
+            sound.stop()
 
     # ---- standalone loop (opens its own window) -----------------------------
     def run(self):
@@ -404,11 +411,40 @@ class Outro:
         pygame.mixer.music.set_volume(self.mute_start_volume * fade)
 
     def _play_outro_music(self):
-        path = os.path.join(os.path.dirname(__file__), "resources", self.outro_sound_file)
-        self.outro_sound = pygame.mixer.Sound(path)
-        self.outro_sound.play()
+        resources = os.path.join(os.path.dirname(__file__), "resources")
+        self.outro_sounds = tuple(pygame.mixer.Sound(os.path.join(resources, name))
+                                  for name in self.outro_sound_files)
+        self.outro_index = 0
+        self.outro_channel = self.outro_sounds[0].play()
+        self.outro_resume_ms = None
+
+    def _update_outro_music(self, now):
+        """Advance through the outro clips: once the current one finishes, wait the
+        gap that follows it, then start the next. Frame-driven, never blocks."""
+        if self.outro_index >= len(self.outro_sounds) - 1:
+            return   # last clip has started (or none loaded yet): nothing left to queue
+        if self.outro_channel is not None and self.outro_channel.get_busy():
+            return   # current clip still playing
+        if self.outro_resume_ms is None:
+            self.outro_resume_ms = now + self.outro_gaps_ms[self.outro_index]
+        elif now >= self.outro_resume_ms:
+            self.outro_index += 1
+            self.outro_channel = self.outro_sounds[self.outro_index].play()
+            self.outro_resume_ms = None
+
+    def _outro_playing(self):
+        """True while an outro clip is actually sounding -- False during the gaps
+        and once the last clip has ended."""
+        return self.outro_channel is not None and self.outro_channel.get_busy()
 
     # ---- rendering ----------------------------------------------------------
+    def _set_face(self, name):
+        """Show the named head+torso as the current face, re-rendering only when it
+        changes -- each render uploads a fresh texture, so skip needless work."""
+        if name != self.current_frame_name:
+            self.current_frame_name = name
+            self.texture = self._render_frame(name)
+
     def _render_frame(self, name):
         """Build one head+torso combination and upload it as a fresh texture,
         deleting the previous one."""

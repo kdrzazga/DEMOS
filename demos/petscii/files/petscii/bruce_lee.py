@@ -9,7 +9,7 @@ class BruceLee(PetsciiImage):
     its hardcoded sprite at self.origin -- the top-left cell Bruce is drawn from.
     """
 
-    GRAY = 13
+    GRAY = 11   # matches the Bruce Lee stage background so his cells blend in
 
     def __init__(self, char_size):
         super().__init__(char_size)

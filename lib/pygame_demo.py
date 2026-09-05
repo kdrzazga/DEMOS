@@ -1,6 +1,6 @@
 import pygame
 from pygame.locals import DOUBLEBUF, FULLSCREEN, KEYDOWN, K_ESCAPE, MOUSEBUTTONDOWN, OPENGL, QUIT
-from OpenGL.GL import GL_COLOR_BUFFER_BIT, glClear
+from OpenGL.GL import GL_COLOR_BUFFER_BIT, glClear, glViewport
 
 from lib.base_demo import BaseDemo
 
@@ -31,6 +31,12 @@ class PygameDemo(BaseDemo):
         self.fps = fps
 
         pygame.init()
+        # the desktop resolution, read BEFORE set_mode (Info() reports the desktop
+        # mode until then). In fullscreen pygame-ce keeps this native size as the GL
+        # drawable while still reporting the requested size, so _fit_viewport needs
+        # the real size to place the viewport instead of leaving it bottom-left.
+        desktop = pygame.display.Info()
+        self.desktop_size = (desktop.current_w, desktop.current_h)
         flags = 0
         if opengl:
             flags |= DOUBLEBUF | OPENGL
@@ -38,6 +44,8 @@ class PygameDemo(BaseDemo):
             flags |= FULLSCREEN
         pygame.display.set_mode((self.width, self.height), flags)
         pygame.display.set_caption(self.title)
+        if opengl:
+            self._fit_viewport()
 
         self.clock = pygame.time.Clock()
         self.running = False
@@ -45,6 +53,33 @@ class PygameDemo(BaseDemo):
         self.setup()
         if self.paused:
             self.on_pause()
+
+    def _fit_viewport(self):
+        """Fit a width:height-aspect viewport into the actual drawable, centred.
+
+        pygame-ce/SDL2 fullscreen keeps the native desktop resolution rather than
+        switching to the requested mode (as SDL1 did), so the drawable is larger
+        than (width, height) while the default GL viewport stays at the requested
+        size -- which drops everything into the bottom-left corner. Reset the
+        viewport to the real drawable, letterboxed so the aspect stays correct.
+
+        The drawable size comes from the desktop resolution captured before
+        set_mode, since get_window_size()/get_surface() report the requested
+        logical size for an OpenGL surface, not the physical fullscreen resolution.
+        """
+        if self.windowed:
+            drawable_width, drawable_height = self.width, self.height
+        else:
+            drawable_width, drawable_height = self.desktop_size
+        target_aspect = self.width / self.height
+        if drawable_width / drawable_height > target_aspect:
+            view_height = drawable_height
+            view_width = round(view_height * target_aspect)
+        else:
+            view_width = drawable_width
+            view_height = round(view_width / target_aspect)
+        glViewport((drawable_width - view_width) // 2, (drawable_height - view_height) // 2,
+                   view_width, view_height)
 
     # ---- template hooks -------------------------------------------------
     def setup(self):

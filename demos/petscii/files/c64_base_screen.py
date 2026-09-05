@@ -139,6 +139,9 @@ class C64BaseScreen:
         self.drawn_caption = None
         self.caption_timer = 0
         self.caption_durations = (75, 220, 75)
+        # captions named here sway by a fixed number of cells; any others fall back
+        # to the width-derived amplitude computed in build_caption
+        self.caption_amplitude_overrides = {"PETSCII": 1}
 
         pygame.mixer.init()
         self.wolf = self.load_sound("wolf.mp3")

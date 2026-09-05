@@ -83,5 +83,9 @@ class C64Screen(C64BaseScreen):
                      self.caption_texture)
         self.drawn_caption = self.mesh_caption
         self.caption_start_frame = frame
-        width = self.mesh.caption_width(self.mesh_caption)
-        self.caption_amplitude = max(1, (Constants.COLUMNS - 2 - width) // 2 - 1)
+        override = self.caption_amplitude_overrides.get(self.mesh_caption)
+        if override is not None:
+            self.caption_amplitude = override
+        else:
+            width = self.mesh.caption_width(self.mesh_caption)
+            self.caption_amplitude = max(1, (Constants.COLUMNS - 2 - width) // 2 - 1)

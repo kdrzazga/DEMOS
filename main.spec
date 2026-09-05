@@ -8,7 +8,7 @@ PROJECT_DIR = 'D:\\code\\DEMOS'
 ICON = 'D:\\code\\DEMOS\\icons/app.ico'
 EXE_NAME = 'P3DSCII - PETSCII 3D DEMO'
 EXCLUDED_DIRS = ('D:/code/DEMOS/demos/demo1', 'D:/code/DEMOS/demos/demo3', 'D:/code/DEMOS/demos/pc45')
-SPLASH_IMAGE = 'D:\\code\\DEMOS\\screens\\splash.png'
+SPLASH_IMAGE = 'D:\\code\\DEMOS\\screens\\splash_p3dscii.png'
 
 # normalize once so os.walk pruning can compare case-/separator-insensitively
 _EXCLUDED = tuple(os.path.normcase(os.path.normpath(p)) for p in EXCLUDED_DIRS)

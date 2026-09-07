@@ -1,13 +1,32 @@
+import contextlib
+import io
 import sys
 
-import arcade
+
+def _import_arcade_quietly():
+    """Import arcade, swallowing only its 'Running without PyMunk' notice.
+
+    arcade prints that line with a bare print() to stdout (not logging or
+    warnings) when this interpreter can't load the optional pymunk hitbox
+    backend, so it can only be filtered at the stream level. Anything else arcade
+    prints during import is passed through untouched."""
+    buffer = io.StringIO()
+    with contextlib.redirect_stdout(buffer):
+        import arcade
+    kept = "".join(line for line in buffer.getvalue().splitlines(keepends=True)
+                   if "Running without PyMunk" not in line)
+    if kept:
+        sys.stdout.write(kept)
+    return arcade
+
+
+arcade = _import_arcade_quietly()
 
 from demos.demo1.main import Demo1
 from demos.demo3.main import Demo3
 from demos.pc45.main import GlDemo
 from demos.pixeloveole.main import PixeloveOle
 from demos.petscii.files.petsciidemo import PetsciiDemo
-from demos.petscii.files.outro import Outro
 
 
 def kna_demo(windowed, triggered):
@@ -58,6 +77,7 @@ def close_boot_splash():
 
 
 if __name__ == "__main__":
+    print("Welcome to DEMO!!!")
     args = [arg.lower() for arg in sys.argv[1:]]
     triggered = any(arg in ("t", "trigger", "triggered") for arg in args)
     windowed = any(arg in ("w", "window", "windowed") for arg in args)

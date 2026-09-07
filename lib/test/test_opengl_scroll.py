@@ -19,6 +19,9 @@ SWAY_DEGREES = 45.0
 SWAY_PERIOD = 3.0
 DISTANCE = 4.5
 HALF_H = 1.5
+RESOURCE_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "demos", "petscii",
+                             "files", "resources")
+LARGE_TEXT_PATH = os.path.join(RESOURCE_PATH, "large-text")
 
 
 def make_texture():
@@ -67,8 +70,10 @@ def main():
 
     layout = dict(x=16, y=12, initial_screen_y=260, rows=25,
                   speed=20, loop=False, font_size=18)
-    wall_a = PygameTextWall(build_lines(load_text("kaplus.txt")), surface=canvas, color=GREEN, **layout)
-    wall_b = PygameTextWall(build_lines(load_text("karate.txt")), surface=canvas, color=BLUE, **layout)
+    wall_a = PygameTextWall(build_lines(load_text(os.path.join(LARGE_TEXT_PATH, "kaplus.txt"))),
+                            surface=canvas, color=GREEN, **layout)
+    wall_b = PygameTextWall(build_lines(load_text(os.path.join(LARGE_TEXT_PATH, "karate.txt"))),
+                            surface=canvas, color=BLUE, **layout)
     walls = TextWallArray()
     walls.add(wall_a, 0.0)
     walls.add(wall_b, 0.5)

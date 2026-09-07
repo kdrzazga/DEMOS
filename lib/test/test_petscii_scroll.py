@@ -18,12 +18,15 @@ file_name = "market_in_poland.txt"
 WIDTH, HEIGHT = 800, 600
 GREEN = (51, 255, 102)
 CHAR_SIZE = 16
-PETSCII_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "demos", "petscii",
-                            "files", "resources", "petscii", file_name)
+RESOURCE_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "demos", "petscii",
+                             "files", "resources")
+PETSCII_PATH = os.path.join(RESOURCE_PATH, "petscii", file_name)
+LARGE_TEXT_PATH = os.path.join(RESOURCE_PATH, "large-text")
 
 
 def build_walls(screen):
-    text_wall = PygameTextWall(build_lines(load_text("kaplus.txt")), surface=screen,
+    text_wall = PygameTextWall(build_lines(load_text(os.path.join(LARGE_TEXT_PATH, "kaplus.txt"))),
+                               surface=screen,
                                color=GREEN, x=16, y=12, initial_screen_y=260,
                                rows=25, speed=20, loop=False)
 

@@ -11,6 +11,9 @@ from lib.test.corpus import load_text, build_lines
 WIDTH, HEIGHT = 800, 600
 GREEN = (51, 255, 102)
 BLUE = (102, 204, 255)
+RESOURCE_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "demos", "petscii",
+                             "files", "resources")
+LARGE_TEXT_PATH = os.path.join(RESOURCE_PATH, "large-text")
 
 
 class ScrollTest(arcade.Window):
@@ -20,10 +23,10 @@ class ScrollTest(arcade.Window):
         self.background_color = (0, 0, 0)
         layout = dict(x=16, y=12, initial_screen_y=260, rows=25,
                       speed=20, loop=False, font_size=12)
-        wall_a = ArcadeTextWall(build_lines(load_text("kaplus.txt")), screen_height=HEIGHT,
-                                color=GREEN, **layout)
-        wall_b = ArcadeTextWall(build_lines(load_text("karate.txt")), screen_height=HEIGHT,
-                                color=BLUE, **layout)
+        wall_a = ArcadeTextWall(build_lines(load_text(os.path.join(LARGE_TEXT_PATH, "kaplus.txt"))),
+                                screen_height=HEIGHT, color=GREEN, **layout)
+        wall_b = ArcadeTextWall(build_lines(load_text(os.path.join(LARGE_TEXT_PATH, "karate.txt"))),
+                                screen_height=HEIGHT, color=BLUE, **layout)
         self.walls = TextWallArray()
         self.walls.add(wall_a, 0.0)
         self.walls.add(wall_b, 0.5)

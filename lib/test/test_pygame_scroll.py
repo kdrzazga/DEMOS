@@ -11,6 +11,9 @@ from lib.test.corpus import load_text, build_lines
 WIDTH, HEIGHT = 800, 600
 GREEN = (51, 255, 102)
 BLUE = (102, 204, 255)
+RESOURCE_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "demos", "petscii",
+                             "files", "resources")
+LARGE_TEXT_PATH = os.path.join(RESOURCE_PATH, "large-text")
 
 
 def main():
@@ -20,8 +23,10 @@ def main():
     clock = pygame.time.Clock()
     layout = dict(x=16, y=12, initial_screen_y=260, rows=25,
                   speed=60, loop=False, font_size=18)
-    wall_a = PygameTextWall(build_lines(load_text("kaplus.txt")), surface=screen, color=GREEN, **layout)
-    wall_b = PygameTextWall(build_lines(load_text("karate.txt")), surface=screen, color=BLUE, **layout)
+    wall_a = PygameTextWall(build_lines(load_text(os.path.join(LARGE_TEXT_PATH, "kaplus.txt"))),
+                            surface=screen, color=GREEN, **layout)
+    wall_b = PygameTextWall(build_lines(load_text(os.path.join(LARGE_TEXT_PATH, "karate.txt"))),
+                            surface=screen, color=BLUE, **layout)
     walls = TextWallArray()
     walls.add(wall_a, 0.0)
     walls.add(wall_b, 0.5)

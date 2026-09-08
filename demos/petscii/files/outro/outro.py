@@ -45,7 +45,7 @@ from OpenGL.GLU import gluPerspective
 
 from lib import Globals
 
-_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", "..", ".."))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
@@ -54,15 +54,20 @@ from demos.petscii.files.petscii.green_guy import GreenGuy
 from lib.helix import PetsciiHelix
 from lib.cequals import Cequals
 from demos.petscii.files.petscii.images.multi_petscii_image_manager import MultiPetsciiImageManager
+from demos.petscii.files.outro.sound_and_talk import SoundAndTalk
+from demos.petscii.files.petscii.images.caption_groups import CAPTION_GROUPS
 from demos.petscii.files.typer import Typer
 
 
 class Outro:
     """The demo's outro: after a short delay the Green Guy flies in from far away
-    (smiling), and once he arrives the expression/sway/zoom animation runs for
-    exactly 19 seconds. The AspirationRamos chiptune plays underneath the whole
-    time (fading in), with outro.mp3 layered over the 19-second stretch. A rainbow
-    PETSCII helix spirals on the left throughout.
+    (smiling), and once he arrives he speaks the three talk segments in turn. Each
+    segment is a SoundAndTalk: a spoken clip, the caption band that scrolls with
+    it, and the text. The guy's mouth animates while a segment is talking and
+    rests on a smile in the short gap between segments; once the last segment has
+    finished the credits type in. The AspirationRamos chiptune plays underneath
+    the whole time (fading in). A rainbow PETSCII helix spirals on the left
+    throughout.
 
     begin() / update() / draw() are frame-driven and never block, so a caller can
     run this and other animations together in one OpenGL context; run() is a
@@ -104,10 +109,11 @@ class Outro:
 
         self.credits = ('Music: Wodnik & Ramos', 'K&A+ PETSCII logo: tom3000'
                      , 'Other PETSCII graphics: KD', 'Code: KD')
-        self.talk = ('For the past 40+ years, PETSCII art has showcased the creativity of Commodore computers like '
-                     'the C64. Similar to ASCII art, it uses simple characters to create expressive images, '
-                     'but with a distinct retro style and limited palette. Even nowadays, it celebrates the '
-                     'ingenuity of early digital artists and the legacy of vintage computing.')
+        self.talk = ('For the past 40+ years, PETSCII art has showcased the creativity of Commodore computers like the C64.'
+                     , ' Similar to ASCII art, it uses simple characters to create expressive images, '
+                     'but with a distinct retro style and limited palette.'
+                     , ' Even nowadays, it celebrates the ingenuity of early digital artists and the legacy of vintage '
+                       'computing.')
 
         # animation config (instance attributes, easy to nudge)
         self.char_size = 24
@@ -125,14 +131,15 @@ class Outro:
         self.volume_step = 0.01
         self.volume_step_ms = 100
         self.max_volume = 1.0
+
+        # the three spoken segments: one sound clip, one talk string and the
+        # caption band that scrolls with it. The caption split lives in the shared
+        # CAPTION_GROUPS so the outro and the test app never diverge.
         self.outro_sound_files = ("outro1.mp3", "outro2.mp3", "outro3.mp3")
-        # silence after each clip before the next one starts: (after clip 1,
-        # after clip 2). Tune each to fit the speech pacing of its clip.
-        self.outro_gaps_ms = (333, 333)
+        self.segment_gap_ms = 333    # silence between one segment and the next
 
         self.delay_ms = 2000
         self.arrive_ms = 2500
-        self.main_ms = 22000   # talk phase length; long enough that the credits don't start mid-speech
         self.guy_far_factor = 8.0
 
         # credits typed in the lower-left once the speech ends
@@ -154,14 +161,13 @@ class Outro:
         self.helix = None
         self.phase = Outro.DELAY
         self.arrived = False
-        self.main_start_ms = None
         self.guy_far_z = 0.0
-        self.outro_sounds = ()
-        self.outro_index = 0
-        self.outro_channel = None
-        self.outro_resume_ms = None
+        self.segments = ()
+        self.segment_index = 0
+        self.segment_paused = False
+        self.segment_pause_start = 0
+        self.segment_talk_start = 0
         self.speech_ended = False
-        self.captions_manager = None
         self.credits_surface = None
         self.credits_typers = ()
         self.credits_texture = None
@@ -195,8 +201,9 @@ class Outro:
 
         self.phase = Outro.DELAY
         self.arrived = False
-        self.main_start_ms = None
         self.speech_ended = False
+        self.segment_index = 0
+        self.segment_paused = False
         self.start_ms = pygame.time.get_ticks()
         self._start_music()
 
@@ -205,12 +212,17 @@ class Outro:
         visible_half_width = eye * math.tan(math.radians(Constants.FOV / 2)) * (width / height)
         self.helix = PetsciiHelix(-0.7 * visible_half_width, self.helix_speed, Cequals(32),
                                   z_stretch=5.0, x_flatten=0.5)
-        self.captions_manager = MultiPetsciiImageManager()
+        self.segments = self._build_segments()
+
+    def _build_segments(self):
+        return tuple(
+            SoundAndTalk(sound_file, talk, MultiPetsciiImageManager(caption_types=captions))
+            for sound_file, talk, captions
+            in zip(self.outro_sound_files, self.talk, CAPTION_GROUPS))
 
     def update(self):
         now = pygame.time.get_ticks()
         self.helix.update()
-        self._update_outro_music(now)
         if not self.speech_ended:
             self._fade_in_music()
         elapsed = now - self.start_ms
@@ -234,30 +246,41 @@ class Outro:
         self.sway = self.sway_degrees * math.sin(2 * math.pi * now / self.sway_period)
         if progress >= 1.0:
             self.arrived = True
-            self.main_start_ms = now
             self.z = self.base_distance
             self._zoom_step = self.zoom_step
-            self._play_outro_music()
+            self.segments[0].start()
+            self.segment_talk_start = now
 
     def _update_main(self, now):
-        main_elapsed = now - self.main_start_ms
-        if main_elapsed >= self.main_ms:
-            if not self.speech_ended:
-                self.speech_ended = True
-                self._set_face("smile")
-                self._begin_credits()
-        elif self._outro_playing():
-            step = (main_elapsed // self.frame_ms) % len(Outro.FRAMES)
-            self._set_face(Outro.FRAMES[step])
+        segment = self.segments[self.segment_index]
+        if self.segment_paused:
+            self._set_face("smile")
+            if now - self.segment_pause_start >= self.segment_gap_ms:
+                self.segment_paused = False
+                self.segment_index += 1
+                self.segments[self.segment_index].start()
+                self.segment_talk_start = now
         else:
-            self._set_face("smile")   # between clips nothing is playing: rest on the smile
+            segment.update()
+            if segment.talking():
+                step = ((now - self.segment_talk_start) // self.frame_ms) % len(Outro.FRAMES)
+                self._set_face(Outro.FRAMES[step])
+            else:
+                self._set_face("smile")
+            if segment.finished:
+                if self.segment_index + 1 < len(self.segments):
+                    self.segment_paused = True
+                    self.segment_pause_start = now
+                else:
+                    self.speech_ended = True
+                    self._set_face("smile")
+                    self._begin_credits()
         self.sway = self.sway_degrees * math.sin(2 * math.pi * now / self.sway_period)
         self.z += self._zoom_step
         if self.z >= self.z_far:
             self.z, self._zoom_step = self.z_far, -self.zoom_step
         elif self.z <= self.z_near:
             self.z, self._zoom_step = self.z_near, self.zoom_step
-        self.captions_manager.update()
 
     def _begin_credits(self):
         self.credits_surface = pygame.Surface((Constants.WIDTH, Constants.HEIGHT), pygame.SRCALPHA)
@@ -286,11 +309,6 @@ class Outro:
         if self.credits_frame >= self.credits_end_frame:
             self.finished = True
 
-    @property
-    def main_finished(self):
-        return self.arrived and self.main_start_ms is not None \
-            and pygame.time.get_ticks() - self.main_start_ms >= self.main_ms
-
     def draw(self):
         """Draw the guy into whatever window is current, sized to its own aspect
         and centred (the projection uses the live window aspect, so it is correct
@@ -316,8 +334,8 @@ class Outro:
             glTexCoord2f(0, 1); glVertex3f(-half_width, -half_height, 0)
             glEnd()
 
-        if self.arrived:
-            self.captions_manager.draw()
+        if self.arrived and self.segments:
+            self.segments[min(self.segment_index, len(self.segments) - 1)].draw()
         self.helix.draw()
         if self.credits_surface is not None:
             self._draw_credits()
@@ -356,8 +374,8 @@ class Outro:
 
     def stop_music(self):
         pygame.mixer.music.stop()
-        for sound in self.outro_sounds:
-            sound.stop()
+        for segment in self.segments:
+            segment.stop()
 
     # ---- standalone loop (opens its own window) -----------------------------
     def run(self):
@@ -389,7 +407,7 @@ class Outro:
 
     # ---- music --------------------------------------------------------------
     def _start_music(self):
-        path = os.path.join(os.path.dirname(__file__), "resources", self.music_file)
+        path = os.path.join(os.path.dirname(__file__), "../resources", self.music_file)
         pygame.mixer.music.load(path)
         pygame.mixer.music.set_volume(self.start_volume)
         pygame.mixer.music.play()
@@ -409,33 +427,6 @@ class Outro:
     def _fade_out_music(self):
         fade = max(0.0, 1.0 - self.credits_frame / self.credits_end_frame)
         pygame.mixer.music.set_volume(self.mute_start_volume * fade)
-
-    def _play_outro_music(self):
-        resources = os.path.join(os.path.dirname(__file__), "resources")
-        self.outro_sounds = tuple(pygame.mixer.Sound(os.path.join(resources, name))
-                                  for name in self.outro_sound_files)
-        self.outro_index = 0
-        self.outro_channel = self.outro_sounds[0].play()
-        self.outro_resume_ms = None
-
-    def _update_outro_music(self, now):
-        """Advance through the outro clips: once the current one finishes, wait the
-        gap that follows it, then start the next. Frame-driven, never blocks."""
-        if self.outro_index >= len(self.outro_sounds) - 1:
-            return   # last clip has started (or none loaded yet): nothing left to queue
-        if self.outro_channel is not None and self.outro_channel.get_busy():
-            return   # current clip still playing
-        if self.outro_resume_ms is None:
-            self.outro_resume_ms = now + self.outro_gaps_ms[self.outro_index]
-        elif now >= self.outro_resume_ms:
-            self.outro_index += 1
-            self.outro_channel = self.outro_sounds[self.outro_index].play()
-            self.outro_resume_ms = None
-
-    def _outro_playing(self):
-        """True while an outro clip is actually sounding -- False during the gaps
-        and once the last clip has ended."""
-        return self.outro_channel is not None and self.outro_channel.get_busy()
 
     # ---- rendering ----------------------------------------------------------
     def _set_face(self, name):

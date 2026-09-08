@@ -37,11 +37,35 @@ from OpenGL.GL import (
 )
 from OpenGL.GLU import gluPerspective
 
+from demos.petscii.files.petscii.caption26 import Caption26
+from demos.petscii.files.petscii.caption27 import Caption27
+from demos.petscii.files.petscii.caption28 import Caption28
+from demos.petscii.files.petscii.images.caption23 import Caption23
+from demos.petscii.files.petscii.images.caption24 import Caption24
+from demos.petscii.files.petscii.images.caption25 import Caption25
+from demos.petscii.files.petscii.images.caption29 import Caption29
+from demos.petscii.files.petscii.images.caption9_5 import Caption95
+
 _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 sys.path.insert(0, _ROOT)
 
 from demos.petscii.files.petscii.green_guy import GreenGuy
-from demos.petscii.files.petscii.images.multi_petscii_image_manager import MultiPetsciiImageManager
+from demos.petscii.files.petscii.images.multi_petscii_image_manager import (
+    MultiPetsciiImageManager,
+    Caption1,
+    Caption2,
+    Caption3,
+    Caption4,
+    Caption5,
+    Caption6,
+    Caption7,
+    Caption75,
+    Caption8,
+    Caption9,
+    Caption21,
+    Caption22,
+    CaptionEmpty,
+)
 from demos.petscii.files.outro.sound_and_talk import SoundAndTalk
 
 CHAR_SIZE = 24
@@ -57,6 +81,12 @@ TALK = (
     "For the past 40+ years, PETSCII art has showcased the creativity of Commodore computers like the C64.",
     " Similar to ASCII art, it uses simple characters to create expressive images, but with a distinct retro style and limited palette.",
     " Even nowadays, it celebrates the ingenuity of early digital artists and the legacy of vintage computing.",
+)
+CAPTION_GROUPS = (
+    (Caption1, Caption2, Caption3, Caption4, Caption5, Caption6,
+     Caption7, Caption75, Caption8, CaptionEmpty, Caption95),
+    (Caption21, Caption22, Caption23, Caption24, Caption25, Caption26, Caption27, Caption28, Caption29),
+    (Caption21,),
 )
 
 
@@ -109,8 +139,8 @@ class GuyFace:
 
 
 def build_segments():
-    return [SoundAndTalk(sound_file, talk, MultiPetsciiImageManager())
-            for sound_file, talk in zip(SOUND_FILES, TALK)]
+    return [SoundAndTalk(sound_file, talk, MultiPetsciiImageManager(caption_types=captions))
+            for sound_file, talk, captions in zip(SOUND_FILES, TALK, CAPTION_GROUPS)]
 
 
 def announce(segment):

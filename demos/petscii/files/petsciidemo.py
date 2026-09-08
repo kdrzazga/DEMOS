@@ -33,7 +33,7 @@ from demos.petscii.files.petscii.bruce_sprite import BruceSprite
 from demos.petscii.files.petscii.yamo_petscii import PetsciiYamo
 from demos.petscii.files.petscii.kna_logo import KnaLogo
 from demos.petscii.files.noise import Noise
-from demos.petscii.files.outro import Outro
+from demos.petscii.files.outro.outro import Outro
 from demos.petscii.files.stage_welcome import WelcomeStage
 from demos.petscii.files.tilt_screen import TiltScreen
 from demos.petscii.files.winding_screen import WindingScreen

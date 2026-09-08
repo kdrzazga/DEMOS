@@ -1,6 +1,11 @@
 from demos.petscii.files.petscii.images.caption1 import Caption1
 from demos.petscii.files.petscii.images.caption2 import Caption2
 from demos.petscii.files.petscii.images.caption3 import Caption3
+from demos.petscii.files.petscii.images.caption35 import Caption35
+from demos.petscii.files.petscii.images.caption36 import Caption36
+from demos.petscii.files.petscii.images.caption37 import Caption37
+from demos.petscii.files.petscii.images.caption38 import Caption38
+from demos.petscii.files.petscii.images.caption39 import Caption39
 from demos.petscii.files.petscii.images.caption4 import Caption4
 from demos.petscii.files.petscii.images.caption5 import Caption5
 from demos.petscii.files.petscii.images.caption6 import Caption6
@@ -28,5 +33,5 @@ CAPTION_GROUPS = (
     (Caption1, Caption2, Caption3, Caption4, Caption5, Caption6,
      Caption7, Caption75, Caption8, CaptionEmpty, Caption95),
     (Caption21, Caption22, Caption23, Caption24, Caption25, Caption26, Caption27, Caption28, Caption29),
-    (Caption31, Caption32, Caption33, Caption34),
+    (Caption31, Caption32, Caption33, Caption34, Caption35, Caption36, Caption37, Caption38, Caption39),
 )

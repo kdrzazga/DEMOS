@@ -137,6 +137,7 @@ class Outro:
         # CAPTION_GROUPS so the outro and the test app never diverge.
         self.outro_sound_files = ("outro1.mp3", "outro2.mp3", "outro3.mp3")
         self.segment_gap_ms = 333    # silence between one segment and the next
+        self.caption_z_travel = 3.0  # stretch each caption band's z path so it lingers on screen
 
         self.delay_ms = 2000
         self.arrive_ms = 2500
@@ -216,7 +217,8 @@ class Outro:
 
     def _build_segments(self):
         return tuple(
-            SoundAndTalk(sound_file, talk, MultiPetsciiImageManager(caption_types=captions))
+            SoundAndTalk(sound_file, talk,
+                         MultiPetsciiImageManager(caption_types=captions, z_travel=self.caption_z_travel))
             for sound_file, talk, captions
             in zip(self.outro_sound_files, self.talk, CAPTION_GROUPS))
 
@@ -232,7 +234,12 @@ class Outro:
         if not self.arrived:
             self.phase = Outro.ARRIVE
             self._update_arrival(now, elapsed)
-        elif not self.speech_ended:
+            return
+        # keep every started caption scrolling, so a finished one runs off the left
+        # edge on its own even while the next segment scrolls in over it
+        for segment in self.segments[:self.segment_index + 1]:
+            segment.update()
+        if not self.speech_ended:
             self.phase = Outro.MAIN
             self._update_main(now)
         else:
@@ -261,7 +268,6 @@ class Outro:
                 self.segments[self.segment_index].start()
                 self.segment_talk_start = now
         else:
-            segment.update()
             if segment.talking():
                 step = ((now - self.segment_talk_start) // self.frame_ms) % len(Outro.FRAMES)
                 self._set_face(Outro.FRAMES[step])
@@ -335,7 +341,8 @@ class Outro:
             glEnd()
 
         if self.arrived and self.segments:
-            self.segments[min(self.segment_index, len(self.segments) - 1)].draw()
+            for segment in self.segments[:self.segment_index + 1]:
+                segment.draw()
         self.helix.draw()
         if self.credits_surface is not None:
             self._draw_credits()

@@ -64,7 +64,9 @@ DEFAULT_CAPTION_TYPES = (
 
 class MultiPetsciiImageManager:
 
-    SPEED = 0.0015 * 1.65
+    SPEED = 0.0015 * 1.65                           # scroll units per frame, tuned at REFERENCE_FPS
+    REFERENCE_FPS = 60
+    SCROLL_PER_MS = SPEED * REFERENCE_FPS / 1000.0  # same real-time pace at any actual frame rate
 
     def __init__(self, char_size=24, sweep=math.pi / 2, segments=80, radius=None,
                  caption_types=None):
@@ -94,10 +96,17 @@ class MultiPetsciiImageManager:
         self.bend_fraction = bend_len / track_len
         self.window = track_len / self.tex_w
         self.scroll = -self.window
+        self.last_update_ms = None
 
     def update(self):
+        now = pygame.time.get_ticks()
+        if self.last_update_ms is None:
+            self.last_update_ms = now   # first tick only sets the clock, so a long
+            return                      # gap before scrolling starts is not swallowed
+        elapsed_ms = now - self.last_update_ms
+        self.last_update_ms = now
         if self.scroll < 1.0:
-            self.scroll = min(1.0, self.scroll + MultiPetsciiImageManager.SPEED)
+            self.scroll = min(1.0, self.scroll + MultiPetsciiImageManager.SCROLL_PER_MS * elapsed_ms)
 
     def _curve_point(self, s):
         if s <= self.bend_fraction:

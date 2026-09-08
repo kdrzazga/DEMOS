@@ -45,7 +45,7 @@ from OpenGL.GLU import gluPerspective
 
 from lib import Globals
 
-_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", "..", ".."))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
@@ -104,10 +104,11 @@ class Outro:
 
         self.credits = ('Music: Wodnik & Ramos', 'K&A+ PETSCII logo: tom3000'
                      , 'Other PETSCII graphics: KD', 'Code: KD')
-        self.talk = ('For the past 40+ years, PETSCII art has showcased the creativity of Commodore computers like '
-                     'the C64. Similar to ASCII art, it uses simple characters to create expressive images, '
-                     'but with a distinct retro style and limited palette. Even nowadays, it celebrates the '
-                     'ingenuity of early digital artists and the legacy of vintage computing.')
+        self.talk = ('For the past 40+ years, PETSCII art has showcased the creativity of Commodore computers like the C64.'
+                     , ' Similar to ASCII art, it uses simple characters to create expressive images, '
+                     'but with a distinct retro style and limited palette.'
+                     , ' Even nowadays, it celebrates the ingenuity of early digital artists and the legacy of vintage '
+                       'computing.')
 
         # animation config (instance attributes, easy to nudge)
         self.char_size = 24
@@ -389,7 +390,7 @@ class Outro:
 
     # ---- music --------------------------------------------------------------
     def _start_music(self):
-        path = os.path.join(os.path.dirname(__file__), "resources", self.music_file)
+        path = os.path.join(os.path.dirname(__file__), "../resources", self.music_file)
         pygame.mixer.music.load(path)
         pygame.mixer.music.set_volume(self.start_volume)
         pygame.mixer.music.play()
@@ -411,7 +412,7 @@ class Outro:
         pygame.mixer.music.set_volume(self.mute_start_volume * fade)
 
     def _play_outro_music(self):
-        resources = os.path.join(os.path.dirname(__file__), "resources")
+        resources = os.path.join(os.path.dirname(__file__), "../resources")
         self.outro_sounds = tuple(pygame.mixer.Sound(os.path.join(resources, name))
                                   for name in self.outro_sound_files)
         self.outro_index = 0

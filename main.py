@@ -3,13 +3,19 @@ import io
 import sys
 
 
-def _import_arcade_quietly():
-    """Import arcade, swallowing only its 'Running without PyMunk' notice.
+def _verbose_requested():
+    return any(arg.lower() in ("v", "verbose") for arg in sys.argv[1:])
 
-    arcade prints that line with a bare print() to stdout (not logging or
-    warnings) when this interpreter can't load the optional pymunk hitbox
-    backend, so it can only be filtered at the stream level. Anything else arcade
-    prints during import is passed through untouched."""
+
+def _import_arcade(verbose):
+    """Import arcade. Unless verbose, swallow only its 'Running without PyMunk'
+    notice -- arcade prints that with a bare print() to stdout (not logging or
+    warnings) when this interpreter can't load the optional pymunk hitbox backend,
+    so it can only be filtered at the stream level. Anything else arcade prints
+    during import is passed through untouched."""
+    if verbose:
+        import arcade
+        return arcade
     buffer = io.StringIO()
     with contextlib.redirect_stdout(buffer):
         import arcade
@@ -20,7 +26,7 @@ def _import_arcade_quietly():
     return arcade
 
 
-arcade = _import_arcade_quietly()
+arcade = _import_arcade(_verbose_requested())
 
 from demos.demo1.main import Demo1
 from demos.demo3.main import Demo3

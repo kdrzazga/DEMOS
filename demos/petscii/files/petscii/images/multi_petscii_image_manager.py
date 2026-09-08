@@ -23,6 +23,7 @@ from OpenGL.GL import (
     glBindTexture,
     glBlendFunc,
     glColor3f,
+    glDepthMask,
     glDepthRange,
     glDisable,
     glEnable,
@@ -147,6 +148,8 @@ class MultiPetsciiImageManager:
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glEnable(GL_DEPTH_TEST)
         glDepthRange(0.999, 1.0)
+        glDepthMask(False)   # test against the scene, but do not block other caption
+                             # bands at this same depth, so overlapping scrolls all show
         glColor3f(1.0, 1.0, 1.0)
         glBindTexture(GL_TEXTURE_2D, self.texture)
         center_y = Constants.HEIGHT / 2.0
@@ -159,6 +162,7 @@ class MultiPetsciiImageManager:
             glTexCoord2f(u, 0.0); glVertex3f(x, yy + self.half_height, z)
             glTexCoord2f(u, 1.0); glVertex3f(x, yy - self.half_height, z)
         glEnd()
+        glDepthMask(True)
         glDepthRange(0.0, 1.0)
         glDisable(GL_BLEND)
 

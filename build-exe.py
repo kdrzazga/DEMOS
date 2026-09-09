@@ -1,3 +1,7 @@
+from datetime import datetime
+
+build_start = datetime.now()
+
 root = "D:/code/DEMOS/"
 icon_path = root + "icons/" + "p3dscii-ico.png"   # .png or .ico both work
 exe_name  = "P3DSCII - PETSCII 3D DEMO"   # -> dist/<exe_name>.exe
@@ -369,6 +373,8 @@ def main():
     print("[build-exe] SUCCESS -> %s" % out)
     print("[build-exe] run it DIRECTLY (never 'python %s.exe'):" % exe_name)
     print("            %s demo3 w" % out)
+    now = datetime.now()
+    print(build_start.strftime("%H:%M:%S") + " -> " + now.strftime("%H:%M:%S"))
 
 
 if __name__ == "__main__":

@@ -23,6 +23,7 @@ from OpenGL.GL import (
     glBindTexture,
     glBlendFunc,
     glColor3f,
+    glDepthMask,
     glDepthRange,
     glDisable,
     glEnable,
@@ -64,10 +65,13 @@ DEFAULT_CAPTION_TYPES = (
 
 class MultiPetsciiImageManager:
 
-    SPEED = 0.0015 * 1.65
+    SPEED = 0.0015 * 1.65                           # scroll units per frame, tuned at REFERENCE_FPS
+    REFERENCE_FPS = 60
+    SCROLL_PER_MS = SPEED * REFERENCE_FPS / 1000.0  # same real-time pace at any actual frame rate
+    SCROLL_FLUSH = 0.05                             # overshoot the end so the last caption clears the edge
 
     def __init__(self, char_size=24, sweep=math.pi / 2, segments=80, radius=None,
-                 caption_types=None):
+                 caption_types=None, z_travel=2.75):
         if caption_types is None:
             caption_types = DEFAULT_CAPTION_TYPES
         self.captions = MultiPetsciiImage(
@@ -80,30 +84,53 @@ class MultiPetsciiImageManager:
         self.sweep = sweep
         self.segments = segments
         self.radius = Constants.WIDTH if radius is None else radius
+        # how far the band dives along z before turning to run along x. Stretching
+        # this lengthens the track, so at the same scroll speed a caption stays on
+        # screen longer.
+        self.z_travel = z_travel
         self.half_height = self.tex_h / 2.0
         self.camera_distance = (Constants.HEIGHT / 2.0) / math.tan(math.radians(Constants.FOV / 2))
         self.far_plane = 100000.0
 
         self.bend_end_x = Constants.WIDTH - self.radius * (1.0 - math.cos(sweep))
-        self.bend_end_z = -self.radius * math.sin(sweep)
+        self.bend_end_z = -self.radius * math.sin(sweep) * self.z_travel
         tan_h = math.tan(math.radians(Constants.FOV / 2)) * (Constants.WIDTH / Constants.HEIGHT)
         self.left_x = Constants.WIDTH / 2.0 - (self.camera_distance - self.bend_end_z) * tan_h
-        bend_len = self.radius * sweep
+        bend_len = self._measure_bend()
         flat_len = max(0.0, self.bend_end_x - self.left_x)
         track_len = bend_len + flat_len
         self.bend_fraction = bend_len / track_len
         self.window = track_len / self.tex_w
         self.scroll = -self.window
+        self.scroll_end = 1.0 + MultiPetsciiImageManager.SCROLL_FLUSH
+        self.last_update_ms = None
+
+    def _measure_bend(self):
+        length = 0.0
+        prev_x, prev_z = Constants.WIDTH, 0.0
+        for i in range(1, self.segments + 1):
+            theta = (i / self.segments) * self.sweep
+            x = Constants.WIDTH - self.radius * (1.0 - math.cos(theta))
+            z = -self.radius * math.sin(theta) * self.z_travel
+            length += math.hypot(x - prev_x, z - prev_z)
+            prev_x, prev_z = x, z
+        return length
 
     def update(self):
-        if self.scroll < 1.0:
-            self.scroll = min(1.0, self.scroll + MultiPetsciiImageManager.SPEED)
+        now = pygame.time.get_ticks()
+        if self.last_update_ms is None:
+            self.last_update_ms = now   # first tick only sets the clock, so a long
+            return                      # gap before scrolling starts is not swallowed
+        elapsed_ms = now - self.last_update_ms
+        self.last_update_ms = now
+        if self.scroll < self.scroll_end:
+            self.scroll = min(self.scroll_end, self.scroll + MultiPetsciiImageManager.SCROLL_PER_MS * elapsed_ms)
 
     def _curve_point(self, s):
         if s <= self.bend_fraction:
             theta = (s / self.bend_fraction) * self.sweep
             return (Constants.WIDTH - self.radius * (1.0 - math.cos(theta)),
-                    -self.radius * math.sin(theta))
+                    -self.radius * math.sin(theta) * self.z_travel)
         p = (s - self.bend_fraction) / (1.0 - self.bend_fraction)
         return (self.bend_end_x + p * (self.left_x - self.bend_end_x), self.bend_end_z)
 
@@ -121,6 +148,8 @@ class MultiPetsciiImageManager:
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glEnable(GL_DEPTH_TEST)
         glDepthRange(0.999, 1.0)
+        glDepthMask(False)   # test against the scene, but do not block other caption
+                             # bands at this same depth, so overlapping scrolls all show
         glColor3f(1.0, 1.0, 1.0)
         glBindTexture(GL_TEXTURE_2D, self.texture)
         center_y = Constants.HEIGHT / 2.0
@@ -133,6 +162,7 @@ class MultiPetsciiImageManager:
             glTexCoord2f(u, 0.0); glVertex3f(x, yy + self.half_height, z)
             glTexCoord2f(u, 1.0); glVertex3f(x, yy - self.half_height, z)
         glEnd()
+        glDepthMask(True)
         glDepthRange(0.0, 1.0)
         glDisable(GL_BLEND)
 

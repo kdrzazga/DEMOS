@@ -15,7 +15,7 @@ class Asian(PetsciiImage):
         except (pygame.error, FileNotFoundError):
             dir = os.getcwd() + "\\..\\files\\resources\\"
             self.all_graphics = pygame.mixer.Sound(dir + "all-graphics.mp3")
-        print(dir)
+        #print(dir)
         self.all_graphics_duration = 4 #seconds
         self.three_d = pygame.mixer.Sound(dir + "3d.mp3")
         self.three_d_duration = 3

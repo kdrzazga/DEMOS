@@ -24,13 +24,14 @@ class SoundAndTalk:
         self.finished = False
 
     def update(self):
-        if not self.started or self.finished:
+        if not self.started:
             return
-        self.captions_manager.update()
+        self.captions_manager.update()   # keep scrolling even after the clip ends,
+        if self.finished:                # so the caption runs off the left edge
+            return
         if self.channel is None:
             self.finished = True
-            return
-        if self.channel.get_busy():
+        elif self.channel.get_busy():
             self.was_audible = True
         elif self.was_audible:
             self.finished = True

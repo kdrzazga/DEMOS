@@ -346,6 +346,7 @@ class PetsciiDemo(PygameDemo):
         elif self.finale_phase == PetsciiDemo.FINALE_OUTRO:
             self.outro.update()
             if self.outro.finished:
+                print("Gracias por ver la demo de P3DSCII !!! / Thanks for watching P3DSCII demo !!!")
                 self.running = False
 
     def start_clear(self):

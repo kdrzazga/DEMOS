@@ -25,9 +25,9 @@ class ScreenWindingAnim:
         self.background_color = background_color
         self.picture_speed = picture_speed
 
-        market_image = self._load_image("market_in_poland.txt", background_color=0)
-        bajtek_image = self._load_image("logo-bajtek.txt", background_color=1)
-        top_secret_image = self._load_image("logo-top-secret.txt", background_color=15)
+        market_image = self._load_image("petscii-intro.txt", background_color=0)
+        bajtek_image = self._load_image("petscii-creators.txt", background_color=1)
+        top_secret_image = self._load_image("mosaic.txt", background_color=0)
         secret_service_image = self._load_image("logo-secret-service.txt", background_color=2)
         secret_service_description = self._load_image("secret-service.txt", background_color=2)
         kna_image = self._load_image("kna.txt", background_color=0)

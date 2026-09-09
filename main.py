@@ -83,7 +83,7 @@ def close_boot_splash():
 
 
 if __name__ == "__main__":
-    print("Welcome to DEMO!!!")
+    print("Bienvenido a la DEMO de P3DSCII !!! / Welcome to P3DSCII demo !!!")
     args = [arg.lower() for arg in sys.argv[1:]]
     triggered = any(arg in ("t", "trigger", "triggered") for arg in args)
     windowed = any(arg in ("w", "window", "windowed") for arg in args)

@@ -12,6 +12,7 @@ class QuarterCopy:
         self.depth = prototype.depth
         self.density = prototype.density
         self.houses = prototype.houses
+        self.hidden = ()
 
     def plot_count(self):
         return self.prototype.plot_count()
@@ -23,6 +24,7 @@ class QuarterCopy:
         glPushMatrix()
         glTranslatef(self.x, self.y, self.z)
         glRotatef(self.facing, 0.0, 1.0, 0.0)
-        for house in self.houses:
-            house.draw()
+        for index, house in enumerate(self.houses):
+            if index not in self.hidden:
+                house.draw()
         glPopMatrix()

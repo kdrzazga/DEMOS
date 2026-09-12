@@ -7,6 +7,8 @@ import pygame
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
+from lib import Globals
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 from demos.WinterDemo26.land import Land, FlattyLand
@@ -630,7 +632,8 @@ class WinterDemo(PygameDemo):
     def _finish(self):
         self._sky_glide_scene()
         if not self.thanks_printed:
-            print("thanks for watching")
+            t = Globals.get_duration()
+            print("thanks for watching, duration " + str(t))
             self.thanks_printed = True
 
     def _place_camera(self):

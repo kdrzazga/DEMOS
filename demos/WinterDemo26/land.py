@@ -13,7 +13,7 @@ class Land:
         self.height_amplitudes = height_amplitudes
         self.stretch = stretch
         self.clearing = clearing
-        self.snow_white = (0.97, 0.98, 1.0)
+        self.snow_white = (0.60, 0.67, 0.63)
         self.cyan_shades = ((0.60, 0.86, 0.95), (0.74, 0.92, 0.98), (0.53, 0.80, 0.93))
         self.vertices = self._build_vertices()
         self.display_list = self._compile()

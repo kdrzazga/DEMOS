@@ -3,7 +3,8 @@ from OpenGL.GL import *
 
 class Road:
     def __init__(self, x, y, z, length, width, facing=0.0, color=(0.16, 0.17, 0.19),
-                 kerb_color=(0.62, 0.65, 0.70), marking_color=(0.66, 0.64, 0.56), marking=True):
+                 kerb_color=(0.62, 0.65, 0.70), marking_color=(0.66, 0.64, 0.56), marking=True,
+                 library=None):
         self.x = x
         self.y = y
         self.z = z
@@ -15,13 +16,13 @@ class Road:
         self.marking_color = marking_color
         self.marking = marking
 
-        self.surface_lift = 0.04
+        self.surface_lift = 0.25
         self.kerb_width = 0.45
         self.marking_width = 0.20
         self.dash_length = 2.2
         self.dash_gap = 2.0
 
-        self.display_list = self._compile()
+        self.display_list = self.compile_shape() if library is None else library.shape_for(self)
 
     def _draw_strip(self, left, right, near, far, height, color):
         glColor3f(*color)
@@ -54,7 +55,12 @@ class Road:
                              self.surface_lift * 1.6, self.marking_color)
             near += step
 
-    def _compile(self):
+    def shape_key(self):
+        return (round(self.length, 4), round(self.width, 4), self.marking, self.color,
+                self.kerb_color, self.marking_color, self.surface_lift, self.kerb_width,
+                self.marking_width, self.dash_length, self.dash_gap)
+
+    def compile_shape(self):
         display_list = glGenLists(1)
         glNewList(display_list, GL_COMPILE)
         self._draw_surface()
@@ -69,3 +75,19 @@ class Road:
         glRotatef(self.facing, 0.0, 1.0, 0.0)
         glCallList(self.display_list)
         glPopMatrix()
+
+
+class RoadLibrary:
+    def __init__(self):
+        self.shapes = {}
+
+    def shape_for(self, road):
+        key = road.shape_key()
+        shape = self.shapes.get(key)
+        if shape is None:
+            shape = road.compile_shape()
+            self.shapes[key] = shape
+        return shape
+
+    def shape_count(self):
+        return len(self.shapes)

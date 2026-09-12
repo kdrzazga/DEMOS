@@ -1,15 +1,15 @@
 import random
 
-from lib.urban.city import City
+from lib.urban.town import Town
 from lib.urban.quarter import Quarter, WALL_PALETTE
 from lib.urban.road import Road
 
 
-class CityBuilder:
+class TownBuilder:
     def __init__(self, blocks_across=3, blocks_deep=2, quarter_rows=2, quarter_columns=3,
                  road_width=7.0, floor_range=(1, 4), windows_range=(2, 4),
                  palette=WALL_PALETTE, house_spacing=(1.6, 2.6), density=1.0,
-                 road_marking=True, seed=0):
+                 road_marking=True, library=None, road_library=None, seed=0):
         self.blocks_across = max(1, blocks_across)
         self.blocks_deep = max(1, blocks_deep)
         self.quarter_rows = quarter_rows
@@ -21,6 +21,8 @@ class CityBuilder:
         self.house_spacing = house_spacing
         self.density = max(0.0, min(1.0, density))
         self.road_marking = road_marking
+        self.library = library
+        self.road_library = road_library
         self.seed = seed
 
     def _create_blocks(self):
@@ -29,13 +31,17 @@ class CityBuilder:
         for _ in range(self.blocks_deep):
             line = []
             for _ in range(self.blocks_across):
-                line.append(Quarter(0.0, 0.0, 0.0, rows=self.quarter_rows,
-                                    columns=self.quarter_columns, floor_range=self.floor_range,
-                                    windows_range=self.windows_range, palette=self.palette,
-                                    spacing=self.house_spacing, density=self.density,
-                                    seed=generator.randrange(1000000)))
+                line.append(self._create_quarter(generator))
             blocks.append(line)
         return blocks
+
+    def _create_quarter(self, generator):
+        if self.library is not None:
+            return self.library.copy(self.density, generator)
+        return Quarter(0.0, 0.0, 0.0, rows=self.quarter_rows, columns=self.quarter_columns,
+                       floor_range=self.floor_range, windows_range=self.windows_range,
+                       palette=self.palette, spacing=self.house_spacing, density=self.density,
+                       seed=generator.randrange(1000000))
 
     def _place_blocks(self, blocks):
         column_widths = tuple(max(blocks[row][column].width for row in range(self.blocks_deep))
@@ -60,13 +66,13 @@ class CityBuilder:
         for column in range(self.blocks_across - 1):
             cursor_x += column_widths[column]
             roads.append(Road(cursor_x + self.road_width / 2.0, 0.0, 0.0, depth, self.road_width,
-                              facing=0.0, marking=self.road_marking))
+                              facing=0.0, marking=self.road_marking, library=self.road_library))
             cursor_x += self.road_width
         cursor_z = -depth / 2.0
         for row in range(self.blocks_deep - 1):
             cursor_z += row_depths[row]
             roads.append(Road(0.0, 0.0, cursor_z + self.road_width / 2.0, width, self.road_width,
-                              facing=90.0, marking=self.road_marking))
+                              facing=90.0, marking=self.road_marking, library=self.road_library))
             cursor_z += self.road_width
         return roads
 
@@ -75,4 +81,4 @@ class CityBuilder:
         column_widths, row_depths, width, depth = self._place_blocks(blocks)
         roads = self._create_roads(column_widths, row_depths, width, depth)
         quarters = tuple(quarter for line in blocks for quarter in line)
-        return City(x, y, z, quarters, roads)
+        return Town(x, y, z, quarters, roads)

@@ -9,7 +9,7 @@ from lib.particles import Texture2D
 
 class Mars:
     def __init__(self, x, y, z, radius=6.0, tilt=25.19, spin_speed=5.0, seed=17,
-                 texture_width=1024, texture_height=512, flattening=0.994):
+                 texture_width=1024, texture_height=512, flattening=0.994, defer_texture=False):
         self.x = x
         self.y = y
         self.z = z
@@ -48,12 +48,20 @@ class Mars:
         self.quadric = gluNewQuadric()
         gluQuadricNormals(self.quadric, GLU_SMOOTH)
         gluQuadricTexture(self.quadric, GL_TRUE)
-        self.surface = Texture2D(self._build_surface())
-        glBindTexture(GL_TEXTURE_2D, self.surface.id)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+        self.surface = None
+        if not defer_texture:
+            self.attach_surface(self._build_surface())
 
     def update(self, dt):
         self.spin += self.spin_speed * dt
+
+    def attach_surface(self, rgba):
+        self.surface = Texture2D(rgba)
+        glBindTexture(GL_TEXTURE_2D, self.surface.id)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+
+    def ready(self):
+        return self.surface is not None
 
     def _upsample(self, grid, height, width):
         rows = np.linspace(0.0, grid.shape[0] - 1.0, height)
@@ -159,6 +167,8 @@ class Mars:
         return rgba * 255.0
 
     def draw(self):
+        if self.surface is None:
+            return
         glPushMatrix()
         glTranslatef(self.x, self.y, self.z)
         glRotatef(self.tilt, 0.0, 0.0, 1.0)

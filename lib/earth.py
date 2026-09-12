@@ -11,7 +11,8 @@ from lib.moon import Moon
 
 class Earth:
     def __init__(self, x, y, z, radius=6.0, tilt=23.4, spin_speed=3.0, texture_path=None,
-                 moon_size_boost=1.0, moon_orbit_scale=1.0, moon_time_scale=1.0):
+                 moon_size_boost=1.0, moon_orbit_scale=1.0, moon_time_scale=1.0,
+                 moon_enabled=True):
         self.x = x
         self.y = y
         self.z = z
@@ -26,6 +27,7 @@ class Earth:
         self.halo_scale = 1.38
 
         self.earth_radius_km = 6371.0
+        self.moon_enabled = moon_enabled
         self.moon_size_boost = moon_size_boost
         self.moon_orbit_scale = moon_orbit_scale
         self.moon_time_scale = moon_time_scale
@@ -117,6 +119,7 @@ class Earth:
         gluSphere(self.quadric, self.radius, 48, 32)
         glDisable(GL_TEXTURE_2D)
         glPopMatrix()
-        for moon in self.moons:
-            moon.draw()
+        if self.moon_enabled:
+            for moon in self.moons:
+                moon.draw()
         glPopMatrix()

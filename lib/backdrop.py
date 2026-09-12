@@ -10,7 +10,7 @@ from lib.round_nebula import RoundNebula
 
 
 class SpaceBackdrop:
-    def __init__(self, aspect, fov=55.0, far=3200.0, tilt=90.0, view_distance=220.0):
+    def __init__(self, aspect, fov=65.0, far=3200.0, tilt=90.0, view_distance=220.0):
         self.aspect = aspect
         self.fov = fov
         self.far = far
@@ -29,15 +29,15 @@ class SpaceBackdrop:
 
     def _build_round_nebulas(self):
         glow = self.textures.glow
-        return (RoundNebula(glow, center=(-210.0, 214.0, -900.0), radius=170.0, seed=3, spin_speed=0.08),
-                RoundNebula(glow, center=(330.0, -260.0, -1200.0), radius=190.0, seed=2, spin_speed=-0.05,
-                            inner_color=(0.10, 0.96, 0.10)),
-                RoundNebula(glow, center=(-200.0, -436.0, -1500.0), radius=200.0, seed=2, spin_speed=0.10,
-                            rim_color=(0.0, 0.94, 0.30)),
-                RoundNebula(glow, center=(520.0, 300.0, -1800.0), radius=240.0, seed=5, spin_speed=-0.09,
-                            rim_color=(0.0, 0.15, 0.99)),
-                RoundNebula(glow, center=(-620.0, -280.0, -2100.0), radius=250.0, seed=1, spin_speed=-0.06),
-                RoundNebula(glow, center=(150.0, 212.0, -700.0), radius=130.0, seed=6, spin_speed=-0.045,
+        return (RoundNebula(glow, center=(433.0, -269.0, -422.0), radius=190.0, seed=3, spin_speed=0.08),
+                # RoundNebula(glow, center=(964.0, -148.0, -330.0), radius=195.0, seed=2, spin_speed=-0.05,
+                #             inner_color=(0.10, 0.96, 0.10)),
+                RoundNebula(glow, center=(1060.0, 466.0, -653.0), radius=50.0, seed=2, spin_speed=0.7),
+                # RoundNebula(glow, center=(620.0, 1053.0, -1074.0), radius=255.0, seed=5, spin_speed=-0.09,
+                #             rim_color=(0.0, 0.94, 0.30)),
+                # RoundNebula(glow, center=(282.0, 477.0, -1806.0), radius=270.0, seed=1, spin_speed=-0.06,
+                #             rim_color=(0.0, 0.15, 0.99)),
+                RoundNebula(glow, center=(203.0, -617.0, -2111.0), radius=190.0, seed=6, spin_speed=-0.145,
                             rim_color=(1.0, 0.34, 0.30), shell_color=(1.0, 0.58, 0.34),
                             inner_color=(0.40, 0.46, 0.92)))
 

@@ -33,6 +33,7 @@ from demos.demo3.main import Demo3
 from demos.pc45.main import GlDemo
 from demos.pixeloveole.main import PixeloveOle
 from demos.petscii.files.petsciidemo import PetsciiDemo
+from demos.WinterDemo26.main import WinterDemo
 
 
 def kna_demo(windowed, triggered):
@@ -56,6 +57,10 @@ def pixelove_ole(windowed, triggered):
     PixeloveOle(windowed=windowed, triggered=triggered).run()
 
 
+def winter_demo(windowed, triggered):
+    WinterDemo(windowed=windowed, triggered=triggered).run()
+
+
 # demo name -> launcher; every launcher takes the same (windowed, triggered)
 DEMOS = {
     "kna": kna_demo,
@@ -63,9 +68,10 @@ DEMOS = {
     "p3dscii": petscii_demo,
     "demo3": demo3,
     "po": pixelove_ole, #cannot be built to exe, due to execution loop
+    "winter": winter_demo,
 }
 
-DEFAULT_DEMO = "p3dscii"
+DEFAULT_DEMO = "winter"
 
 
 def close_boot_splash():

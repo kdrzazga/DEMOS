@@ -7,6 +7,8 @@ import pygame
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
+from lib import Globals
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 from demos.WinterDemo26.land import Land, FlattyLand
@@ -25,6 +27,9 @@ from lib.saturn import Saturn
 from lib.mars import Mars
 from lib.earth import Earth
 from demos.WinterDemo26.santa_ride import SantaRide
+from demos.WinterDemo26.santa_claus import SantaClaus
+from lib.urban.city_factory import CityFactory
+from lib.urban.house import House
 
 
 class WinterDemo(PygameDemo):
@@ -92,7 +97,9 @@ class WinterDemo(PygameDemo):
         self.slalom_amplitude = 3.5
         self.slalom_period = 3.4
         self.cloud_start_fill = 0.90
-        self.glide_duration = 10.0
+        self.cloud_reveal_schedule = ((150.0, 5), (100.0, 13), (80.0, 52),
+                                      (78.0, 99), (75.0, 124), (63.0, 130))
+        self.glide_duration = 15.0
         self.glide_speed = 40.0
         self.glide_level = 2.5
         self.glide_drop = 60.0
@@ -102,6 +109,32 @@ class WinterDemo(PygameDemo):
         self.glide_look_down = 5.0
         self.glide_sky_fade = 3.0
         self.glide_fog_end = 1600.0
+        self.city_ahead = 580.0
+        self.city_aside = 25.0
+        self.city_matrix = 7
+        self.city_sink = 0.0
+        self.city_seed = 5
+        self.landing_duration = 5.0
+        self.rooftop_duration = 4.2
+        self.jump_duration = 1.6
+        self.roof_camera_offset = (11.0, 5.5, 8.0)
+        self.landing_turn = 180.0
+        self.rooftop_santa_size = 1.6
+        self.jump_arc = 2.4
+        self.roof_stand_offset = 1.4
+        self.landing_floors = 5
+        self.landing_bays = 12
+        self.sleigh_offset_ratio = 0.30
+        self.landing_margin = 0.4
+        self.landing_chimney_scale = 3.4
+        self.landing_chimney_width_scale = 1.21
+        self.landing_snow = 0.0
+        self.landing_color = (0.44, 0.34, 0.36)
+        self.city_flat_size = (176.0, 112.0)
+        self.city_flat_falloff = 100.0
+        self.igloo_flat_falloff = 60.0
+        self.land_extent = 560.0
+        self.land_resolution = 280
         self.snowman_end = self.sway_duration
         self.transition_end = self.snowman_end + self.travel_duration
         self.outside_end = self.transition_end + self.settle_duration
@@ -116,15 +149,27 @@ class WinterDemo(PygameDemo):
         self.ride_end = self.ride_start + self.ride_duration
         self.planets_end = self.ride_end + self.planets_duration
         self.glide_end = self.planets_end + self.glide_duration
+        self.landing_end = self.glide_end + self.landing_duration
+        self.rooftop_end = self.landing_end + self.rooftop_duration
+        self.roof_house = None
         self.eye = (0.0, 10.0, 26.0)
         self.target = (0.0, 3.0, 0.0)
         self.thanks_printed = False
         self._start_music()
         self._init_gl()
+        self._set_approach_angles()
         self.flatty_offset = (160.0, 0.0, 0.0)
         self.flatty_land = FlattyLand(extent=80.0, resolution=144, seed=11)
-        self.land = Land(extent=560.0, resolution=280, seed=7, stretch=7.0,
-                         clearing=(self.flatty_offset[0], self.flatty_offset[2], self.flatty_land.extent))
+        city_x, city_z = self._city_ground_spot()
+        self.land = Land(extent=self.land_extent, resolution=self.land_resolution, seed=7, stretch=7.0,
+                         clearings=((self.flatty_offset[0], self.flatty_offset[2],
+                                     self.flatty_land.extent, self.flatty_land.depth_extent),),
+                         flattenings=((self.flatty_offset[0], self.flatty_offset[2],
+                                       self.flatty_land.extent, self.flatty_land.depth_extent,
+                                       self.igloo_flat_falloff, 0.0),
+                                      (city_x, city_z, self.city_flat_size[0],
+                                       self.city_flat_size[1], self.city_flat_falloff, None)))
+        self.city_offset = (city_x, 0.0, city_z)
         self.trees = self._create_trees()
         self.snowman = Snowman(1.7, 0.0, self.land.surface_height(1.7, 0.0) - 0.6)
         self.igloo = Igloo(self.flatty_offset[0], self.flatty_offset[2],
@@ -140,6 +185,8 @@ class WinterDemo(PygameDemo):
         self.santa_ride = self._create_santa_ride()
         self.planets = self._create_planets()
         self.sky_clouds = self._create_sky_clouds()
+        self.city = CityFactory(seed=self.city_seed).create_big_city(matrix_size=self.city_matrix)
+        self.rooftop_santa = SantaClaus(0.0, 0.0, 0.0, size=self.rooftop_santa_size, wave=True, seed=9)
         self.baked_surfaces = {}
         threading.Thread(target=self._bake_surfaces, daemon=True).start()
         self.snow = Snow(220, (-22.0, 22.0, -20.0, 20.0, -1.5, 18.0))
@@ -170,6 +217,10 @@ class WinterDemo(PygameDemo):
             self._planets_scene()
         elif time <= self.glide_end:
             self._sky_glide_scene()
+        elif time <= self.landing_end:
+            self._landing_scene()
+        elif time <= self.rooftop_end:
+            self._rooftop_scene()
         else:
             self._finish()
 
@@ -244,13 +295,23 @@ class WinterDemo(PygameDemo):
         anchor = self._santa_anchor()
         return (anchor[0] + offset[0], anchor[1] + offset[1], anchor[2] + offset[2])
 
+    def _set_approach_angles(self):
+        course = tuple(self.santa_end_offset[axis] - self.santa_start_offset[axis] for axis in range(3))
+        self.approach_facing = math.degrees(math.atan2(course[0], course[2]))
+        self.approach_pitch = math.degrees(math.atan2(-course[1], math.hypot(course[0], course[2])))
+
+    def _city_ground_spot(self):
+        course = self._glide_direction()
+        right = self._unit(self._cross(course, (0.0, 1.0, 0.0)))
+        along = self.city_ahead - self.glide_site_ahead
+        aside = self.city_aside - self.glide_site_aside
+        cell = 2.0 * self.land_extent / self.land_resolution
+        local_x = course[0] * along + right[0] * aside + self.flatty_offset[0] / 2.0
+        local_z = course[2] * along + right[2] * aside
+        return (round(local_x / cell) * cell, round(local_z / cell) * cell)
+
     def _create_santa_ride(self):
         start = self._santa_waypoint(self.santa_start_offset)
-        end = self._santa_waypoint(self.santa_end_offset)
-        course = tuple(end[axis] - start[axis] for axis in range(3))
-        flat = math.hypot(course[0], course[2])
-        self.approach_facing = math.degrees(math.atan2(course[0], course[2]))
-        self.approach_pitch = math.degrees(math.atan2(-course[1], flat))
         return SantaRide(start[0], start[1], start[2], size=self.santa_size,
                          facing=self.approach_facing, pitch=self.approach_pitch, bob=True, seed=4)
 
@@ -377,11 +438,35 @@ class WinterDemo(PygameDemo):
         return self._unit(tuple(forward[axis] * self.flight_speed + right[axis] * drift
                                 for axis in range(3)))
 
+    def _earth_gap(self):
+        centre = (self.earth.x, self.earth.y, self.earth.z)
+        return math.sqrt(sum((self.eye[axis] - centre[axis]) ** 2 for axis in range(3)))
+
+    def _santa_earth_gap(self):
+        centre = (self.earth.x, self.earth.y, self.earth.z)
+        rider = (self.santa_ride.x, self.santa_ride.y, self.santa_ride.z)
+        return math.sqrt(sum((rider[axis] - centre[axis]) ** 2 for axis in range(3)))
+
+    def _visible_cloud_count(self):
+        if not self._in_flight():
+            return 0
+        gap = self._santa_earth_gap()
+        schedule = self.cloud_reveal_schedule
+        shown = schedule[-1][1]
+        if gap >= schedule[0][0]:
+            shown = schedule[0][1]
+        else:
+            for far, near in zip(schedule, schedule[1:]):
+                if gap >= near[0]:
+                    reached = (far[0] - gap) / (far[0] - near[0])
+                    shown = far[1] + (near[1] - far[1]) * reached
+                    break
+        return min(len(self.sky_clouds), int(round(shown)))
+
     def _cloud_approach(self):
         if not self._in_flight():
             return 0.0
-        gap = math.sqrt(sum((self.eye[axis] - (self.earth.x, self.earth.y, self.earth.z)[axis]) ** 2
-                            for axis in range(3)))
+        gap = self._earth_gap()
         near = self.earth_radius / math.sin(self.cloud_start_fill * math.radians(self.field_of_view / 2.0))
         full = self.earth_radius / math.sin(self._half_width())
         return self._ease(self._clamp01((near - gap) / (near - full)))
@@ -404,11 +489,14 @@ class WinterDemo(PygameDemo):
             hazy = (aside > self.sky_cloud_core
                     and generator.random() < self.sky_cloud_haze_share)
             opacity = generator.uniform(*self.sky_cloud_opacity) if hazy else 1.0
-            clouds.append(Cloud(spot[0], spot[1], spot[2],
-                                size=generator.uniform(*self.sky_cloud_size),
-                                puff_count=self.sky_cloud_puffs, seed=index + 11, opacity=opacity))
-        clouds.sort(key=lambda cloud: -cloud.opacity)
-        return clouds
+            clouds.append((reach, Cloud(spot[0], spot[1], spot[2],
+                                        size=generator.uniform(*self.sky_cloud_size),
+                                        puff_count=self.sky_cloud_puffs, seed=index + 11,
+                                        opacity=opacity)))
+        clouds.sort(key=lambda entry: entry[0])
+        layered = [(rank, entry[1]) for rank, entry in enumerate(clouds)]
+        layered.sort(key=lambda entry: -entry[1].opacity)
+        return tuple(layered)
 
     def _place_santa_flight(self):
         self.santa_ride.x, self.santa_ride.y, self.santa_ride.z = self._flight_position()
@@ -490,10 +578,19 @@ class WinterDemo(PygameDemo):
                 origin[1] - self.glide_drop - self.glide_altitude,
                 origin[2] + course[2] * self.glide_site_ahead + right[2] * self.glide_site_aside)
 
+    def _city_site(self):
+        shift = self._winter_shift()
+        ground = self.land.surface_height(self.city_offset[0], self.city_offset[2])
+        return (shift[0] + self.city_offset[0],
+                shift[1] + ground - self.city_sink,
+                shift[2] + self.city_offset[2])
+
     def _sky_glide_scene(self):
         course = self._glide_direction()
         settle = self._ease(self._clamp01(self._glide_span() / self.glide_level))
         self.santa_ride.x, self.santa_ride.y, self.santa_ride.z = self._glide_position()
+        self.city.x, self.city.y, self.city.z = self._city_site()
+        self._roof_house()
         self.santa_ride.facing = math.degrees(math.atan2(course[0], course[2]))
         self.santa_ride.pitch = self._dive_pitch() * (1.0 - settle)
         self.eye, self.target = self._glide_view()
@@ -627,10 +724,108 @@ class WinterDemo(PygameDemo):
     def _space_scene(self):
         self.eye, self.target = self._space_view(self._clamp01((self.elapsed - self.ascend_end) / self.space_duration))
 
+    def _roof_house(self):
+        if self.roof_house is None:
+            town = self.city.town_at(self.city.rows // 2, self.city.columns // 2)
+            tallest = None
+            for quarter in town.quarters:
+                for index, house in enumerate(quarter.houses):
+                    if tallest is None or house.total_height > tallest[0].total_height:
+                        tallest = (house, quarter, index,
+                                   (town.x + quarter.x + house.x, town.z + quarter.z + house.z))
+            crowded, quarter, index, spot = tallest
+            self.roof_house = House(self.city.x + spot[0], self.city.y, self.city.z + spot[1],
+                                    self.landing_floors, windows_per_floor=self.landing_bays,
+                                    color=self.landing_color, facing=crowded.facing,
+                                    snow_top=self.landing_snow,
+                                    chimney_scale=self.landing_chimney_scale,
+                                    chimney_width_scale=self.landing_chimney_width_scale)
+            self._clear_landing_plot(spot)
+        return self.roof_house
+
+    def _clear_landing_plot(self, spot):
+        big = self.roof_house
+        for town in self.city.towns:
+            for quarter in town.quarters:
+                hidden = list(quarter.hidden)
+                for index, other in enumerate(quarter.houses):
+                    across = abs(town.x + quarter.x + other.x - spot[0])
+                    along = abs(town.z + quarter.z + other.z - spot[1])
+                    if (across < (other.width + big.width) / 2.0 + self.landing_margin
+                            and along < (other.depth + big.depth) / 2.0 + self.landing_margin
+                            and index not in hidden):
+                        hidden.append(index)
+                quarter.hidden = tuple(hidden)
+
+    def _chimney_top(self):
+        house = self._roof_house()
+        return (house.x, house.y + house.roof_peak + house.chimney_rise, house.z)
+
+    def _landing_spot(self):
+        house = self._roof_house()
+        top = self._chimney_top()
+        return (top[0], house.y + house.roof_peak + self.roof_stand_offset,
+                top[2] + house.depth * self.sleigh_offset_ratio)
+
+    def _roof_view(self, turn=0.0):
+        top = self._chimney_top()
+        course = self._glide_direction()
+        right = self._unit(self._cross(course, (0.0, 1.0, 0.0)))
+        back, lift, side = self.roof_camera_offset
+        sweep = math.radians(turn)
+        along = -back * math.cos(sweep) - side * math.sin(sweep)
+        across = -back * math.sin(sweep) + side * math.cos(sweep)
+        eye = (top[0] + course[0] * along + right[0] * across,
+               top[1] + lift,
+               top[2] + course[2] * along + right[2] * across)
+        return eye, top
+
+    def _landing_scene(self):
+        settle = self._ease(self._clamp01((self.elapsed - self.glide_end) / self.landing_duration))
+        course = self._glide_direction()
+        self.santa_ride.x, self.santa_ride.y, self.santa_ride.z = self._lerp(
+            self._glide_position(), self._landing_spot(), settle)
+        self.santa_ride.facing = math.degrees(math.atan2(course[0], course[2]))
+        self.santa_ride.pitch = 0.0
+        glide_eye, glide_target = self._glide_view()
+        roof_eye, roof_target = self._roof_view(settle * self.landing_turn)
+        self.eye = self._lerp(glide_eye, roof_eye, settle)
+        self.target = self._lerp(glide_target, roof_target, settle)
+
+    def _on_rooftop(self):
+        return self.elapsed > self.landing_end
+
+    def _rooftop_scene(self):
+        local = min(self.elapsed, self.rooftop_end) - self.landing_end
+        course = self._glide_direction()
+        self.santa_ride.x, self.santa_ride.y, self.santa_ride.z = self._landing_spot()
+        self.santa_ride.facing = math.degrees(math.atan2(course[0], course[2]))
+        self.santa_ride.pitch = 0.0
+        self.santa_ride.carry_santa = False
+        top = self._chimney_top()
+        seat = (self.santa_ride.x, self.santa_ride.y + self.roof_stand_offset, self.santa_ride.z)
+        if local <= self.jump_duration:
+            hop = self._clamp01(local / self.jump_duration)
+            spot = self._lerp(seat, top, hop)
+            self.rooftop_santa.x = spot[0]
+            self.rooftop_santa.y = spot[1] + math.sin(math.pi * hop) * self.jump_arc
+            self.rooftop_santa.z = spot[2]
+            self.rooftop_santa.size = self.rooftop_santa_size
+        else:
+            sink = self._ease(self._clamp01((local - self.jump_duration)
+                                            / (self.rooftop_duration - self.jump_duration)))
+            self.rooftop_santa.x, self.rooftop_santa.z = top[0], top[2]
+            self.rooftop_santa.y = top[1] - sink * self.rooftop_santa_size * 2.6
+            self.rooftop_santa.size = self.rooftop_santa_size
+        self.rooftop_santa.facing = math.degrees(math.atan2(top[0] - seat[0], top[2] - seat[2]))
+        self.eye = self._roof_view(self.landing_turn)[0]
+        self.target = (self.rooftop_santa.x, self.rooftop_santa.y, self.rooftop_santa.z)
+
     def _finish(self):
-        self._sky_glide_scene()
+        self._rooftop_scene()
         if not self.thanks_printed:
-            print("thanks for watching")
+            t = Globals.get_duration()
+            print("thanks for watching, duration " + str(t))
             self.thanks_printed = True
 
     def _place_camera(self):
@@ -687,8 +882,13 @@ class WinterDemo(PygameDemo):
         else:
             glDisable(GL_LIGHT1)
         if self._gliding():
+            self.city.draw()
+            if self.roof_house is not None:
+                self.roof_house.draw()
+            if self._on_rooftop():
+                self.rooftop_santa.draw()
             if self._space_factor() > 0.0:
-                for cloud in self.sky_clouds:
+                for _, cloud in self.sky_clouds:
                     cloud.draw()
             self.santa_ride.draw()
         elif self._in_flight():
@@ -699,8 +899,10 @@ class WinterDemo(PygameDemo):
                     planet.draw()
             elif not self._inside_clouds():
                 self.earth.draw()
-            for cloud in self.sky_clouds:
-                cloud.draw()
+            shown = self._visible_cloud_count()
+            for rank, cloud in self.sky_clouds:
+                if rank < shown:
+                    cloud.draw()
             self.santa_ride.draw()
         else:
             santa_progress = self._santa_progress()
@@ -736,6 +938,7 @@ class WinterDemo(PygameDemo):
             for robin in self.robins:
                 robin.update(delta_seconds)
         self.santa_ride.update(delta_seconds)
+        self.rooftop_santa.update(delta_seconds)
         for planet in self.planets:
             planet.update(delta_seconds)
         self._install_surfaces()

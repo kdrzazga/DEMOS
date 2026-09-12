@@ -6,19 +6,23 @@ from OpenGL.GLU import *
 
 class Land:
     def __init__(self, extent=24.0, resolution=44, seed=7, height_amplitudes=(1.15, 0.7, 0.5, 0.35),
-                 stretch=1.0, clearing=None):
+                 stretch=1.0, clearings=(), flattenings=(), depth_extent=None):
         self.extent = extent
+        self.depth_extent = extent if depth_extent is None else depth_extent
         self.resolution = resolution
         self.random_generator = random.Random(seed)
         self.height_amplitudes = height_amplitudes
         self.stretch = stretch
-        self.clearing = clearing
-        self.snow_white = (0.97, 0.98, 1.0)
+        self.clearings = clearings
+        self.flattenings = flattenings
+        self.flatten_levels = tuple(self._natural_height(spot[0], spot[1]) if spot[5] is None
+                                    else spot[5] for spot in flattenings)
+        self.snow_white = (0.60, 0.67, 0.63)
         self.cyan_shades = ((0.60, 0.86, 0.95), (0.74, 0.92, 0.98), (0.53, 0.80, 0.93))
         self.vertices = self._build_vertices()
         self.display_list = self._compile()
 
-    def surface_height(self, x, z):
+    def _natural_height(self, x, z):
         amplitude = self.height_amplitudes
         across = x / self.stretch
         along = z / self.stretch
@@ -27,11 +31,28 @@ class Land:
                 + amplitude[2] * math.sin(0.22 * (across + along))
                 + amplitude[3] * math.cos(0.5 * across - 0.3 * along))
 
+    def _flatten_blend(self, x, z, center_x, center_z, half_width, half_depth, falloff):
+        beyond = max((abs(x - center_x) - half_width) / falloff,
+                     (abs(z - center_z) - half_depth) / falloff)
+        if beyond <= 0.0:
+            return 1.0
+        if beyond >= 1.0:
+            return 0.0
+        return 1.0 - beyond * beyond * (3.0 - 2.0 * beyond)
+
+    def surface_height(self, x, z):
+        height = self._natural_height(x, z)
+        for index, spot in enumerate(self.flattenings):
+            blend = self._flatten_blend(x, z, spot[0], spot[1], spot[2], spot[3], spot[4])
+            if blend > 0.0:
+                height += (self.flatten_levels[index] - height) * blend
+        return height
+
     def _is_cleared(self, x, z):
-        if self.clearing is None:
-            return False
-        center_x, center_z, half_extent = self.clearing
-        return abs(x - center_x) < half_extent and abs(z - center_z) < half_extent
+        for center_x, center_z, half_width, half_depth in self.clearings:
+            if abs(x - center_x) < half_width and abs(z - center_z) < half_depth:
+                return True
+        return False
 
     def _normal_at(self, x, z):
         step = 0.05
@@ -62,7 +83,7 @@ class Land:
             line = []
             for column in range(count + 1):
                 x = -self.extent + (2.0 * self.extent) * column / count
-                z = -self.extent + (2.0 * self.extent) * row / count
+                z = -self.depth_extent + (2.0 * self.depth_extent) * row / count
                 y = self.surface_height(x, z)
                 normal = self._normal_at(x, z)
                 color = self._color_at(y)
@@ -97,5 +118,6 @@ class Land:
 
 class FlattyLand(Land):
 
-    def __init__(self, extent=24.0, resolution=44, seed=7):
-        super().__init__(extent, resolution, seed, height_amplitudes=(0.15, 0.07, 0.05, 0.035))
+    def __init__(self, extent=24.0, resolution=44, seed=7, depth_extent=None):
+        super().__init__(extent, resolution, seed, height_amplitudes=(0.15, 0.07, 0.05, 0.035),
+                         depth_extent=depth_extent)

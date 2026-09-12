@@ -13,7 +13,7 @@ from demos.WinterDemo26.reindeer import Reindeer
 
 
 class SantaRide:
-    def __init__(self, x, y, z, size=1.0, facing=0.0, pitch=0.0, bob=True, seed=0):
+    def __init__(self, x, y, z, size=1.0, facing=0.0, pitch=0.0, bob=True, carry_santa=True, seed=0):
         self.x = x
         self.y = y
         self.z = z
@@ -21,6 +21,7 @@ class SantaRide:
         self.facing = facing
         self.pitch = pitch
         self.bob = bob
+        self.carry_santa = carry_santa
         self.random_generator = random.Random(seed)
         self.time = 0.0
         self.bob_phase = self.random_generator.uniform(0.0, math.tau)
@@ -102,7 +103,8 @@ class SantaRide:
         glRotatef(self.pitch + tilt, 1.0, 0.0, 0.0)
         glScalef(self.size, self.size, self.size)
         self.sleigh.draw()
-        self.santa.draw()
+        if self.carry_santa:
+            self.santa.draw()
         self.reindeer.draw()
         self._draw_reins()
         glPopMatrix()

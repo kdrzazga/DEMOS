@@ -2,7 +2,7 @@ import os
 import sys
 import math
 import pygame
-from pygame.locals import DOUBLEBUF, OPENGL, QUIT, KEYDOWN, K_ESCAPE, K_1, K_2, K_3, K_4
+from pygame.locals import DOUBLEBUF, OPENGL, QUIT, KEYDOWN, K_ESCAPE, K_1, K_2, K_3, K_4, K_5, K_6
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
@@ -35,7 +35,12 @@ class CityTest:
                                                           quarter_rows=1, quarter_columns=5,
                                                           floor_range=(1, 2), windows_range=(2, 3),
                                                           road_width=6.0, house_spacing=(2.6, 3.0),
-                                                          seed=4)))
+                                                          seed=4)),
+                        ("compact 3 x 2 at density 0.45", CityBuilder(density=0.45, seed=1)),
+                        ("dense grid 12 x 9 at density 0.7",
+                         CityBuilder(blocks_across=12, blocks_deep=9, quarter_rows=4,
+                                     quarter_columns=4, floor_range=(1, 3), road_width=5.0,
+                                     density=0.7, seed=2)))
         pygame.init()
         pygame.display.set_mode((width, height), DOUBLEBUF | OPENGL)
         pygame.display.set_caption("City Test")
@@ -63,11 +68,12 @@ class CityTest:
         glLoadIdentity()
 
     def _announce(self):
-        name = self.layouts[self.selected][0]
+        name, builder = self.layouts[self.selected]
         city = self.cities[self.selected]
-        print("%d. %s -- %.0f x %.0f, %d quarters, %d roads, %d houses"
-              % (self.selected + 1, name, city.width, city.depth,
-                 len(city.quarters), len(city.roads), city.house_count()))
+        plots = sum(quarter.plot_count() for quarter in city.quarters)
+        print("%d. %s -- %.0f x %.0f, %d quarters, %d roads, %d of %d plots built (density %.2f)"
+              % (self.selected + 1, name, city.width, city.depth, len(city.quarters),
+                 len(city.roads), city.house_count(), plots, builder.density))
 
     def _half_width_angle(self):
         half_height = math.radians(self.field_of_view / 2.0)
@@ -98,7 +104,7 @@ class CityTest:
             self._announce()
 
     def run(self):
-        choices = (K_1, K_2, K_3, K_4)
+        choices = (K_1, K_2, K_3, K_4, K_5, K_6)
         running = True
         while running:
             delta_seconds = self.clock.tick(60) / 1000.0
@@ -126,7 +132,7 @@ class CityTest:
 
 
 def main():
-    print('Press key 1, 2, 3 or 4')
+    print('Press key 1, 2, 3, 4, 5 or 6')
     CityTest().run()
 
 

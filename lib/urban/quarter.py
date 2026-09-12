@@ -9,8 +9,7 @@ WALL_PALETTE = ((0.46, 0.44, 0.42), (0.52, 0.40, 0.34), (0.38, 0.42, 0.48),
 
 class Quarter:
     def __init__(self, x, y, z, rows=2, columns=3, floor_range=(1, 4), windows_range=(2, 4),
-                 palette=WALL_PALETTE, spacing=(1.6, 2.6), density=1.0, snow_share=0.35,
-                 snow_cover=(0.45, 0.80), facing=0.0, seed=0):
+                 palette=WALL_PALETTE, spacing=(1.6, 2.6), density=1.0, facing=0.0, seed=0):
         self.x = x
         self.y = y
         self.z = z
@@ -21,8 +20,6 @@ class Quarter:
         self.palette = palette
         self.spacing = spacing
         self.density = max(0.0, min(1.0, density))
-        self.snow_share = snow_share
-        self.snow_cover = snow_cover
         self.facing = facing
         self.seed = seed
 
@@ -43,10 +40,8 @@ class Quarter:
                 windows_per_floor = generator.randint(*self.windows_range)
                 color = self.palette[generator.randrange(len(self.palette))]
                 street_side = 180.0 if row < self.rows / 2.0 else 0.0
-                snow_top = (generator.uniform(*self.snow_cover)
-                            if generator.random() < self.snow_share else 0.0)
                 line.append(House(0.0, 0.0, 0.0, floor_count, windows_per_floor=windows_per_floor,
-                                  color=color, facing=street_side, snow_top=snow_top))
+                                  color=color, facing=street_side))
             grid.append(line)
         return grid
 

@@ -4,12 +4,13 @@ from OpenGL.GLU import *
 
 
 class Cloud:
-    def __init__(self, x, y, z, size=5.0, puff_count=11, seed=0):
+    def __init__(self, x, y, z, size=5.0, puff_count=11, seed=0, opacity=1.0):
         self.x = x
         self.y = y
         self.z = z
         self.size = size
         self.puff_count = puff_count
+        self.opacity = opacity
         self.random_generator = random.Random(seed)
         self.base_color = (0.80, 0.82, 0.86)
         self.quadric = gluNewQuadric()
@@ -32,9 +33,9 @@ class Cloud:
         display_list = glGenLists(1)
         glNewList(display_list, GL_COMPILE)
         for offset_x, offset_y, offset_z, radius, shade in self.puffs:
-            glColor3f(min(1.0, self.base_color[0] * shade),
+            glColor4f(min(1.0, self.base_color[0] * shade),
                       min(1.0, self.base_color[1] * shade),
-                      min(1.0, self.base_color[2] * shade))
+                      min(1.0, self.base_color[2] * shade), self.opacity)
             glPushMatrix()
             glTranslatef(offset_x * self.size, offset_y * self.size, offset_z * self.size)
             glScalef(1.0, 0.68, 1.0)
@@ -46,5 +47,13 @@ class Cloud:
     def draw(self):
         glPushMatrix()
         glTranslatef(self.x, self.y, self.z)
-        glCallList(self.display_list)
+        if self.opacity < 1.0:
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+            glDepthMask(GL_FALSE)
+            glCallList(self.display_list)
+            glDepthMask(GL_TRUE)
+            glDisable(GL_BLEND)
+        else:
+            glCallList(self.display_list)
         glPopMatrix()

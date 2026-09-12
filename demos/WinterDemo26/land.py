@@ -5,11 +5,14 @@ from OpenGL.GLU import *
 
 
 class Land:
-    def __init__(self, extent=24.0, resolution=44, seed=7, height_amplitudes=(1.15, 0.7, 0.5, 0.35)):
+    def __init__(self, extent=24.0, resolution=44, seed=7, height_amplitudes=(1.15, 0.7, 0.5, 0.35),
+                 stretch=1.0, clearing=None):
         self.extent = extent
         self.resolution = resolution
         self.random_generator = random.Random(seed)
         self.height_amplitudes = height_amplitudes
+        self.stretch = stretch
+        self.clearing = clearing
         self.snow_white = (0.97, 0.98, 1.0)
         self.cyan_shades = ((0.60, 0.86, 0.95), (0.74, 0.92, 0.98), (0.53, 0.80, 0.93))
         self.vertices = self._build_vertices()
@@ -17,10 +20,18 @@ class Land:
 
     def surface_height(self, x, z):
         amplitude = self.height_amplitudes
-        return (amplitude[0] * math.sin(0.35 * x + 0.6) * math.cos(0.32 * z)
-                + amplitude[1] * math.sin(0.6 * z + 1.3)
-                + amplitude[2] * math.sin(0.22 * (x + z))
-                + amplitude[3] * math.cos(0.5 * x - 0.3 * z))
+        across = x / self.stretch
+        along = z / self.stretch
+        return (amplitude[0] * math.sin(0.35 * across + 0.6) * math.cos(0.32 * along)
+                + amplitude[1] * math.sin(0.6 * along + 1.3)
+                + amplitude[2] * math.sin(0.22 * (across + along))
+                + amplitude[3] * math.cos(0.5 * across - 0.3 * along))
+
+    def _is_cleared(self, x, z):
+        if self.clearing is None:
+            return False
+        center_x, center_z, half_extent = self.clearing
+        return abs(x - center_x) < half_extent and abs(z - center_z) < half_extent
 
     def _normal_at(self, x, z):
         step = 0.05
@@ -69,6 +80,9 @@ class Land:
                            self.vertices[row][column + 1],
                            self.vertices[row + 1][column + 1],
                            self.vertices[row + 1][column])
+                if self._is_cleared((corners[0][0] + corners[2][0]) * 0.5,
+                                    (corners[0][2] + corners[2][2]) * 0.5):
+                    continue
                 for x, y, z, normal, color in corners:
                     glColor3f(*color)
                     glNormal3f(*normal)

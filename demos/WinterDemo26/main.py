@@ -1,6 +1,8 @@
 import math
 import os
+import random
 import sys
+import threading
 import pygame
 from OpenGL.GL import *
 from OpenGL.GLU import *
@@ -19,6 +21,9 @@ from demos.WinterDemo26.cloud import Cloud
 from demos.WinterDemo26.stars import Stars
 from lib.backdrop import SpaceBackdrop
 from lib.pygame_demo import PygameDemo
+from lib.saturn import Saturn
+from lib.mars import Mars
+from lib.earth import Earth
 from demos.WinterDemo26.santa_ride import SantaRide
 
 
@@ -41,7 +46,7 @@ class WinterDemo(PygameDemo):
         self.ascend_duration = 4.6
         self.hole_tilt_duration = 0.4
         self.hole_hold_duration = 0.5
-        self.space_duration = 11.0
+        self.space_duration = 10.0
         self.ascend_top = 40.0
         self.space_color = (0.01, 0.01, 0.04)
         self.nebula_delay = 2.0
@@ -53,6 +58,50 @@ class WinterDemo(PygameDemo):
         self.santa_size = 2.0
         self.santa_start_offset = (110.0, 100.0, 30.0)
         self.santa_end_offset = (18.0, 22.0, 6.0)
+        self.ride_duration = 5.0
+        self.planets_duration = 17.0
+        self.turn_left = 35.0
+        self.turn_duration = 1.4
+        self.flight_pitch = 0.0
+        self.flight_speed = 90.0
+        self.shoulder_offset = (20.0, 5.0, 10.0)
+        self.shoulder_lead = 12.0
+        self.camera_blend = 2.2
+        self.flight_fog_end = 600.0
+        self.flight_far = 2000.0
+        self.planet_plan = ((850.0, 150.0, 45.0), (1150.0, -60.0, -25.0))
+        self.field_of_view = 55.0
+        self.earth_radius = 60.0
+        self.earth_tilt = 23.4
+        self.earth_longitude = 10.0
+        self.earth_latitude = 50.0
+        self.earth_spin_speed = 1.5
+        self.approach_duration = 8.0
+        self.dive_blend = 2.0
+        self.sky_cloud_count = 130
+        self.sky_cloud_shell = (61.0, 78.0)
+        self.dive_end_radius = 62.0
+        self.sky_cloud_core = 8.0
+        self.sky_cloud_spread = 24.0
+        self.sky_cloud_crowding = 1.6
+        self.sky_cloud_size = (5.0, 9.0)
+        self.sky_cloud_puffs = 9
+        self.sky_cloud_seed = 7
+        self.sky_cloud_haze_share = 0.5
+        self.sky_cloud_opacity = (0.25, 0.70)
+        self.slalom_amplitude = 3.5
+        self.slalom_period = 3.4
+        self.cloud_start_fill = 0.90
+        self.glide_duration = 10.0
+        self.glide_speed = 40.0
+        self.glide_level = 2.5
+        self.glide_drop = 60.0
+        self.glide_altitude = 30.0
+        self.glide_site_ahead = 200.0
+        self.glide_site_aside = -8.0
+        self.glide_look_down = 5.0
+        self.glide_sky_fade = 3.0
+        self.glide_fog_end = 1600.0
         self.snowman_end = self.sway_duration
         self.transition_end = self.snowman_end + self.travel_duration
         self.outside_end = self.transition_end + self.settle_duration
@@ -63,14 +112,19 @@ class WinterDemo(PygameDemo):
         self.space_end = self.ascend_end + self.space_duration
         self.nebula_start = self.ascend_end + self.nebula_delay
         self.santa_start = self.nebula_start + self.santa_delay
+        self.ride_start = self.santa_start + self.santa_approach
+        self.ride_end = self.ride_start + self.ride_duration
+        self.planets_end = self.ride_end + self.planets_duration
+        self.glide_end = self.planets_end + self.glide_duration
         self.eye = (0.0, 10.0, 26.0)
         self.target = (0.0, 3.0, 0.0)
         self.thanks_printed = False
         self._start_music()
         self._init_gl()
-        self.land = Land(extent=80.0, resolution=144, seed=7)
-        self.flatty_offset = (2.0 * self.land.extent, 0.0, 0.0)
+        self.flatty_offset = (160.0, 0.0, 0.0)
         self.flatty_land = FlattyLand(extent=80.0, resolution=144, seed=11)
+        self.land = Land(extent=560.0, resolution=280, seed=7, stretch=7.0,
+                         clearing=(self.flatty_offset[0], self.flatty_offset[2], self.flatty_land.extent))
         self.trees = self._create_trees()
         self.snowman = Snowman(1.7, 0.0, self.land.surface_height(1.7, 0.0) - 0.6)
         self.igloo = Igloo(self.flatty_offset[0], self.flatty_offset[2],
@@ -82,8 +136,12 @@ class WinterDemo(PygameDemo):
         self.robins = self._create_robins()
         self.clouds = self._create_clouds()
         self.stars = Stars(seed=5)
-        self.space_backdrop = SpaceBackdrop(self.width / self.height, fov=55.0)
+        self.space_backdrop = SpaceBackdrop(self.width / self.height, fov=65.0)
         self.santa_ride = self._create_santa_ride()
+        self.planets = self._create_planets()
+        self.sky_clouds = self._create_sky_clouds()
+        self.baked_surfaces = {}
+        threading.Thread(target=self._bake_surfaces, daemon=True).start()
         self.snow = Snow(220, (-22.0, 22.0, -20.0, 20.0, -1.5, 18.0))
         self.igloo_snow = Snow(200, (self.flatty_offset[0] - 22.0, self.flatty_offset[0] + 22.0,
                                      self.flatty_offset[2] - 20.0, self.flatty_offset[2] + 20.0,
@@ -106,6 +164,12 @@ class WinterDemo(PygameDemo):
             self._ascend_scene()
         elif time <= self.space_end:
             self._space_scene()
+        elif time <= self.ride_end:
+            self._santa_ride_scene()
+        elif time <= self.planets_end:
+            self._planets_scene()
+        elif time <= self.glide_end:
+            self._sky_glide_scene()
         else:
             self._finish()
 
@@ -185,10 +249,10 @@ class WinterDemo(PygameDemo):
         end = self._santa_waypoint(self.santa_end_offset)
         course = tuple(end[axis] - start[axis] for axis in range(3))
         flat = math.hypot(course[0], course[2])
-        facing = math.degrees(math.atan2(course[0], course[2]))
-        pitch = math.degrees(math.atan2(-course[1], flat))
+        self.approach_facing = math.degrees(math.atan2(course[0], course[2]))
+        self.approach_pitch = math.degrees(math.atan2(-course[1], flat))
         return SantaRide(start[0], start[1], start[2], size=self.santa_size,
-                         facing=facing, pitch=pitch, bob=True, seed=4)
+                         facing=self.approach_facing, pitch=self.approach_pitch, bob=True, seed=4)
 
     def _santa_progress(self):
         return (self.elapsed - self.santa_start) / self.santa_approach
@@ -198,11 +262,282 @@ class WinterDemo(PygameDemo):
         end = self._santa_waypoint(self.santa_end_offset)
         self.santa_ride.x, self.santa_ride.y, self.santa_ride.z = self._lerp(start, end, self._clamp01(progress))
 
+    def _cross(self, first, second):
+        return (first[1] * second[2] - first[2] * second[1],
+                first[2] * second[0] - first[0] * second[2],
+                first[0] * second[1] - first[1] * second[0])
+
+    def _unit(self, vector):
+        length = math.sqrt(vector[0] ** 2 + vector[1] ** 2 + vector[2] ** 2)
+        return (vector[0] / length, vector[1] / length, vector[2] / length)
+
+    def _flight_direction(self):
+        facing = math.radians(self.approach_facing + self.turn_left)
+        pitch = math.radians(self.flight_pitch)
+        return (math.sin(facing) * math.cos(pitch), -math.sin(pitch), math.cos(facing) * math.cos(pitch))
+
+    def _flight_point(self, along, side, rise):
+        base = self._santa_waypoint(self.santa_end_offset)
+        forward = self._flight_direction()
+        right = self._unit(self._cross(forward, (0.0, 1.0, 0.0)))
+        return tuple(base[axis] + forward[axis] * along + right[axis] * side
+                     + (0.0, 1.0, 0.0)[axis] * rise for axis in range(3))
+
+    def _half_width(self):
+        half_height = math.radians(self.field_of_view / 2.0)
+        return math.atan(math.tan(half_height) * self.width / self.height)
+
+    def _dive_angle(self):
+        heading = math.radians(self.approach_facing + self.turn_left)
+        tilt = math.radians(self.earth_tilt)
+        across = math.sin(heading) * math.sin(tilt)
+        along = math.cos(tilt)
+        return math.asin(math.sin(math.radians(self.earth_latitude)) / math.hypot(across, along))             - math.atan2(across, along)
+
+    def _approach_direction(self):
+        heading = math.radians(self.approach_facing + self.turn_left)
+        dive = self._dive_angle()
+        return (math.sin(heading) * math.cos(dive), -math.sin(dive), math.cos(heading) * math.cos(dive))
+
+    def _europe_spin(self):
+        tilt = math.radians(self.earth_tilt)
+        toward = tuple(-axis for axis in self._approach_direction())
+        return math.degrees(math.atan2(toward[0] * math.cos(tilt) + toward[1] * math.sin(tilt),
+                                       toward[2])) - self.earth_longitude
+
+    def _cruise_end(self):
+        return self.planets_end - self.approach_duration
+
+    def _cruise_point(self):
+        return self._flight_point((self._cruise_end() - self.ride_start) * self.flight_speed, 0.0, 0.0)
+
+    def _approach_length(self):
+        return self.flight_speed * self.approach_duration / 2.0
+
+    def _earth_center(self):
+        direction = self._approach_direction()
+        base = self._cruise_point()
+        span = self._approach_length() + self.dive_end_radius
+        return tuple(base[axis] + direction[axis] * span for axis in range(3))
+
+    def _create_planets(self):
+        self.earth = Earth(0.0, 0.0, 0.0, radius=self.earth_radius, tilt=self.earth_tilt,
+                           spin_speed=self.earth_spin_speed, moon_orbit_scale=0.04)
+        self.earth.x, self.earth.y, self.earth.z = self._earth_center()
+        self.earth.spin = self._europe_spin() - self.earth_spin_speed * self.planets_end
+        self.saturn = Saturn(0.0, 0.0, 0.0, radius=26.0, seed=11, defer_texture=True)
+        self.mars = Mars(0.0, 0.0, 0.0, radius=12.0, seed=17, defer_texture=True)
+        bodies = [self.saturn, self.mars]
+        for body, (along, side, rise) in zip(bodies, self.planet_plan):
+            body.x, body.y, body.z = self._flight_point(along, side, rise)
+        bodies.append(self.earth)
+        return bodies
+
+    def _flight_heading(self):
+        moment = min(self.elapsed, self.planets_end)
+        if moment <= self._cruise_end():
+            return self._flight_direction()
+        blend = self._ease(self._clamp01((moment - self._cruise_end()) / self.dive_blend))
+        return self._unit(self._lerp(self._flight_direction(), self._approach_direction(), blend))
+
+    def _flight_path_point(self, aside=0.0):
+        moment = min(self.elapsed, self.planets_end)
+        cruise_end = self._cruise_end()
+        along = max(0.0, min(moment, cruise_end) - self.ride_start) * self.flight_speed
+        point = self._flight_point(along, aside, 0.0)
+        if moment <= cruise_end:
+            return point
+        eased = 1.0 - (1.0 - (moment - cruise_end) / self.approach_duration) ** 2
+        direction = self._approach_direction()
+        return tuple(point[axis] + direction[axis] * self._approach_length() * eased for axis in range(3))
+
+    def _slalom_reach(self):
+        moment = min(self.elapsed, self.planets_end)
+        rise = self._ease(self._clamp01((moment - self.ride_start) / self.turn_duration))
+        settle = self._ease(self._clamp01((moment - self._cruise_end()) / self.dive_blend))
+        return self.slalom_amplitude * rise * (1.0 - settle)
+
+    def _slalom_phase(self):
+        travelled = max(0.0, min(self.elapsed, self.planets_end) - self.ride_start)
+        return math.tau * travelled / self.slalom_period
+
+    def _slalom_offset(self):
+        return math.sin(self._slalom_phase()) * self._slalom_reach()
+
+    def _slalom_drift(self):
+        return math.cos(self._slalom_phase()) * self._slalom_reach() * math.tau / self.slalom_period
+
+    def _flight_position(self):
+        return self._flight_path_point(self._slalom_offset())
+
+    def _santa_heading(self):
+        forward = self._flight_heading()
+        right = self._unit(self._cross(self._flight_direction(), (0.0, 1.0, 0.0)))
+        drift = self._slalom_drift()
+        return self._unit(tuple(forward[axis] * self.flight_speed + right[axis] * drift
+                                for axis in range(3)))
+
+    def _cloud_approach(self):
+        if not self._in_flight():
+            return 0.0
+        gap = math.sqrt(sum((self.eye[axis] - (self.earth.x, self.earth.y, self.earth.z)[axis]) ** 2
+                            for axis in range(3)))
+        near = self.earth_radius / math.sin(self.cloud_start_fill * math.radians(self.field_of_view / 2.0))
+        full = self.earth_radius / math.sin(self._half_width())
+        return self._ease(self._clamp01((near - gap) / (near - full)))
+
+    def _create_sky_clouds(self):
+        axis = tuple(-value for value in self._approach_direction())
+        right = self._unit(self._cross(axis, (0.0, 1.0, 0.0)))
+        lift = self._cross(right, axis)
+        centre = self._earth_center()
+        generator = random.Random(self.sky_cloud_seed)
+        clouds = []
+        for index in range(self.sky_cloud_count):
+            aside = self.sky_cloud_spread * generator.random() ** self.sky_cloud_crowding
+            swing = generator.uniform(0.0, math.tau)
+            reach = generator.uniform(*self.sky_cloud_shell)
+            spot = tuple(centre[axis_index] + axis[axis_index] * reach
+                         + (math.cos(swing) * right[axis_index]
+                            + math.sin(swing) * lift[axis_index]) * aside
+                         for axis_index in range(3))
+            hazy = (aside > self.sky_cloud_core
+                    and generator.random() < self.sky_cloud_haze_share)
+            opacity = generator.uniform(*self.sky_cloud_opacity) if hazy else 1.0
+            clouds.append(Cloud(spot[0], spot[1], spot[2],
+                                size=generator.uniform(*self.sky_cloud_size),
+                                puff_count=self.sky_cloud_puffs, seed=index + 11, opacity=opacity))
+        clouds.sort(key=lambda cloud: -cloud.opacity)
+        return clouds
+
+    def _place_santa_flight(self):
+        self.santa_ride.x, self.santa_ride.y, self.santa_ride.z = self._flight_position()
+        heading = self._santa_heading()
+        moment = min(self.elapsed, self.planets_end)
+        turn = self._ease(self._clamp01((moment - self.ride_start) / self.turn_duration))
+        facing = math.degrees(math.atan2(heading[0], heading[2]))
+        pitch = math.degrees(math.atan2(-heading[1], math.hypot(heading[0], heading[2])))
+        self.santa_ride.facing = self.approach_facing + (facing - self.approach_facing) * turn
+        self.santa_ride.pitch = self.approach_pitch + (pitch - self.approach_pitch) * turn
+
+    def _shoulder_view(self):
+        course = self._flight_path_point()
+        forward = self._flight_heading()
+        right = self._unit(self._cross(forward, (0.0, 1.0, 0.0)))
+        back, lift, side = self.shoulder_offset
+        eye = tuple(course[axis] - forward[axis] * back + (0.0, 1.0, 0.0)[axis] * lift
+                    + right[axis] * side for axis in range(3))
+        return eye, tuple(course[axis] + forward[axis] * self.shoulder_lead for axis in range(3))
+
+    def _santa_ride_scene(self):
+        self._place_santa_flight()
+        eye, target = self._shoulder_view()
+        blend = self._ease(self._clamp01((self.elapsed - self.ride_start) / self.camera_blend))
+        if blend < 1.0:
+            parked_eye, parked_target = self._space_view(1.0)
+            eye = self._lerp(parked_eye, eye, blend)
+            target = self._lerp(parked_target, target, blend)
+        self.eye, self.target = eye, target
+
+    def _planets_scene(self):
+        self._santa_ride_scene()
+
+    def _gliding(self):
+        return self.elapsed > self.planets_end
+
+    def _glide_span(self):
+        return min(self.elapsed, self.glide_end) - self.planets_end
+
+    def _glide_origin(self):
+        return self._flight_path_point()
+
+    def _glide_direction(self):
+        approach = self._approach_direction()
+        flat = math.hypot(approach[0], approach[2])
+        return (approach[0] / flat, 0.0, approach[2] / flat)
+
+    def _dive_pitch(self):
+        direction = self._approach_direction()
+        return math.degrees(math.atan2(-direction[1], math.hypot(direction[0], direction[2])))
+
+    def _glide_position(self):
+        span = self._glide_span()
+        origin = self._glide_origin()
+        course = self._glide_direction()
+        drop = self.glide_drop * self._ease(self._clamp01(span / self.glide_level))
+        return (origin[0] + course[0] * span * self.glide_speed,
+                origin[1] - drop,
+                origin[2] + course[2] * span * self.glide_speed)
+
+    def _glide_view(self):
+        rider = self._glide_position()
+        course = self._glide_direction()
+        right = self._unit(self._cross(course, (0.0, 1.0, 0.0)))
+        back, lift, side = self.shoulder_offset
+        eye = tuple(rider[axis] - course[axis] * back + (0.0, 1.0, 0.0)[axis] * lift
+                    + right[axis] * side for axis in range(3))
+        target = tuple(rider[axis] + course[axis] * self.shoulder_lead for axis in range(3))
+        return eye, (target[0], target[1] - self.glide_look_down, target[2])
+
+    def _winter_shift(self):
+        if not self._gliding():
+            return (0.0, 0.0, 0.0)
+        origin = self._glide_origin()
+        course = self._glide_direction()
+        right = self._unit(self._cross(course, (0.0, 1.0, 0.0)))
+        middle = self.flatty_offset[0] / 2.0
+        return (origin[0] + course[0] * self.glide_site_ahead + right[0] * self.glide_site_aside - middle,
+                origin[1] - self.glide_drop - self.glide_altitude,
+                origin[2] + course[2] * self.glide_site_ahead + right[2] * self.glide_site_aside)
+
+    def _sky_glide_scene(self):
+        course = self._glide_direction()
+        settle = self._ease(self._clamp01(self._glide_span() / self.glide_level))
+        self.santa_ride.x, self.santa_ride.y, self.santa_ride.z = self._glide_position()
+        self.santa_ride.facing = math.degrees(math.atan2(course[0], course[2]))
+        self.santa_ride.pitch = self._dive_pitch() * (1.0 - settle)
+        self.eye, self.target = self._glide_view()
+
+    def _bake_surfaces(self):
+        self.baked_surfaces["saturn"] = self.saturn._build_surface()
+        self.baked_surfaces["mars"] = self.mars._build_surface()
+
+    def _install_surfaces(self):
+        for name, planet in (("saturn", self.saturn), ("mars", self.mars)):
+            if not planet.ready() and name in self.baked_surfaces:
+                planet.attach_surface(self.baked_surfaces.pop(name))
+
+    def _winter_visible(self):
+        return self.elapsed < self.nebula_start or self._gliding()
+
+    def _in_cloud(self):
+        return self._cloud_approach() > 0.0
+
+    def _nebula_brightness(self):
+        if self._gliding():
+            return 0.0
+        return self._nebula_factor() * (1.0 - self._cloud_approach())
+
+    def _inside_clouds(self):
+        if not self._in_flight():
+            return False
+        centre = (self.earth.x, self.earth.y, self.earth.z)
+        rider = (self.santa_ride.x, self.santa_ride.y, self.santa_ride.z)
+        gap = math.sqrt(sum((rider[axis] - centre[axis]) ** 2 for axis in range(3)))
+        return gap <= self.sky_cloud_shell[1]
+
+    def _in_flight(self):
+        return self.elapsed >= self.ride_start
+
     def _nebula_travel(self):
         return min(self.nebula_travel_cap,
                    max(0.0, self.elapsed - self.nebula_start) * self.nebula_travel_speed)
 
     def _space_factor(self):
+        if self._gliding():
+            return 1.0 - self._ease(self._clamp01(self._glide_span() / self.glide_sky_fade))
+        if self._in_flight():
+            return 1.0
         return self._ease(self._clamp01((self.eye[1] - 28.0) / 24.0))
 
     def _nebula_factor(self):
@@ -293,7 +628,7 @@ class WinterDemo(PygameDemo):
         self.eye, self.target = self._space_view(self._clamp01((self.elapsed - self.ascend_end) / self.space_duration))
 
     def _finish(self):
-        self.eye, self.target = self._space_view(1.0)
+        self._sky_glide_scene()
         if not self.thanks_printed:
             print("thanks for watching")
             self.thanks_printed = True
@@ -307,37 +642,77 @@ class WinterDemo(PygameDemo):
         sky = self._lerp(self.sky_color, self.space_color, space_factor)
         glClearColor(sky[0], sky[1], sky[2], 1.0)
         glFogfv(GL_FOG_COLOR, (sky[0], sky[1], sky[2], 1.0))
-        glFogf(GL_FOG_END, 80.0 + 180.0 * space_factor)
+        if self._gliding():
+            glFogf(GL_FOG_END, self.glide_fog_end)
+            reach = self.flight_far
+        elif self._in_flight():
+            glFogf(GL_FOG_END, self.flight_fog_end)
+            reach = self.flight_far
+        else:
+            glFogf(GL_FOG_END, 80.0 + 180.0 * space_factor)
+            reach = 220.0
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        gluPerspective(55.0, self.width / self.height, 0.1, reach)
+        glMatrixMode(GL_MODELVIEW)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glLoadIdentity()
         self._place_camera()
-        self.space_backdrop.draw(self._nebula_factor(), self.eye, self.target, self._nebula_travel())
+        self.space_backdrop.draw(self._nebula_brightness(), self.eye, self.target, self._nebula_travel())
         self.stars.draw(space_factor, self.eye)
         glLightfv(GL_LIGHT0, GL_POSITION, (0.5, 1.0, 0.6, 0.0))
-        glow = self.bonfire.glow_intensity()
-        glLightfv(GL_LIGHT1, GL_POSITION, self.bonfire.light_position())
-        glLightfv(GL_LIGHT1, GL_DIFFUSE, (glow, 0.5 * glow, 0.18 * glow, 1.0))
-        self.land.draw()
-        glPushMatrix()
-        glTranslatef(*self.flatty_offset)
-        self.flatty_land.draw()
-        self.igloo_patch.draw()
-        glPopMatrix()
-        for cloud in self.clouds:
-            cloud.draw()
-        for tree in self.trees:
-            tree.draw()
-        self.snowman.draw()
-        self.igloo.draw(glow)
-        for robin in self.robins:
-            robin.draw()
-        self.bonfire.draw()
-        santa_progress = self._santa_progress()
-        if santa_progress >= 0.0:
-            self._place_santa(santa_progress)
+        if self._winter_visible():
+            glEnable(GL_LIGHT1)
+            glow = self.bonfire.glow_intensity()
+            glLightfv(GL_LIGHT1, GL_DIFFUSE, (glow, 0.5 * glow, 0.18 * glow, 1.0))
+            glPushMatrix()
+            glTranslatef(*self._winter_shift())
+            glLightfv(GL_LIGHT1, GL_POSITION, self.bonfire.light_position())
+            self.land.draw()
+            glPushMatrix()
+            glTranslatef(*self.flatty_offset)
+            self.flatty_land.draw()
+            self.igloo_patch.draw()
+            glPopMatrix()
+            for cloud in self.clouds:
+                cloud.draw()
+            for tree in self.trees:
+                tree.draw()
+            self.snowman.draw()
+            self.igloo.draw(glow)
+            for robin in self.robins:
+                robin.draw()
+            self.bonfire.draw()
+            glPopMatrix()
+        else:
+            glDisable(GL_LIGHT1)
+        if self._gliding():
+            if self._space_factor() > 0.0:
+                for cloud in self.sky_clouds:
+                    cloud.draw()
             self.santa_ride.draw()
-        self.snow.draw()
-        self.igloo_snow.draw()
+        elif self._in_flight():
+            approaching = self._in_cloud()
+            self.earth.moon_enabled = not approaching
+            if not approaching:
+                for planet in self.planets:
+                    planet.draw()
+            elif not self._inside_clouds():
+                self.earth.draw()
+            for cloud in self.sky_clouds:
+                cloud.draw()
+            self.santa_ride.draw()
+        else:
+            santa_progress = self._santa_progress()
+            if santa_progress >= 0.0:
+                self._place_santa(santa_progress)
+                self.santa_ride.draw()
+        if self._winter_visible():
+            glPushMatrix()
+            glTranslatef(*self._winter_shift())
+            self.snow.draw()
+            self.igloo_snow.draw()
+            glPopMatrix()
 
     def on_pause(self):
         try:
@@ -354,14 +729,18 @@ class WinterDemo(PygameDemo):
     def step(self):
         delta_seconds = self.clock.get_time() / 1000.0
         self.elapsed += delta_seconds
-        self.snow.update(delta_seconds)
-        self.igloo_snow.update(delta_seconds)
-        self.bonfire.update(delta_seconds)
-        for robin in self.robins:
-            robin.update(delta_seconds)
+        if self._winter_visible():
+            self.snow.update(delta_seconds)
+            self.igloo_snow.update(delta_seconds)
+            self.bonfire.update(delta_seconds)
+            for robin in self.robins:
+                robin.update(delta_seconds)
         self.santa_ride.update(delta_seconds)
+        for planet in self.planets:
+            planet.update(delta_seconds)
+        self._install_surfaces()
         self._play_scene()
-        self.space_backdrop.update(self.elapsed, self._nebula_factor())
+        self.space_backdrop.update(self.elapsed, self._nebula_brightness())
         self._draw()
 
 

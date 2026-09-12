@@ -12,7 +12,7 @@ class Saturn:
     def __init__(self, x, y, z, radius=6.0, tilt=26.7, spin_speed=6.0, seed=11,
                  texture_width=1024, texture_height=512, flattening=0.90,
                  moon_size_boost=1.0, moon_orbit_compression=1.0, moon_orbit_scale=0.32,
-                 moon_time_scale=0.38):
+                 moon_time_scale=0.38, defer_texture=False):
         self.x = x
         self.y = y
         self.z = z
@@ -49,9 +49,9 @@ class Saturn:
         self.quadric = gluNewQuadric()
         gluQuadricNormals(self.quadric, GLU_SMOOTH)
         gluQuadricTexture(self.quadric, GL_TRUE)
-        self.surface = Texture2D(self._build_surface())
-        glBindTexture(GL_TEXTURE_2D, self.surface.id)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+        self.surface = None
+        if not defer_texture:
+            self.attach_surface(self._build_surface())
         self.ring_list = self._build_rings()
         self.moons = self._build_moons()
 
@@ -59,6 +59,14 @@ class Saturn:
         self.spin += self.spin_speed * dt
         for moon in self.moons:
             moon.update(dt)
+
+    def attach_surface(self, rgba):
+        self.surface = Texture2D(rgba)
+        glBindTexture(GL_TEXTURE_2D, self.surface.id)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+
+    def ready(self):
+        return self.surface is not None
 
     def _build_moons(self):
         moons = []
@@ -189,6 +197,8 @@ class Saturn:
         glEnable(GL_LIGHTING)
 
     def draw(self):
+        if self.surface is None:
+            return
         glPushMatrix()
         glTranslatef(self.x, self.y, self.z)
         glRotatef(self.tilt, 0.0, 0.0, 1.0)

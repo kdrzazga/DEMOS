@@ -28,8 +28,8 @@ class BruceWalk:
         self.step_frames = 5                        # frames per run1/run2 leg
         self.stand_frames = int(Constants.FPS)      # stand this long before setting off
         self.sprite_width = 6                        # kept clear of the right edge
-        self.kick_start_column = 2 / 3 * Constants.COLUMNS
-        self.kick_end_column = 3 / 4 * Constants.COLUMNS
+        self.kick_start_column = 20
+        self.kick_end_column = 30
         self.border_column = Constants.COLUMNS - self.sprite_width
 
         self.phase = BruceWalk.STAND

@@ -92,6 +92,14 @@ class Helix:
         top_limit = visible_half_height * (1 + 2 * margin)
         bottom_limit = -top_limit
 
+        # The items are spaced `pitch` apart and recycle over the bottom->top loop.
+        # A chain shorter than that loop leaves an empty band each time the front
+        # recycles -- the visible "break" after the intro rise. Treat the given
+        # count as a minimum and add whatever it takes to tile the loop, so the
+        # rise flows seamlessly into the steady spin with no gap.
+        loop_height = top_limit - bottom_limit
+        count = max(count, math.ceil(loop_height / pitch) + 1)
+
         self.items = []
         for i in range(count):
             angle = i * angle_step

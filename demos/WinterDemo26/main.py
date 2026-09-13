@@ -961,6 +961,8 @@ class WinterDemo(PygameDemo):
                 robin.update(delta_seconds)
         self.santa_ride.update(delta_seconds)
         self.rooftop_santa.update(delta_seconds)
+        if self.roof_house is not None:
+            self.roof_house.update(delta_seconds)
         for planet in self.planets:
             planet.update(delta_seconds)
         self._install_surfaces()

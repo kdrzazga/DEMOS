@@ -1,6 +1,9 @@
+import colorsys
 import math
 from OpenGL.GL import *
 from OpenGL.GLU import *
+
+from demos.WinterDemo26.ceiling_neon import CeilingNeon
 
 
 class Hall:
@@ -76,12 +79,29 @@ class Hall:
         self.flue_color = (0.03, 0.03, 0.04)
         self.flue_ratio = 0.62
         self.flue_width = self.chimney_width * self.flue_ratio
+        self.neon_rows = (0.30, 0.64)
+        self.neon_length_share = 0.5
+        self.neon_width = 0.22
+        self.neon_drop = 0.08
+        self.neon_glow_reach = 0.9
+        self.neon_glow_strength = 0.55
+        self.neon_core_whitening = 0.45
+        self.neon_cycle_speed = 0.04
+        self.neon_light_power = 1.3
+        self.neon_light_height = 12.5
+        self.neon_attenuation = (1.0, 0.06, 0.012)
+        self.first_neon_light = 2
+        self.light_cell = 1.2
+        self.neon_palettes = {1.0: ((0.20, 0.90, 1.00), (0.20, 0.45, 1.00), (0.25, 1.00, 0.45)),
+                              -1.0: ((1.00, 0.85, 0.15), (1.00, 0.50, 0.10), (1.00, 0.20, 0.45))}
 
         self.wall_x = self.half_span + self.arch_band
         self.side_step_run = (self.wall_x - self.stage_half_width) / self.side_step_count
         self.step_run = (self.stage_half_width - self.landing_half) / self.stage_steps
         self.chimney_z = self.length / self.arch_count / 2.0
         self.display_list = self._compile()
+        self.neon_phase = 0.0
+        self.neon_lights = self._create_neons()
 
     def _winds_with(self, normal, corners):
         first = tuple(corners[1][axis] - corners[0][axis] for axis in range(3))
@@ -158,12 +178,8 @@ class Hall:
             wall = side * self.wall_x
             normal = (-side, 0.0, 0.0)
             glColor3f(*self.brick_color)
-            self._quad(normal, ((wall, 0.0, -half_length), (wall, 0.0, half_length),
-                                (wall, self.brick_height, half_length), (wall, self.brick_height, -half_length)))
-            self._shaded_quad((normal,) * 4,
-                              ((wall, self.brick_height, -half_length), (wall, self.brick_height, half_length),
-                               (wall, self.wall_top, half_length), (wall, self.wall_top, -half_length)),
-                              (1.0, 1.0, self.wall_top_shadow, self.wall_top_shadow))
+            self._draw_wall_cells(wall, normal, 0.0, self.brick_height, True)
+            self._draw_wall_cells(wall, normal, self.brick_height, self.wall_top, False)
         glEnd()
 
     def _draw_brick_lines(self, fixed_axis, fixed_value, span, height_limit, facing_sign, base=0.0):
@@ -267,6 +283,48 @@ class Hall:
     def _ceiling_shade(self, across):
         return self.eave_shadow + (self.ridge_shadow - self.eave_shadow) * (1.0 - across / self.wall_x)
 
+    def _cell_count(self, span):
+        return max(1, int(math.ceil(span / self.light_cell)))
+
+    def _draw_ceiling_cells(self, side, inner, start, end, inward):
+        across_cells = self._cell_count(self.wall_x - inner)
+        along_cells = self._cell_count(end - start)
+        for across in range(across_cells):
+            near = inner + (self.wall_x - inner) * across / across_cells
+            far = inner + (self.wall_x - inner) * (across + 1) / across_cells
+            for along in range(along_cells):
+                front = start + (end - start) * along / along_cells
+                rear = start + (end - start) * (along + 1) / along_cells
+                corners = ((side * far, self._slope_height(far, 0.0), front),
+                           (side * near, self._slope_height(near, 0.0), front),
+                           (side * near, self._slope_height(near, 0.0), rear),
+                           (side * far, self._slope_height(far, 0.0), rear))
+                shades = (self._ceiling_shade(far), self._ceiling_shade(near),
+                          self._ceiling_shade(near), self._ceiling_shade(far))
+                self._shaded_quad((inward,) * 4, corners, shades)
+
+    def _wall_shade(self, height):
+        climb = (height - self.brick_height) / (self.wall_top - self.brick_height)
+        return 1.0 + (self.wall_top_shadow - 1.0) * max(0.0, min(1.0, climb))
+
+    def _draw_wall_cells(self, wall, normal, bottom, top, brick):
+        half_length = self.length / 2.0
+        along_cells = self._cell_count(self.length)
+        rise_cells = self._cell_count(top - bottom)
+        for rise in range(rise_cells):
+            low = bottom + (top - bottom) * rise / rise_cells
+            high = bottom + (top - bottom) * (rise + 1) / rise_cells
+            for along in range(along_cells):
+                front = -half_length + self.length * along / along_cells
+                rear = -half_length + self.length * (along + 1) / along_cells
+                corners = ((wall, low, front), (wall, low, rear), (wall, high, rear), (wall, high, front))
+                if brick:
+                    self._quad(normal, corners)
+                else:
+                    self._shaded_quad((normal,) * 4, corners,
+                                      (self._wall_shade(low), self._wall_shade(low),
+                                       self._wall_shade(high), self._wall_shade(high)))
+
     def _draw_roof(self):
         climb = self.ridge - self.wall_top
         slope = math.hypot(climb, self.wall_x)
@@ -274,13 +332,7 @@ class Hall:
         for side in (1.0, -1.0):
             inward = (-side * climb / slope, -self.wall_x / slope, 0.0)
             for inner, start, end in self._slope_pieces(self.flue_width / 2.0):
-                corners = ((side * self.wall_x, self._slope_height(self.wall_x, 0.0), start),
-                           (side * inner, self._slope_height(inner, 0.0), start),
-                           (side * inner, self._slope_height(inner, 0.0), end),
-                           (side * self.wall_x, self._slope_height(self.wall_x, 0.0), end))
-                shades = (self._ceiling_shade(self.wall_x), self._ceiling_shade(inner),
-                          self._ceiling_shade(inner), self._ceiling_shade(self.wall_x))
-                self._shaded_quad((inward,) * 4, corners, shades)
+                self._draw_ceiling_cells(side, inner, start, end, inward)
         glColor3f(*self.roof_color)
         for side in (1.0, -1.0):
             outward = (side * climb / slope, self.wall_x / slope, 0.0)
@@ -562,6 +614,76 @@ class Hall:
                                    self.brick_height, -end)
         glEnable(GL_LIGHTING)
 
+    def _ceiling_point(self, side, across, z, drop, slide):
+        climb = self.ridge - self.wall_top
+        slope = math.hypot(climb, self.wall_x)
+        down = (-side * climb / slope, -self.wall_x / slope)
+        uphill = (-side * self.wall_x / slope, climb / slope)
+        return (side * across + uphill[0] * slide + down[0] * drop,
+                self._slope_height(across, 0.0) + uphill[1] * slide + down[1] * drop,
+                z)
+
+    def _create_neons(self):
+        half_length = self._bay_length() * self.neon_length_share / 2.0
+        half_width = self.neon_width / 2.0
+        reach = self.neon_glow_reach
+        inner = ((-half_width, -half_length), (half_width, -half_length),
+                 (half_width, half_length), (-half_width, half_length))
+        outer = ((-half_width - reach, -half_length - reach), (half_width + reach, -half_length - reach),
+                 (half_width + reach, half_length + reach), (-half_width - reach, half_length + reach))
+        lights = []
+        for bay, center_z in enumerate(self._window_positions()):
+            for side in (1.0, -1.0):
+                palette = self.neon_palettes[side]
+                for row, share in enumerate(self.neon_rows):
+                    across = self.wall_x * share
+                    neon = CeilingNeon(
+                        tuple(self._ceiling_point(side, across, center_z + along, self.neon_drop, slide)
+                              for slide, along in inner),
+                        tuple(self._ceiling_point(side, across, center_z + along, self.neon_drop * 0.5, slide)
+                              for slide, along in inner),
+                        tuple(self._ceiling_point(side, across, center_z + along, self.neon_drop * 0.5, slide)
+                              for slide, along in outer),
+                        glow_strength=self.neon_glow_strength, core_whitening=self.neon_core_whitening)
+                    color = palette[(bay + row) % len(palette)]
+                    lights.append([neon, bay, colorsys.rgb_to_hsv(*color), color])
+        return lights
+
+    def update(self, delta_seconds):
+        self.neon_phase = (self.neon_phase + delta_seconds * self.neon_cycle_speed) % 1.0
+        for light in self.neon_lights:
+            hue, saturation, value = light[2]
+            light[3] = colorsys.hsv_to_rgb((hue + self.neon_phase) % 1.0, saturation, value)
+
+    def _bay_colors(self):
+        totals = {}
+        for _, bay, _, color in self.neon_lights:
+            summed, count = totals.get(bay, ((0.0, 0.0, 0.0), 0))
+            totals[bay] = (tuple(summed[axis] + color[axis] for axis in range(3)), count + 1)
+        return {bay: tuple(channel / count for channel in summed) for bay, (summed, count) in totals.items()}
+
+    def _neon_light_ids(self):
+        available = 8 - self.first_neon_light
+        return tuple(GL_LIGHT0 + self.first_neon_light + index
+                     for index in range(min(available, len(self._window_positions()))))
+
+    def _switch_on_neon_lights(self):
+        colors = self._bay_colors()
+        constant, linear, quadratic = self.neon_attenuation
+        for bay, (light, center_z) in enumerate(zip(self._neon_light_ids(), self._window_positions())):
+            glEnable(light)
+            glLightfv(light, GL_POSITION, (0.0, self.neon_light_height, center_z, 1.0))
+            glLightfv(light, GL_DIFFUSE, tuple(channel * self.neon_light_power for channel in colors[bay]) + (1.0,))
+            glLightfv(light, GL_AMBIENT, (0.0, 0.0, 0.0, 1.0))
+            glLightfv(light, GL_SPECULAR, (0.0, 0.0, 0.0, 1.0))
+            glLightf(light, GL_CONSTANT_ATTENUATION, constant)
+            glLightf(light, GL_LINEAR_ATTENUATION, linear)
+            glLightf(light, GL_QUADRATIC_ATTENUATION, quadratic)
+
+    def _switch_off_neon_lights(self):
+        for light in self._neon_light_ids():
+            glDisable(light)
+
     def _compile(self):
         display_list = glGenLists(1)
         glNewList(display_list, GL_COMPILE)
@@ -598,5 +720,9 @@ class Hall:
         glTranslatef(self.x, self.y, self.z)
         glRotatef(self.facing, 0.0, 1.0, 0.0)
         glScalef(self.size, self.size, self.size)
+        self._switch_on_neon_lights()
         glCallList(self.display_list)
+        self._switch_off_neon_lights()
+        for neon, _, _, color in self.neon_lights:
+            neon.glow(color)
         glPopMatrix()

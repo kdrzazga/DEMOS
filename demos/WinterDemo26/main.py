@@ -29,7 +29,7 @@ from lib.earth import Earth
 from demos.WinterDemo26.santa_ride import SantaRide
 from demos.WinterDemo26.santa_claus import SantaClaus
 from lib.urban.city_factory import CityFactory
-from lib.urban.house import House
+from demos.WinterDemo26.hall import Hall
 
 
 class WinterDemo(PygameDemo):
@@ -122,14 +122,8 @@ class WinterDemo(PygameDemo):
         self.rooftop_santa_size = 1.6
         self.jump_arc = 2.4
         self.roof_stand_offset = 1.4
-        self.landing_floors = 5
-        self.landing_bays = 12
-        self.sleigh_offset_ratio = 0.30
+        self.sleigh_ridge_offset = 6.0
         self.landing_margin = 0.4
-        self.landing_chimney_scale = 3.4
-        self.landing_chimney_width_scale = 1.21
-        self.landing_snow = 0.0
-        self.landing_color = (0.44, 0.34, 0.36)
         self.city_flat_size = (176.0, 112.0)
         self.city_flat_falloff = 100.0
         self.igloo_flat_falloff = 60.0
@@ -733,39 +727,38 @@ class WinterDemo(PygameDemo):
                     if tallest is None or house.total_height > tallest[0].total_height:
                         tallest = (house, quarter, index,
                                    (town.x + quarter.x + house.x, town.z + quarter.z + house.z))
-            crowded, quarter, index, spot = tallest
-            self.roof_house = House(self.city.x + spot[0], self.city.y, self.city.z + spot[1],
-                                    self.landing_floors, windows_per_floor=self.landing_bays,
-                                    color=self.landing_color, facing=crowded.facing,
-                                    snow_top=self.landing_snow,
-                                    chimney_scale=self.landing_chimney_scale,
-                                    chimney_width_scale=self.landing_chimney_width_scale)
+            spot = tallest[3]
+            self.roof_house = Hall(self.city.x + spot[0], self.city.y, self.city.z + spot[1])
             self._clear_landing_plot(spot)
         return self.roof_house
 
     def _clear_landing_plot(self, spot):
-        big = self.roof_house
+        hall = self.roof_house
+        half_across = hall.wall_x * hall.size
+        half_along = hall.length / 2.0 * hall.size
         for town in self.city.towns:
             for quarter in town.quarters:
                 hidden = list(quarter.hidden)
                 for index, other in enumerate(quarter.houses):
                     across = abs(town.x + quarter.x + other.x - spot[0])
                     along = abs(town.z + quarter.z + other.z - spot[1])
-                    if (across < (other.width + big.width) / 2.0 + self.landing_margin
-                            and along < (other.depth + big.depth) / 2.0 + self.landing_margin
+                    if (across < other.width / 2.0 + half_across + self.landing_margin
+                            and along < other.depth / 2.0 + half_along + self.landing_margin
                             and index not in hidden):
                         hidden.append(index)
                 quarter.hidden = tuple(hidden)
 
     def _chimney_top(self):
-        house = self._roof_house()
-        return (house.x, house.y + house.roof_peak + house.chimney_rise, house.z)
+        hall = self._roof_house()
+        return (hall.x,
+                hall.y + (hall.ridge + hall.roof_thickness + hall.chimney_rise + hall.chimney_cap_height) * hall.size,
+                hall.z + hall.chimney_z * hall.size)
 
     def _landing_spot(self):
-        house = self._roof_house()
+        hall = self._roof_house()
         top = self._chimney_top()
-        return (top[0], house.y + house.roof_peak + self.roof_stand_offset,
-                top[2] + house.depth * self.sleigh_offset_ratio)
+        return (top[0], hall.y + (hall.ridge + hall.roof_thickness) * hall.size + self.roof_stand_offset,
+                top[2] + self.sleigh_ridge_offset)
 
     def _roof_view(self, turn=0.0):
         top = self._chimney_top()

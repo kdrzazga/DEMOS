@@ -31,20 +31,31 @@ class Hall:
         self.window_rows = 6
         self.plank_width = 0.6
 
-        self.stage_half_width = 4.6
         self.stage_depth = 1.8
-        self.stage_base = 2.2
+        self.stage_base = 3.3
         self.stage_steps = 5
-        self.step_rise = 0.42
-        self.step_run = 0.6
-        self.opening_width = 3.2
-        self.opening_height = 2.7
+        self.step_rise = 0.63
+        self.landing_half = 2.4
+        self.stage_half_width = 6.8
+        self.opening_width = 4.8
+        self.opening_height = 4.05
         self.door_size = (1.1, 2.0)
         self.side_step_count = 3
+        self.side_step_depth = 0.6
+        self.side_step_top = 2.2 / 3.0
         self.rail_height = 0.9
 
-        self.plaster_color = (0.60, 0.58, 0.56)
-        self.ceiling_color = (0.54, 0.52, 0.52)
+        self.wall_white = (0.7, 0.7, 0.7)
+        self.lighting_gain = 1.5
+        self.outline_color = (0.45, 0.45, 0.46)
+        self.outline_width = 2.0
+        self.arch_base_shadow = 0.62
+        self.arch_base_reach = 3.0
+        self.arch_crown_shadow = 0.82
+        self.arch_crown_reach = 3.0
+        self.eave_shadow = 0.80
+        self.ridge_shadow = 0.70
+        self.wall_top_shadow = 0.80
         self.brick_color = (0.42, 0.16, 0.11)
         self.mortar_color = (0.46, 0.40, 0.36)
         self.glass_color = (0.55, 0.62, 0.66)
@@ -54,14 +65,61 @@ class Hall:
         self.opening_color = (0.05, 0.04, 0.04)
         self.door_color = (0.50, 0.50, 0.48)
         self.rail_color = (0.18, 0.18, 0.20)
+        self.roof_color = (0.22, 0.22, 0.23)
+        self.roof_thickness = 0.3
+        self.chimney_color = (0.57, 0.14, 0.11)
+        self.chimney_cap_color = (0.34, 0.10, 0.08)
+        self.chimney_width = 0.70 * 3.4 * 1.21
+        self.chimney_rise = 1.15 * 3.4
+        self.chimney_cap_height = 0.12
+        self.chimney_cap_overhang = 0.07
+        self.flue_color = (0.03, 0.03, 0.04)
+        self.flue_ratio = 0.62
+        self.flue_width = self.chimney_width * self.flue_ratio
 
         self.wall_x = self.half_span + self.arch_band
+        self.side_step_run = (self.wall_x - self.stage_half_width) / self.side_step_count
+        self.step_run = (self.stage_half_width - self.landing_half) / self.stage_steps
+        self.chimney_z = self.length / self.arch_count / 2.0
         self.display_list = self._compile()
 
+    def _winds_with(self, normal, corners):
+        first = tuple(corners[1][axis] - corners[0][axis] for axis in range(3))
+        second = tuple(corners[2][axis] - corners[0][axis] for axis in range(3))
+        facing = (first[1] * second[2] - first[2] * second[1],
+                  first[2] * second[0] - first[0] * second[2],
+                  first[0] * second[1] - first[1] * second[0])
+        return sum(facing[axis] * normal[axis] for axis in range(3)) >= 0.0
+
     def _quad(self, normal, corners):
+        if not self._winds_with(normal, corners):
+            corners = tuple(reversed(corners))
         glNormal3f(*normal)
         for corner in corners:
             glVertex3f(*corner)
+
+    def _white(self, shade):
+        glColor3f(*(channel / self.lighting_gain * shade for channel in self.wall_white))
+
+    def _shaded_quad(self, normals, corners, shades):
+        average = tuple(sum(normal[axis] for normal in normals) for axis in range(3))
+        if not self._winds_with(average, corners):
+            normals, corners, shades = (tuple(reversed(normals)), tuple(reversed(corners)),
+                                        tuple(reversed(shades)))
+        for normal, corner, shade in zip(normals, corners, shades):
+            self._white(shade)
+            glNormal3f(*normal)
+            glVertex3f(*corner)
+
+    def _ease(self, value):
+        value = max(0.0, min(1.0, value))
+        return value * value * (3.0 - 2.0 * value)
+
+    def _arch_shade(self, height):
+        base = self.arch_base_shadow + (1.0 - self.arch_base_shadow) * self._ease(height / self.arch_base_reach)
+        crown = 1.0 - (1.0 - self.arch_crown_shadow) * self._ease(
+            (height - (self.arch_rise - self.arch_crown_reach)) / self.arch_crown_reach)
+        return base * crown
 
     def _bay_length(self):
         return self.length / self.arch_count
@@ -102,9 +160,10 @@ class Hall:
             glColor3f(*self.brick_color)
             self._quad(normal, ((wall, 0.0, -half_length), (wall, 0.0, half_length),
                                 (wall, self.brick_height, half_length), (wall, self.brick_height, -half_length)))
-            glColor3f(*self.plaster_color)
-            self._quad(normal, ((wall, self.brick_height, -half_length), (wall, self.brick_height, half_length),
-                                (wall, self.wall_top, half_length), (wall, self.wall_top, -half_length)))
+            self._shaded_quad((normal,) * 4,
+                              ((wall, self.brick_height, -half_length), (wall, self.brick_height, half_length),
+                               (wall, self.wall_top, half_length), (wall, self.wall_top, -half_length)),
+                              (1.0, 1.0, self.wall_top_shadow, self.wall_top_shadow))
         glEnd()
 
     def _draw_brick_lines(self, fixed_axis, fixed_value, span, height_limit, facing_sign, base=0.0):
@@ -184,27 +243,100 @@ class Hall:
         glColor3f(*self.brick_color)
         self._quad(normal, ((-self.wall_x, 0.0, wall_z), (self.wall_x, 0.0, wall_z),
                             (self.wall_x, self.brick_height, wall_z), (-self.wall_x, self.brick_height, wall_z)))
-        glColor3f(*self.plaster_color)
-        self._quad(normal, ((-self.wall_x, self.brick_height, wall_z), (self.wall_x, self.brick_height, wall_z),
-                            (self.wall_x, self.wall_top, wall_z), (-self.wall_x, self.wall_top, wall_z)))
+        self._shaded_quad((normal,) * 4,
+                          ((-self.wall_x, self.brick_height, wall_z), (self.wall_x, self.brick_height, wall_z),
+                           (self.wall_x, self.wall_top, wall_z), (-self.wall_x, self.wall_top, wall_z)),
+                          (1.0, 1.0, 0.92, 0.92))
         glEnd()
         glBegin(GL_TRIANGLES)
-        self._quad(normal, ((-self.wall_x, self.wall_top, wall_z), (self.wall_x, self.wall_top, wall_z),
-                            (0.0, self.ridge, wall_z)))
+        self._shaded_quad((normal,) * 3,
+                          ((-self.wall_x, self.wall_top, wall_z), (self.wall_x, self.wall_top, wall_z),
+                           (0.0, self.ridge, wall_z)),
+                          (self.eave_shadow, self.eave_shadow, self.ridge_shadow))
         glEnd()
 
-    def _draw_roof(self):
+    def _slope_height(self, across, lift):
+        return self.wall_top + lift + (self.ridge - self.wall_top) * (1.0 - across / self.wall_x)
+
+    def _slope_pieces(self, hole_half):
         half_length = self.length / 2.0
+        near = self.chimney_z - hole_half
+        far = self.chimney_z + hole_half
+        return ((0.0, -half_length, near), (0.0, far, half_length), (hole_half, near, far))
+
+    def _ceiling_shade(self, across):
+        return self.eave_shadow + (self.ridge_shadow - self.eave_shadow) * (1.0 - across / self.wall_x)
+
+    def _draw_roof(self):
         climb = self.ridge - self.wall_top
         slope = math.hypot(climb, self.wall_x)
-        glColor3f(*self.ceiling_color)
         glBegin(GL_QUADS)
         for side in (1.0, -1.0):
-            normal = (-side * climb / slope, -self.wall_x / slope, 0.0)
-            self._quad(normal, ((side * self.wall_x, self.wall_top, -half_length),
-                                (0.0, self.ridge, -half_length),
-                                (0.0, self.ridge, half_length),
-                                (side * self.wall_x, self.wall_top, half_length)))
+            inward = (-side * climb / slope, -self.wall_x / slope, 0.0)
+            for inner, start, end in self._slope_pieces(self.flue_width / 2.0):
+                corners = ((side * self.wall_x, self._slope_height(self.wall_x, 0.0), start),
+                           (side * inner, self._slope_height(inner, 0.0), start),
+                           (side * inner, self._slope_height(inner, 0.0), end),
+                           (side * self.wall_x, self._slope_height(self.wall_x, 0.0), end))
+                shades = (self._ceiling_shade(self.wall_x), self._ceiling_shade(inner),
+                          self._ceiling_shade(inner), self._ceiling_shade(self.wall_x))
+                self._shaded_quad((inward,) * 4, corners, shades)
+        glColor3f(*self.roof_color)
+        for side in (1.0, -1.0):
+            outward = (side * climb / slope, self.wall_x / slope, 0.0)
+            for inner, start, end in self._slope_pieces(self.chimney_width / 2.0):
+                self._quad(outward, ((side * self.wall_x, self._slope_height(self.wall_x, self.roof_thickness), start),
+                                     (side * inner, self._slope_height(inner, self.roof_thickness), start),
+                                     (side * inner, self._slope_height(inner, self.roof_thickness), end),
+                                     (side * self.wall_x, self._slope_height(self.wall_x, self.roof_thickness), end)))
+        glEnd()
+
+    def _draw_chimney_box(self, bottom, top, size, color):
+        half = size / 2.0
+        near = self.chimney_z - half
+        far = self.chimney_z + half
+        glColor3f(*color)
+        glBegin(GL_QUADS)
+        for side in (1.0, -1.0):
+            self._quad((0.0, 0.0, side), ((-half, bottom, self.chimney_z + side * half),
+                                          (half, bottom, self.chimney_z + side * half),
+                                          (half, top, self.chimney_z + side * half),
+                                          (-half, top, self.chimney_z + side * half)))
+            self._quad((side, 0.0, 0.0), ((side * half, bottom, near), (side * half, bottom, far),
+                                          (side * half, top, far), (side * half, top, near)))
+        glEnd()
+
+    def _draw_chimney(self):
+        shaft_bottom = self._slope_height(self.flue_width / 2.0, 0.0)
+        shaft_top = self.ridge + self.roof_thickness + self.chimney_rise
+        rim = shaft_top + self.chimney_cap_height
+        cap_width = self.chimney_width + self.chimney_cap_overhang * 2.0
+        half_cap = cap_width / 2.0
+        half_flue = self.flue_width / 2.0
+        self._draw_chimney_box(shaft_bottom, shaft_top, self.chimney_width, self.chimney_color)
+        self._draw_chimney_box(shaft_top, rim, cap_width, self.chimney_cap_color)
+        center = self.chimney_z
+        glColor3f(*self.chimney_cap_color)
+        glBegin(GL_QUADS)
+        for side in (1.0, -1.0):
+            self._quad((0.0, 1.0, 0.0), ((-half_cap, rim, center + side * half_cap),
+                                         (half_cap, rim, center + side * half_cap),
+                                         (half_cap, rim, center + side * half_flue),
+                                         (-half_cap, rim, center + side * half_flue)))
+            self._quad((0.0, 1.0, 0.0), ((side * half_cap, rim, center - half_flue),
+                                         (side * half_cap, rim, center + half_flue),
+                                         (side * half_flue, rim, center + half_flue),
+                                         (side * half_flue, rim, center - half_flue)))
+        glColor3f(*self.flue_color)
+        for side in (1.0, -1.0):
+            self._quad((0.0, 0.0, -side), ((-half_flue, shaft_bottom, center + side * half_flue),
+                                           (half_flue, shaft_bottom, center + side * half_flue),
+                                           (half_flue, rim, center + side * half_flue),
+                                           (-half_flue, rim, center + side * half_flue)))
+            self._quad((-side, 0.0, 0.0), ((side * half_flue, shaft_bottom, center - half_flue),
+                                           (side * half_flue, shaft_bottom, center + half_flue),
+                                           (side * half_flue, rim, center + half_flue),
+                                           (side * half_flue, rim, center - half_flue)))
         glEnd()
 
     def _arch_profile(self, radius, center_x, side):
@@ -215,33 +347,93 @@ class Hall:
             points.append((side * (center_x + radius * math.cos(angle)), radius * math.sin(angle), angle))
         return points
 
-    def _draw_arch(self, center_z):
+    def _arch_geometry(self):
         span = self.half_span
         radius = (self.arch_rise ** 2 + span ** 2) / (2.0 * span)
-        center_x = span - radius
+        return radius, span - radius
+
+    def _draw_arch(self, center_z):
+        radius, center_x = self._arch_geometry()
         near = center_z + self.arch_depth / 2.0
         far = center_z - self.arch_depth / 2.0
-        glColor3f(*self.plaster_color)
         glBegin(GL_QUADS)
         for side in (1.0, -1.0):
             inner = self._arch_profile(radius, center_x, side)
             outer = self._arch_profile(radius + self.arch_band, center_x, side)
             for step in range(self.arch_steps):
                 low, high = inner[step], inner[step + 1]
-                middle = (low[2] + high[2]) / 2.0
-                self._quad((-side * math.cos(middle), -math.sin(middle), 0.0),
-                           ((low[0], low[1], far), (high[0], high[1], far),
-                            (high[0], high[1], near), (low[0], low[1], near)))
                 low_outer, high_outer = outer[step], outer[step + 1]
-                middle = (low_outer[2] + high_outer[2]) / 2.0
-                self._quad((side * math.cos(middle), math.sin(middle), 0.0),
-                           ((low_outer[0], low_outer[1], near), (high_outer[0], high_outer[1], near),
-                            (high_outer[0], high_outer[1], far), (low_outer[0], low_outer[1], far)))
+                inward_low = (-side * math.cos(low[2]), -math.sin(low[2]), 0.0)
+                inward_high = (-side * math.cos(high[2]), -math.sin(high[2]), 0.0)
+                self._shaded_quad((inward_low, inward_high, inward_high, inward_low),
+                                  ((low[0], low[1], far), (high[0], high[1], far),
+                                   (high[0], high[1], near), (low[0], low[1], near)),
+                                  (self._arch_shade(low[1]), self._arch_shade(high[1]),
+                                   self._arch_shade(high[1]), self._arch_shade(low[1])))
+                outward_low = (side * math.cos(low_outer[2]), math.sin(low_outer[2]), 0.0)
+                outward_high = (side * math.cos(high_outer[2]), math.sin(high_outer[2]), 0.0)
+                self._shaded_quad((outward_low, outward_high, outward_high, outward_low),
+                                  ((low_outer[0], low_outer[1], near), (high_outer[0], high_outer[1], near),
+                                   (high_outer[0], high_outer[1], far), (low_outer[0], low_outer[1], far)),
+                                  (self._arch_shade(low_outer[1]), self._arch_shade(high_outer[1]),
+                                   self._arch_shade(high_outer[1]), self._arch_shade(low_outer[1])))
                 for face, normal_z in ((near, 1.0), (far, -1.0)):
-                    self._quad((0.0, 0.0, normal_z),
-                               ((low[0], low[1], face), (high[0], high[1], face),
-                                (high_outer[0], high_outer[1], face), (low_outer[0], low_outer[1], face)))
+                    flat = (0.0, 0.0, normal_z)
+                    self._shaded_quad((flat,) * 4,
+                                      ((low[0], low[1], face), (high[0], high[1], face),
+                                       (high_outer[0], high_outer[1], face), (low_outer[0], low_outer[1], face)),
+                                      (self._arch_shade(low[1]), self._arch_shade(high[1]),
+                                       self._arch_shade(high_outer[1]), self._arch_shade(low_outer[1])))
         glEnd()
+
+    def _corner_boundary(self, side):
+        climb = self.ridge - self.wall_top
+        roof_run = math.hypot(self.wall_x, climb)
+        total = self.wall_top + roof_run
+        points = []
+        for step in range(self.arch_steps + 1):
+            travelled = total * step / self.arch_steps
+            if travelled <= self.wall_top:
+                points.append((side * self.wall_x, travelled))
+            else:
+                along = (travelled - self.wall_top) / roof_run
+                points.append((side * self.wall_x * (1.0 - along), self.wall_top + climb * along))
+        return points
+
+    def _draw_arch_corners(self, center_z):
+        radius, center_x = self._arch_geometry()
+        glBegin(GL_QUADS)
+        for side in (1.0, -1.0):
+            arc = self._arch_profile(radius + self.arch_band, center_x, side)
+            boundary = self._corner_boundary(side)
+            for face, normal_z in ((center_z + self.arch_depth / 2.0, 1.0),
+                                   (center_z - self.arch_depth / 2.0, -1.0)):
+                flat = (0.0, 0.0, normal_z)
+                for step in range(self.arch_steps):
+                    corners = ((arc[step][0], arc[step][1], face),
+                               (arc[step + 1][0], arc[step + 1][1], face),
+                               (boundary[step + 1][0], boundary[step + 1][1], face),
+                               (boundary[step][0], boundary[step][1], face))
+                    self._shaded_quad((flat,) * 4, corners,
+                                      tuple(self._arch_shade(corner[1]) for corner in corners))
+        glEnd()
+
+    def _draw_arch_outlines(self, center_z):
+        radius, center_x = self._arch_geometry()
+        lift = 0.01
+        glColor3f(*self.outline_color)
+        for side in (1.0, -1.0):
+            inner = self._arch_profile(radius, center_x, side)
+            boundary = self._corner_boundary(side)
+            for face in (center_z + self.arch_depth / 2.0 + lift, center_z - self.arch_depth / 2.0 - lift):
+                glBegin(GL_LINE_STRIP)
+                for point_x, point_y, angle in inner:
+                    glVertex3f(point_x - side * math.cos(angle) * lift, point_y - math.sin(angle) * lift, face)
+                glEnd()
+                glBegin(GL_LINE_STRIP)
+                for point_x, point_y in boundary:
+                    glVertex3f(point_x - side * lift, point_y - lift, face)
+                glEnd()
 
     def _stage_columns(self):
         landing_half = self.stage_half_width - self.stage_steps * self.step_run
@@ -273,20 +465,20 @@ class Hall:
     def _draw_side_steps(self, back, front):
         glColor3f(*self.brick_color)
         glBegin(GL_QUADS)
+        flight_width = self.side_step_count * self.side_step_run
         for side in (1.0, -1.0):
+            inner = side * self.stage_half_width
+            outer = side * (self.stage_half_width + flight_width)
+            left, right = min(inner, outer), max(inner, outer)
             for step in range(self.side_step_count):
-                inner = self.stage_half_width + step * self.step_run
-                outer = inner + self.step_run
-                height = self.stage_base * (self.side_step_count - step) / (self.side_step_count + 1)
-                left, right = (inner, outer) if side > 0.0 else (-outer, -inner)
-                reach = front - step * 0.1
+                height = self.side_step_top * (step + 1) / self.side_step_count
+                reach = front + (self.side_step_count - 1 - step) * self.side_step_depth
                 self._quad((0.0, 0.0, 1.0), ((left, 0.0, reach), (right, 0.0, reach),
                                              (right, height, reach), (left, height, reach)))
                 self._quad((0.0, 1.0, 0.0), ((left, height, reach), (right, height, reach),
                                              (right, height, back), (left, height, back)))
-                edge = right if side > 0.0 else left
-                self._quad((side, 0.0, 0.0), ((edge, 0.0, reach), (edge, 0.0, back),
-                                              (edge, height, back), (edge, height, reach)))
+                self._quad((side, 0.0, 0.0), ((outer, 0.0, reach), (outer, 0.0, back),
+                                              (outer, height, back), (outer, height, reach)))
         glEnd()
 
     def _draw_stage_opening(self):
@@ -331,13 +523,13 @@ class Hall:
             finish = (side * landing_half, top + self.rail_height, rail_z)
             glVertex3f(*start)
             glVertex3f(*finish)
-            glVertex3f(side * landing_half, top + self.rail_height, rail_z)
-            glVertex3f(0.0, top + self.rail_height, back + 0.2)
             for step in range(self.stage_steps + 1):
                 along = self.stage_half_width - step * self.step_run
                 level = self.stage_base + step * self.step_rise
                 glVertex3f(side * along, level, rail_z)
                 glVertex3f(side * along, level + self.rail_height, rail_z)
+        glVertex3f(-landing_half, top + self.rail_height, rail_z)
+        glVertex3f(landing_half, top + self.rail_height, rail_z)
         glEnd()
         glLineWidth(1.0)
         glEnable(GL_LIGHTING)
@@ -378,8 +570,10 @@ class Hall:
         self._draw_end_wall(1.0)
         self._draw_end_wall(-1.0)
         self._draw_roof()
+        self._draw_chimney()
         for center_z in self._arch_positions():
             self._draw_arch(center_z)
+            self._draw_arch_corners(center_z)
         self._draw_windows()
         self._draw_stage()
         self._draw_door()
@@ -390,6 +584,12 @@ class Hall:
         self._draw_stage_bricks()
         self._draw_stage_opening()
         self._draw_rails()
+        glDisable(GL_LIGHTING)
+        glLineWidth(self.outline_width)
+        for center_z in self._arch_positions():
+            self._draw_arch_outlines(center_z)
+        glLineWidth(1.0)
+        glEnable(GL_LIGHTING)
         glEndList()
         return display_list
 

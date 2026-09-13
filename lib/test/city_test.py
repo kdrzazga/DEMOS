@@ -52,7 +52,7 @@ class CityTest:
         glLoadIdentity()
 
     def _create_city(self, seed, kind):
-        factory = CityFactory(seed=seed)
+        factory = CityFactory(seed=seed, name="Namysłów") #UFT-8
         if kind == "triple":
             return factory.create_with_dense_center_triple()
         if kind == "big":

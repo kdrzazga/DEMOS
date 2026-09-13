@@ -12,7 +12,7 @@ class CityFactory:
     def __init__(self, quarter_rows=2, quarter_columns=3, road_width=6.0, town_spacing=0.0,
                  floor_range=(1, 4), windows_range=(2, 4), palette=WALL_PALETTE,
                  house_spacing=(1.6, 2.6), matrix_size=7, quarter_variants=43,
-                 library=None, seed=0):
+                 library=None, name="City", seed=0):
         self.quarter_rows = quarter_rows
         self.quarter_columns = quarter_columns
         self.road_width = road_width
@@ -24,6 +24,7 @@ class CityFactory:
         self.matrix_size = matrix_size
         self.quarter_variants = quarter_variants
         self.library = library
+        self.name = name
         self.seed = seed
 
         self.ring_densities = (1.0, 0.7, 0.5)
@@ -98,7 +99,7 @@ class CityFactory:
                 layout = self._enlarged(self._ring_quarters(distance), factor)
                 line.append(self._create_town(layout, density, generator, library))
             grid.append(line)
-        return City(x, y, z, grid, spacing=self.town_spacing)
+        return City(x, y, z, grid, spacing=self.town_spacing, name=self.name)
 
     def build_library(self):
         if self.library is None:

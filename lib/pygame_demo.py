@@ -31,6 +31,7 @@ class PygameDemo(BaseDemo):
         self.fps = fps
 
         pygame.init()
+        pygame.mouse.set_visible(False)
         flags = 0
         if opengl:
             flags |= DOUBLEBUF | OPENGL

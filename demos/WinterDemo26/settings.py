@@ -33,6 +33,7 @@ class Duration:
         self.hall_santa_bounce = 0.45
         self.first_wishes = 14.0
         self.second_wishes = 16.0
+        self.ending_fade = 3.0
 
 
 

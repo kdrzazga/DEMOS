@@ -799,7 +799,7 @@ class WinterDemo(PygameDemo):
         """The hall scene lasts until the camera reaches the screen view and Santa has spoken all wishes."""
         if not self.desks:
             return math.inf
-        return self._wishes_start() + sum(duration for _, _, _, duration in self.wish_parts)
+        return self._wishes_start() + sum(duration for _, _, _, duration in self.wish_parts) + 12
 
     def _current_wish(self):
         """Index into wish_parts of the wishes shown now, or None before and after them."""
@@ -1004,11 +1004,55 @@ class WinterDemo(PygameDemo):
         self.target = (self.rooftop_santa.x, self.rooftop_santa.y, self.rooftop_santa.z)
 
     def _finish(self):
+        """Fades picture and sound out after the hall scene, then lets the main loop end the app."""
         self._hall_interior_scene()
         if not self.thanks_printed:
             t = Globals.get_duration()
             print("thanks for watching, duration " + str(t))
             self.thanks_printed = True
+            self._fade_out_sound()
+        if self._ending_darkness() >= 1.0:
+            self.running = False
+
+    def _fade_out_sound(self):
+        fade_milliseconds = int(self.duration.ending_fade * 1000)
+        try:
+            pygame.mixer.music.fadeout(fade_milliseconds)
+            pygame.mixer.fadeout(fade_milliseconds)
+        except pygame.error:
+            pass
+
+    def _ending_darkness(self):
+        """0.0 until the hall scene ends, then rises to 1.0 (black) over the ending fade."""
+        return self._clamp01((self.elapsed - self._interior_end()) / self.duration.ending_fade)
+
+    def _draw_fade_to_black(self, opacity):
+        glMatrixMode(GL_PROJECTION)
+        glPushMatrix()
+        glLoadIdentity()
+        glOrtho(0.0, 1.0, 0.0, 1.0, -1.0, 1.0)
+        glMatrixMode(GL_MODELVIEW)
+        glPushMatrix()
+        glLoadIdentity()
+        glPushAttrib(GL_ENABLE_BIT)
+        glDisable(GL_DEPTH_TEST)
+        glDisable(GL_LIGHTING)
+        glDisable(GL_FOG)
+        glDisable(GL_TEXTURE_2D)
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        glColor4f(0.0, 0.0, 0.0, opacity)
+        glBegin(GL_QUADS)
+        glVertex2f(0.0, 0.0)
+        glVertex2f(1.0, 0.0)
+        glVertex2f(1.0, 1.0)
+        glVertex2f(0.0, 1.0)
+        glEnd()
+        glPopAttrib()
+        glPopMatrix()
+        glMatrixMode(GL_PROJECTION)
+        glPopMatrix()
+        glMatrixMode(GL_MODELVIEW)
 
     def _place_camera(self):
         gluLookAt(self.eye[0], self.eye[1], self.eye[2],
@@ -1101,6 +1145,9 @@ class WinterDemo(PygameDemo):
             self.snow.draw()
             self.igloo_snow.draw()
             glPopMatrix()
+        ending_darkness = self._ending_darkness()
+        if ending_darkness > 0.0:
+            self._draw_fade_to_black(ending_darkness)
 
     def on_pause(self):
         try:

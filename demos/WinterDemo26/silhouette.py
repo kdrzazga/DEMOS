@@ -103,8 +103,8 @@ class Silhouette:
                 yield run_start, column
                 run_start = None
 
-    def _draw_caps(self, mask):
-        front = self.thick / 2.0
+    def _draw_caps(self, mask, thick):
+        front = thick / 2.0
         back = -front
         for row in range(mask.shape[0]):
             for run_start, run_end in self._row_runs(mask, row):
@@ -121,8 +121,8 @@ class Silhouette:
                 glVertex3f(right, top, back)
                 glVertex3f(right, bottom, back)
 
-    def _draw_side_walls(self, mask):
-        front = self.thick / 2.0
+    def _draw_side_walls(self, mask, thick):
+        front = thick / 2.0
         back = -front
         for row, column in zip(*np.nonzero(mask)):
             left, right, bottom, top = self._cell_bounds(mask, row, column)
@@ -159,8 +159,8 @@ class Silhouette:
         glTranslatef(0.0, -drop, 0.0)
         glColor3f(*self.color)
         glBegin(GL_QUADS)
-        self._draw_caps(mask)
-        self._draw_side_walls(mask)
+        self._draw_caps(mask, self.thick)
+        self._draw_side_walls(mask, self.thick)
         glEnd()
         glPopMatrix()
         glEndList()

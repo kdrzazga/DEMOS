@@ -30,6 +30,9 @@ from demos.WinterDemo26.santa_ride import SantaRide
 from demos.WinterDemo26.santa_claus import SantaClaus
 from lib.urban.city_factory import CityFactory
 from demos.WinterDemo26.hall import Hall
+from demos.WinterDemo26.desk import Desk
+from demos.WinterDemo26.big_screen import BigScreen
+from demos.WinterDemo26.settings import Duration, Delay
 
 
 class WinterDemo(PygameDemo):
@@ -43,30 +46,18 @@ class WinterDemo(PygameDemo):
                                (-10.0, -9.0), (3.0, 8.0), (-2.0, -11.0), (11.0, -1.0),
                                (-12.0, -14.0), (1.0, 13.0), (-4.0, -14.0), (12.0, -12.0))
         self.elapsed = 0.0
-        self.sway_duration = 5.0
-        self.travel_duration = 2.5
-        self.settle_duration = 4.0
-        self.enter_duration = 3.0
-        self.igloo_show_duration = 6.0
-        self.ascend_duration = 4.6
-        self.hole_tilt_duration = 0.4
-        self.hole_hold_duration = 0.5
-        self.space_duration = 10.0
+        self.duration = Duration()
+        self.delay = Delay()
         self.ascend_top = 40.0
         self.space_color = (0.01, 0.01, 0.04)
-        self.nebula_delay = 2.0
         self.nebula_fade = 2.5
         self.nebula_travel_speed = 90.0
         self.nebula_travel_cap = 700.0
-        self.santa_delay = 2.0
         self.santa_approach = 6.0
         self.santa_size = 2.0
         self.santa_start_offset = (110.0, 100.0, 30.0)
         self.santa_end_offset = (18.0, 22.0, 6.0)
-        self.ride_duration = 5.0
-        self.planets_duration = 17.0
         self.turn_left = 35.0
-        self.turn_duration = 1.4
         self.flight_pitch = 0.0
         self.flight_speed = 90.0
         self.shoulder_offset = (20.0, 5.0, 10.0)
@@ -81,7 +72,6 @@ class WinterDemo(PygameDemo):
         self.earth_longitude = 10.0
         self.earth_latitude = 50.0
         self.earth_spin_speed = 1.5
-        self.approach_duration = 8.0
         self.dive_blend = 2.0
         self.sky_cloud_count = 130
         self.sky_cloud_shell = (61.0, 78.0)
@@ -99,7 +89,6 @@ class WinterDemo(PygameDemo):
         self.cloud_start_fill = 0.90
         self.cloud_reveal_schedule = ((150.0, 5), (100.0, 13), (80.0, 52),
                                       (78.0, 99), (75.0, 124), (63.0, 130))
-        self.glide_duration = 15.0
         self.glide_speed = 40.0
         self.glide_level = 2.5
         self.glide_drop = 60.0
@@ -114,15 +103,11 @@ class WinterDemo(PygameDemo):
         self.city_matrix = 7
         self.city_sink = 0.0
         self.city_seed = 5
-        self.landing_duration = 5.0
-        self.rooftop_duration = 4.2
-        self.interior_duration = 7.0
         self.interior_eye_setback = 4.0
         self.interior_eye_height = 2.4
         self.interior_look_height = 6.0
         self.interior_sway = 3.0
         self.interior_sway_speed = 0.5
-        self.jump_duration = 1.6
         self.roof_camera_offset = (11.0, 5.5, 8.0)
         self.landing_turn = 180.0
         self.rooftop_santa_size = 1.6
@@ -131,29 +116,55 @@ class WinterDemo(PygameDemo):
         self.sleigh_ridge_offset = 6.0
         self.hall_lift = 0.35
         self.landing_margin = 0.4
+        self.desk_rows = 3
+        self.desks_per_row = 2
+        self.desk_wall_margin = 1.0
+        self.desk_size = 2.5
+        self.desk_gap = 0.4
+        self.desk_row_spacing = 2.2
+        self.desk_nearest_row_z = 5.0
+        self.hall_dark_level = 0.1
+        self.hall_dark_neon_level = 0.45
+        self.front_row_eye_setback = 5.0
+        self.front_row_eye_height = 4.2
+        self.front_row_look_ahead = 8.0
+        self.front_row_look_height = 1.9
+        self.front_row_sway_left = 0.2
+        self.screen_gap_before_stairs = 0.6
+        self.screen_view_eye = (-2.0, 4.8, -2.0)
+        self.screen_view_target = (-3.0, 5.0, -14.4)
+        self.hall_santa_size = 1.8
+        self.hall_santa_side_gap = 1.4
+        self.hall_santa_front_offset = 0.8
+        self.hall_santa_foot_depth = 0.165
+        self.hall_santa_drop_height = 14.0
+        self.hall_santa_bounce_height = 0.7
+        self.sun_diffuse = (1.0, 0.98, 0.92)
+        self.sun_ambient = (0.35, 0.40, 0.48)
         self.city_flat_size = (176.0, 112.0)
         self.city_flat_falloff = 100.0
         self.igloo_flat_falloff = 60.0
         self.land_extent = 560.0
         self.land_resolution = 280
-        self.snowman_end = self.sway_duration
-        self.transition_end = self.snowman_end + self.travel_duration
-        self.outside_end = self.transition_end + self.settle_duration
-        self.enter_end = self.outside_end + self.enter_duration
-        self.show_end = self.enter_end + self.igloo_show_duration
-        self.hole_gaze_duration = self.hole_tilt_duration + self.hole_hold_duration
-        self.ascend_end = self.show_end + self.hole_gaze_duration + self.ascend_duration
-        self.space_end = self.ascend_end + self.space_duration
-        self.nebula_start = self.ascend_end + self.nebula_delay
-        self.santa_start = self.nebula_start + self.santa_delay
+        self.snowman_end = self.duration.sway
+        self.transition_end = self.snowman_end + self.duration.travel
+        self.outside_end = self.transition_end + self.duration.settle
+        self.enter_end = self.outside_end + self.duration.enter
+        self.show_end = self.enter_end + self.duration.igloo_show
+        self.ascend_end = self.show_end + self.duration.hole_gaze + self.duration.ascend
+        self.space_end = self.ascend_end + self.duration.space
+        self.nebula_start = self.ascend_end + self.delay.nebula
+        self.santa_start = self.nebula_start + self.delay.santa
         self.ride_start = self.santa_start + self.santa_approach
-        self.ride_end = self.ride_start + self.ride_duration
-        self.planets_end = self.ride_end + self.planets_duration
-        self.glide_end = self.planets_end + self.glide_duration
-        self.landing_end = self.glide_end + self.landing_duration
-        self.rooftop_end = self.landing_end + self.rooftop_duration
-        self.interior_end = self.rooftop_end + self.interior_duration
+        self.ride_end = self.ride_start + self.duration.ride
+        self.planets_end = self.ride_end + self.duration.planets
+        self.glide_end = self.planets_end + self.duration.glide
+        self.landing_end = self.glide_end + self.duration.landing
+        self.rooftop_end = self.landing_end + self.duration.rooftop
         self.roof_house = None
+        self.desks = ()
+        self.big_screen = None
+        self.hall_neon_power = None
         self.eye = (0.0, 10.0, 26.0)
         self.target = (0.0, 3.0, 0.0)
         self.thanks_printed = False
@@ -190,6 +201,7 @@ class WinterDemo(PygameDemo):
         self.city = CityFactory(seed=self.city_seed, name="Karlsruhe").create_big_city(
             matrix_size=self.city_matrix)
         self.rooftop_santa = SantaClaus(0.0, 0.0, 0.0, size=self.rooftop_santa_size, wave=True, seed=9)
+        self.hall_santa = SantaClaus(0.0, 0.0, 0.0, size=self.hall_santa_size, wave=True, seed=9)
         self.baked_surfaces = {}
         threading.Thread(target=self._bake_surfaces, daemon=True).start()
         self.snow = Snow(220, (-22.0, 22.0, -20.0, 20.0, -1.5, 18.0))
@@ -224,13 +236,13 @@ class WinterDemo(PygameDemo):
             self._landing_scene()
         elif time <= self.rooftop_end:
             self._rooftop_scene()
-        elif time <= self.interior_end:
+        elif time <= self._interior_end():
             self._hall_interior_scene()
         else:
             self._finish()
 
     def _start_music(self):
-        music_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dzisiaj.mp3")
+        music_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources/dzisiaj.mp3")
         try:
             pygame.mixer.init()
             pygame.mixer.music.load(music_path)
@@ -247,9 +259,7 @@ class WinterDemo(PygameDemo):
         glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE)
         glShadeModel(GL_SMOOTH)
         glEnable(GL_NORMALIZE)
-        glLightfv(GL_LIGHT0, GL_DIFFUSE, (1.0, 0.98, 0.92, 1.0))
-        glLightfv(GL_LIGHT0, GL_AMBIENT, (0.35, 0.40, 0.48, 1.0))
-        glLightModelfv(GL_LIGHT_MODEL_AMBIENT, (0.35, 0.40, 0.48, 1.0))
+        self._set_sun_brightness(1.0)
         glEnable(GL_LIGHT1)
         glLightfv(GL_LIGHT1, GL_AMBIENT, (0.14, 0.07, 0.02, 1.0))
         glLightf(GL_LIGHT1, GL_CONSTANT_ATTENUATION, 1.0)
@@ -372,13 +382,13 @@ class WinterDemo(PygameDemo):
                                        toward[2])) - self.earth_longitude
 
     def _cruise_end(self):
-        return self.planets_end - self.approach_duration
+        return self.planets_end - self.duration.approach
 
     def _cruise_point(self):
         return self._flight_point((self._cruise_end() - self.ride_start) * self.flight_speed, 0.0, 0.0)
 
     def _approach_length(self):
-        return self.flight_speed * self.approach_duration / 2.0
+        return self.flight_speed * self.duration.approach / 2.0
 
     def _earth_center(self):
         direction = self._approach_direction()
@@ -413,13 +423,13 @@ class WinterDemo(PygameDemo):
         point = self._flight_point(along, aside, 0.0)
         if moment <= cruise_end:
             return point
-        eased = 1.0 - (1.0 - (moment - cruise_end) / self.approach_duration) ** 2
+        eased = 1.0 - (1.0 - (moment - cruise_end) / self.duration.approach) ** 2
         direction = self._approach_direction()
         return tuple(point[axis] + direction[axis] * self._approach_length() * eased for axis in range(3))
 
     def _slalom_reach(self):
         moment = min(self.elapsed, self.planets_end)
-        rise = self._ease(self._clamp01((moment - self.ride_start) / self.turn_duration))
+        rise = self._ease(self._clamp01((moment - self.ride_start) / self.duration.turn))
         settle = self._ease(self._clamp01((moment - self._cruise_end()) / self.dive_blend))
         return self.slalom_amplitude * rise * (1.0 - settle)
 
@@ -507,7 +517,7 @@ class WinterDemo(PygameDemo):
         self.santa_ride.x, self.santa_ride.y, self.santa_ride.z = self._flight_position()
         heading = self._santa_heading()
         moment = min(self.elapsed, self.planets_end)
-        turn = self._ease(self._clamp01((moment - self.ride_start) / self.turn_duration))
+        turn = self._ease(self._clamp01((moment - self.ride_start) / self.duration.turn))
         facing = math.degrees(math.atan2(heading[0], heading[2]))
         pitch = math.degrees(math.atan2(-heading[1], math.hypot(heading[0], heading[2])))
         self.santa_ride.facing = self.approach_facing + (facing - self.approach_facing) * turn
@@ -643,7 +653,7 @@ class WinterDemo(PygameDemo):
         return self._ease(self._clamp01((self.eye[1] - 28.0) / 24.0))
 
     def _nebula_factor(self):
-        started = self.elapsed - self.ascend_end - self.nebula_delay
+        started = self.elapsed - self.ascend_end - self.delay.nebula
         return self._ease(self._clamp01(started / self.nebula_fade))
 
     def _clamp01(self, value):
@@ -672,7 +682,7 @@ class WinterDemo(PygameDemo):
         self.target = (0.0, 3.0, 0.0)
 
     def _igloo_transition(self):
-        progress = (self.elapsed - self.snowman_end) / self.travel_duration
+        progress = (self.elapsed - self.snowman_end) / self.duration.travel
         eased = progress * progress * (3.0 - 2.0 * progress)
         end_eye, end_target = self._outside_igloo_view(0.0)
         self.eye = self._lerp(self._sway_eye(self.snowman_end), end_eye, eased)
@@ -682,12 +692,12 @@ class WinterDemo(PygameDemo):
         self.eye, self.target = self._outside_igloo_view(self.elapsed - self.transition_end)
 
     def _enter_igloo(self):
-        progress = (self.elapsed - self.outside_end) / self.enter_duration
-        start_eye, _ = self._outside_igloo_view(self.settle_duration)
+        progress = (self.elapsed - self.outside_end) / self.duration.enter
+        start_eye, _ = self._outside_igloo_view(self.duration.settle)
         self.eye, self.target = self.igloo.enter_igloo(start_eye, progress)
 
     def _igloo_inside_view(self):
-        start_eye, _ = self._outside_igloo_view(self.settle_duration)
+        start_eye, _ = self._outside_igloo_view(self.duration.settle)
         return self.igloo.enter_igloo(start_eye, 1.0)
 
     def _igloo_scene(self):
@@ -702,7 +712,7 @@ class WinterDemo(PygameDemo):
 
     def _hole_gaze_view(self, local_time):
         inside_eye, inside_target = self._igloo_inside_view()
-        tilt = self._ease(self._clamp01(local_time / self.hole_tilt_duration))
+        tilt = self._ease(self._clamp01(local_time / self.duration.hole_tilt))
         return inside_eye, self._lerp(inside_target, self._hole_position(), tilt)
 
     def _ascend_view(self, progress):
@@ -720,14 +730,14 @@ class WinterDemo(PygameDemo):
 
     def _ascend_scene(self):
         local_time = self.elapsed - self.show_end
-        if local_time <= self.hole_gaze_duration:
+        if local_time <= self.duration.hole_gaze:
             self.eye, self.target = self._hole_gaze_view(local_time)
         else:
-            rise = (local_time - self.hole_gaze_duration) / self.ascend_duration
+            rise = (local_time - self.duration.hole_gaze) / self.duration.ascend
             self.eye, self.target = self._ascend_view(self._clamp01(rise))
 
     def _space_scene(self):
-        self.eye, self.target = self._space_view(self._clamp01((self.elapsed - self.ascend_end) / self.space_duration))
+        self.eye, self.target = self._space_view(self._clamp01((self.elapsed - self.ascend_end) / self.duration.space))
 
     def _roof_house(self):
         if self.roof_house is None:
@@ -740,8 +750,122 @@ class WinterDemo(PygameDemo):
                                    (town.x + quarter.x + house.x, town.z + quarter.z + house.z))
             spot = tallest[3]
             self.roof_house = Hall(self.city.x + spot[0], self.city.y + self.hall_lift, self.city.z + spot[1])
+            self.desks = self._create_desks(self.roof_house)
+            self.big_screen = self._create_big_screen(self.roof_house)
+            self.hall_neon_power = self.roof_house.neon_light_power
             self._clear_landing_plot(spot)
         return self.roof_house
+
+    def _create_desks(self, hall):
+        """Rows of desks facing the stage, in the hall's local frame, each row starting at the left wall.
+        Index 0 is the row nearest the entrance, matching the build order of desk_test."""
+        desks = []
+        for row in range(self.desk_rows):
+            row_z = self.desk_nearest_row_z - row * self.desk_row_spacing * self.desk_size
+            for column in range(self.desks_per_row):
+                desk = Desk(0.0, 0.0, row_z, laptop_count=2 + (row + column) % 2,
+                            size=self.desk_size, seed=row * 10 + column)
+                desk_span = (desk.length + self.desk_gap) * self.desk_size
+                desk.x = -hall.wall_x + self.desk_wall_margin + desk.length * self.desk_size / 2.0 + column * desk_span
+                desks.append(desk)
+        return desks
+
+    def _desk_build_time(self, desk_index):
+        build_start = self.rooftop_end + self.duration.desk_empty_hall + desk_index * self.delay.desk_start
+        return self.elapsed - build_start
+
+    def _desks_built_time(self):
+        last_desk_start = self.duration.desk_empty_hall + (len(self.desks) - 1) * self.delay.desk_start
+        longest_build = max(desk.item_count() for desk in self.desks) * self.delay.desk_item
+        return self.rooftop_end + last_desk_start + longest_build
+
+    def _hall_darken_start(self):
+        return self._desks_built_time() + self.duration.desk_settle
+
+    def _front_row_approach_start(self):
+        return self._hall_darken_start() + self.duration.hall_darken
+
+    def _scene_brightness(self):
+        """1.0 until the desks are built, then fades down to hall_dark_level."""
+        if not self.desks:
+            return 1.0
+        darken = self._ease(self._clamp01((self.elapsed - self._hall_darken_start()) / self.duration.hall_darken))
+        return 1.0 - darken * (1.0 - self.hall_dark_level)
+
+    def _dim_hall_neons(self, brightness):
+        if self.roof_house is None:
+            return
+        darkness = (1.0 - brightness) / (1.0 - self.hall_dark_level)
+        neon_level = 1.0 - darkness * (1.0 - self.hall_dark_neon_level)
+        self.roof_house.neon_light_power = self.hall_neon_power * neon_level
+
+    def _set_sun_brightness(self, brightness):
+        glLightfv(GL_LIGHT0, GL_DIFFUSE, tuple(channel * brightness for channel in self.sun_diffuse) + (1.0,))
+        glLightfv(GL_LIGHT0, GL_AMBIENT, tuple(channel * brightness for channel in self.sun_ambient) + (1.0,))
+        glLightModelfv(GL_LIGHT_MODEL_AMBIENT, tuple(channel * brightness for channel in self.sun_ambient) + (1.0,))
+
+    def _create_big_screen(self, hall):
+        """Stands on the floor just in front of the stage's side stairs, centred across the hall."""
+        stairs_front = (-hall.length / 2.0 + hall.stage_depth
+                        + (hall.side_step_count - 1) * hall.side_step_depth)
+        return BigScreen(0.0, 0.0, stairs_front + self.screen_gap_before_stairs)
+
+    def _screen_appear_start(self):
+        return self._front_row_approach_start()
+
+    def _screen_approach_start(self):
+        return self._front_row_approach_start() + self.duration.front_row_approach + self.duration.front_row_hold
+
+    def _interior_end(self):
+        """The hall scene lasts until the camera reaches the screen view and Santa has had time to wave."""
+        if not self.desks:
+            return math.inf
+        return self._screen_approach_start() + self.duration.screen_approach + self.duration.hall_final_hold
+
+    def _hall_santa_fall_start(self):
+        return self._screen_approach_start() + self.delay.hall_santa_fall
+
+    def _hall_santa_spot(self):
+        screen = self.big_screen
+        santa_x = screen.x - screen.width / 2.0 - screen.frame_border - self.hall_santa_side_gap
+        return santa_x, screen.z + self.hall_santa_front_offset
+
+    def _hall_santa_height(self, fall_time):
+        """Falls from under the ceiling with gravity-like easing, then one small bounce on the floor."""
+        floor = self.hall_santa_foot_depth * self.hall_santa_size
+        if fall_time < self.duration.hall_santa_fall:
+            drop = (fall_time / self.duration.hall_santa_fall) ** 2
+            return self.hall_santa_drop_height - (self.hall_santa_drop_height - floor) * drop
+        bounce = (fall_time - self.duration.hall_santa_fall) / self.duration.hall_santa_bounce
+        if bounce < 1.0:
+            return floor + math.sin(math.pi * bounce) * self.hall_santa_bounce_height
+        return floor
+
+    def _draw_hall_santa(self):
+        fall_time = self.elapsed - self._hall_santa_fall_start()
+        if fall_time < 0.0:
+            return
+        self.hall_santa.x, self.hall_santa.z = self._hall_santa_spot()
+        self.hall_santa.y = self._hall_santa_height(fall_time)
+        self.hall_santa.facing = 0.0
+        self.hall_santa.draw()
+
+    def _draw_big_screen(self):
+        appear = (self.elapsed - self._screen_appear_start()) / self.duration.screen_fade
+        if appear >= 0.0:
+            self.big_screen.draw(self._ease(self._clamp01(appear)))
+
+    def _furnish_hall(self):
+        self._draw_desks()
+        self._draw_big_screen()
+        self._draw_hall_santa()
+
+    def _draw_desks(self):
+        for desk_index, desk in enumerate(self.desks):
+            build_time = self._desk_build_time(desk_index)
+            if build_time >= 0.0:
+                screen_glow = 0.85 + 0.15 * math.sin(self.elapsed * 4.0 + desk_index * 1.7)
+                desk.draw(screen_glow, int(build_time // self.delay.desk_item))
 
     def _clear_landing_plot(self, spot):
         hall = self.roof_house
@@ -794,7 +918,7 @@ class WinterDemo(PygameDemo):
         return eye, top
 
     def _landing_scene(self):
-        settle = self._ease(self._clamp01((self.elapsed - self.glide_end) / self.landing_duration))
+        settle = self._ease(self._clamp01((self.elapsed - self.glide_end) / self.duration.landing))
         course = self._glide_direction()
         self.santa_ride.x, self.santa_ride.y, self.santa_ride.z = self._lerp(
             self._glide_position(), self._landing_spot(), settle)
@@ -808,14 +932,39 @@ class WinterDemo(PygameDemo):
     def _on_rooftop(self):
         return self.landing_end < self.elapsed <= self.rooftop_end
 
+    def _front_row_view(self, hall, sway):
+        """Just behind the benches of the row nearest the entrance, looking over the sitters' shoulders."""
+        front_row = self.desks[:self.desks_per_row]
+        row_x = sum(desk.x for desk in front_row) / len(front_row)
+        row_z = front_row[0].z
+        eye = (hall.x + (row_x + sway) * hall.size, hall.y + self.front_row_eye_height * hall.size,
+               hall.z + (row_z + self.front_row_eye_setback) * hall.size)
+        target = (hall.x + row_x * hall.size, hall.y + self.front_row_look_height * hall.size,
+                  hall.z + (row_z - self.front_row_look_ahead) * hall.size)
+        return eye, target
+
     def _hall_interior_scene(self):
         hall = self._roof_house()
-        moment = min(self.elapsed, self.interior_end) - self.rooftop_end
+        moment = self.elapsed - self.rooftop_end
         sway = math.sin(moment * self.interior_sway_speed) * self.interior_sway
         half_length = hall.length / 2.0 * hall.size
-        self.eye = (hall.x + sway, hall.y + self.interior_eye_height,
-                    hall.z + half_length - self.interior_eye_setback)
-        self.target = (hall.x + sway * 0.3, hall.y + self.interior_look_height, hall.z - half_length)
+        entrance_eye = (hall.x + sway, hall.y + self.interior_eye_height,
+                        hall.z + half_length - self.interior_eye_setback)
+        entrance_target = (hall.x + sway * 0.3, hall.y + self.interior_look_height, hall.z - half_length)
+        approach = self._ease(self._clamp01((self.elapsed - self._front_row_approach_start())
+                                            / self.duration.front_row_approach))
+        row_eye, row_target = self._front_row_view(hall, sway * self.front_row_sway_left)
+        eye = self._lerp(entrance_eye, row_eye, approach)
+        target = self._lerp(entrance_target, row_target, approach)
+        forward = self._ease(self._clamp01((self.elapsed - self._screen_approach_start())
+                                           / self.duration.screen_approach))
+        screen_eye = self._hall_point(hall, self.screen_view_eye, sway * self.front_row_sway_left)
+        screen_target = self._hall_point(hall, self.screen_view_target)
+        self.eye = self._lerp(eye, screen_eye, forward)
+        self.target = self._lerp(target, screen_target, forward)
+
+    def _hall_point(self, hall, local, sway=0.0):
+        return (hall.x + (local[0] + sway) * hall.size, hall.y + local[1] * hall.size, hall.z + local[2] * hall.size)
 
     def _rooftop_scene(self):
         local = min(self.elapsed, self.rooftop_end) - self.landing_end
@@ -826,16 +975,16 @@ class WinterDemo(PygameDemo):
         self.santa_ride.carry_santa = False
         top = self._chimney_top()
         seat = (self.santa_ride.x, self.santa_ride.y + self.roof_stand_offset, self.santa_ride.z)
-        if local <= self.jump_duration:
-            hop = self._clamp01(local / self.jump_duration)
+        if local <= self.duration.jump:
+            hop = self._clamp01(local / self.duration.jump)
             spot = self._lerp(seat, top, hop)
             self.rooftop_santa.x = spot[0]
             self.rooftop_santa.y = spot[1] + math.sin(math.pi * hop) * self.jump_arc
             self.rooftop_santa.z = spot[2]
             self.rooftop_santa.size = self.rooftop_santa_size
         else:
-            sink = self._ease(self._clamp01((local - self.jump_duration)
-                                            / (self.rooftop_duration - self.jump_duration)))
+            sink = self._ease(self._clamp01((local - self.duration.jump)
+                                            / (self.duration.rooftop - self.duration.jump)))
             self.rooftop_santa.x, self.rooftop_santa.z = top[0], top[2]
             self.rooftop_santa.y = top[1] - sink * self.rooftop_santa_size * 2.6
             self.rooftop_santa.size = self.rooftop_santa_size
@@ -857,6 +1006,10 @@ class WinterDemo(PygameDemo):
     def _draw(self):
         space_factor = self._space_factor()
         sky = self._lerp(self.sky_color, self.space_color, space_factor)
+        brightness = self._scene_brightness()
+        self._dim_hall_neons(brightness)
+        sky = tuple(channel * brightness for channel in sky)
+        self._set_sun_brightness(brightness)
         glClearColor(sky[0], sky[1], sky[2], 1.0)
         glFogfv(GL_FOG_COLOR, (sky[0], sky[1], sky[2], 1.0))
         if self._gliding():
@@ -906,7 +1059,7 @@ class WinterDemo(PygameDemo):
         if self._gliding():
             self.city.draw()
             if self.roof_house is not None:
-                self.roof_house.draw()
+                self.roof_house.draw(self._furnish_hall)
             if self._on_rooftop():
                 self.rooftop_santa.draw()
             if self._space_factor() > 0.0:
@@ -963,6 +1116,11 @@ class WinterDemo(PygameDemo):
         self.rooftop_santa.update(delta_seconds)
         if self.roof_house is not None:
             self.roof_house.update(delta_seconds)
+        for desk in self.desks:
+            desk.update(delta_seconds)
+        if self.big_screen is not None:
+            self.big_screen.update(delta_seconds)
+        self.hall_santa.update(delta_seconds)
         for planet in self.planets:
             planet.update(delta_seconds)
         self._install_surfaces()

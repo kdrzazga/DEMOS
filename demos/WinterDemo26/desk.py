@@ -9,7 +9,7 @@ from demos.WinterDemo26.sitting_silhouette import SittingSilhouette
 class Desk:
 
     def __init__(self, x, y, z, length=2.4, depth=0.7, height=0.76, facing=0.0,
-                 laptop_count=2, bottle_count=3, with_bench=True, occupancy=0.6, seed=0):
+                 laptop_count=2, bottle_count=3, with_bench=True, occupancy=0.6, size=1.0, seed=0):
         self.x = x
         self.y = y
         self.z = z
@@ -17,6 +17,7 @@ class Desk:
         self.depth = depth
         self.height = height
         self.facing = facing
+        self.size = size
         self.laptop_count = laptop_count
         self.bottle_count = bottle_count
         self.with_bench = with_bench
@@ -275,6 +276,7 @@ class Desk:
         glPushMatrix()
         glTranslatef(self.x, self.y, self.z)
         glRotatef(self.facing, 0.0, 1.0, 0.0)
+        glScalef(self.size, self.size, self.size)
         glCallList(self.display_list)
         for kind, index in shown_items:
             if kind == "laptop":

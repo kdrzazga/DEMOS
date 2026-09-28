@@ -715,13 +715,16 @@ class Hall:
         glEndList()
         return display_list
 
-    def draw(self):
+    def draw(self, furnish=None):
+        """`furnish` is called in the hall's local frame while the neon lights are on."""
         glPushMatrix()
         glTranslatef(self.x, self.y, self.z)
         glRotatef(self.facing, 0.0, 1.0, 0.0)
         glScalef(self.size, self.size, self.size)
         self._switch_on_neon_lights()
         glCallList(self.display_list)
+        if furnish is not None:
+            furnish()
         self._switch_off_neon_lights()
         for neon, _, _, color in self.neon_lights:
             neon.glow(color)

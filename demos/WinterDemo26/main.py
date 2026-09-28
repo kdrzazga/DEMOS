@@ -32,7 +32,8 @@ from lib.urban.city_factory import CityFactory
 from demos.WinterDemo26.hall import Hall
 from demos.WinterDemo26.desk import Desk
 from demos.WinterDemo26.big_screen import BigScreen
-from demos.WinterDemo26.settings import Duration, Delay
+from demos.WinterDemo26.settings import (Duration, Delay, Globe, SkyCloudCover, Glide, CityPlan,
+                                         InteriorCamera, DeskLayout, FrontRowCamera, HallSantaEntrance)
 
 
 class WinterDemo(PygameDemo):
@@ -48,6 +49,14 @@ class WinterDemo(PygameDemo):
         self.elapsed = 0.0
         self.duration = Duration()
         self.delay = Delay()
+        self.globe = Globe()
+        self.sky_cloud_cover = SkyCloudCover()
+        self.glide = Glide()
+        self.city_plan = CityPlan()
+        self.interior_camera = InteriorCamera()
+        self.desk_layout = DeskLayout()
+        self.front_row_camera = FrontRowCamera()
+        self.hall_santa_entrance = HallSantaEntrance()
         self.ascend_top = 40.0
         self.space_color = (0.01, 0.01, 0.04)
         self.nebula_fade = 2.5
@@ -67,47 +76,13 @@ class WinterDemo(PygameDemo):
         self.flight_far = 2000.0
         self.planet_plan = ((850.0, 150.0, 45.0), (1150.0, -60.0, -25.0))
         self.field_of_view = 55.0
-        self.earth_radius = 60.0
-        self.earth_tilt = 23.4
-        self.earth_longitude = 10.0
-        self.earth_latitude = 50.0
-        self.earth_spin_speed = 1.5
         self.dive_blend = 2.0
-        self.sky_cloud_count = 130
-        self.sky_cloud_shell = (61.0, 78.0)
         self.dive_end_radius = 62.0
-        self.sky_cloud_core = 8.0
-        self.sky_cloud_spread = 24.0
-        self.sky_cloud_crowding = 1.6
-        self.sky_cloud_size = (5.0, 9.0)
-        self.sky_cloud_puffs = 9
-        self.sky_cloud_seed = 7
-        self.sky_cloud_haze_share = 0.5
-        self.sky_cloud_opacity = (0.25, 0.70)
         self.slalom_amplitude = 3.5
         self.slalom_period = 3.4
         self.cloud_start_fill = 0.90
         self.cloud_reveal_schedule = ((150.0, 5), (100.0, 13), (80.0, 52),
                                       (78.0, 99), (75.0, 124), (63.0, 130))
-        self.glide_speed = 40.0
-        self.glide_level = 2.5
-        self.glide_drop = 60.0
-        self.glide_altitude = 30.0
-        self.glide_site_ahead = 200.0
-        self.glide_site_aside = -8.0
-        self.glide_look_down = 5.0
-        self.glide_sky_fade = 3.0
-        self.glide_fog_end = 1600.0
-        self.city_ahead = 580.0
-        self.city_aside = 25.0
-        self.city_matrix = 7
-        self.city_sink = 0.0
-        self.city_seed = 5
-        self.interior_eye_setback = 4.0
-        self.interior_eye_height = 2.4
-        self.interior_look_height = 6.0
-        self.interior_sway = 3.0
-        self.interior_sway_speed = 0.5
         self.roof_camera_offset = (11.0, 5.5, 8.0)
         self.landing_turn = 180.0
         self.rooftop_santa_size = 1.6
@@ -116,33 +91,13 @@ class WinterDemo(PygameDemo):
         self.sleigh_ridge_offset = 6.0
         self.hall_lift = 0.35
         self.landing_margin = 0.4
-        self.desk_rows = 3
-        self.desks_per_row = 2
-        self.desk_wall_margin = 1.0
-        self.desk_size = 2.5
-        self.desk_gap = 0.4
-        self.desk_row_spacing = 2.2
-        self.desk_nearest_row_z = 5.0
         self.hall_dark_level = 0.1
         self.hall_dark_neon_level = 0.45
-        self.front_row_eye_setback = 5.0
-        self.front_row_eye_height = 4.2
-        self.front_row_look_ahead = 8.0
-        self.front_row_look_height = 1.9
-        self.front_row_sway_left = 0.2
         self.screen_gap_before_stairs = 0.6
         self.screen_view_eye = (-2.0, 4.8, -2.0)
         self.screen_view_target = (-3.0, 5.0, -14.4)
-        self.hall_santa_size = 1.8
-        self.hall_santa_side_gap = 1.4
-        self.hall_santa_front_offset = 0.8
-        self.hall_santa_foot_depth = 0.165
-        self.hall_santa_drop_height = 14.0
-        self.hall_santa_bounce_height = 0.7
         self.sun_diffuse = (1.0, 0.98, 0.92)
         self.sun_ambient = (0.35, 0.40, 0.48)
-        self.city_flat_size = (176.0, 112.0)
-        self.city_flat_falloff = 100.0
         self.igloo_flat_falloff = 60.0
         self.land_extent = 560.0
         self.land_resolution = 280
@@ -168,7 +123,15 @@ class WinterDemo(PygameDemo):
         self.eye = (0.0, 10.0, 26.0)
         self.target = (0.0, 3.0, 0.0)
         self.thanks_printed = False
+        self.resources = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources")
+        self.wish_parts = (("wishes1.txt", "wuenschen1.txt", "HoHoHo1.mp3", self.duration.first_wishes),
+                           ("wishes2.txt", "wuenschen2.txt", "HoHoHo2.mp3", self.duration.second_wishes))
+        self.wishes_text_size = 79
+        self.music_volume = 1.0
+        self.music_volume_under_wishes = 0.75
+        self.shown_wish = None
         self._start_music()
+        self.wish_sounds = self._load_wish_sounds()
         self._init_gl()
         self._set_approach_angles()
         self.flatty_offset = (160.0, 0.0, 0.0)
@@ -180,8 +143,8 @@ class WinterDemo(PygameDemo):
                          flattenings=((self.flatty_offset[0], self.flatty_offset[2],
                                        self.flatty_land.extent, self.flatty_land.depth_extent,
                                        self.igloo_flat_falloff, 0.0),
-                                      (city_x, city_z, self.city_flat_size[0],
-                                       self.city_flat_size[1], self.city_flat_falloff, None)))
+                                      (city_x, city_z, self.city_plan.flat_size[0],
+                                       self.city_plan.flat_size[1], self.city_plan.flat_falloff, None)))
         self.city_offset = (city_x, 0.0, city_z)
         self.trees = self._create_trees()
         self.snowman = Snowman(1.7, 0.0, self.land.surface_height(1.7, 0.0) - 0.6)
@@ -198,10 +161,10 @@ class WinterDemo(PygameDemo):
         self.santa_ride = self._create_santa_ride()
         self.planets = self._create_planets()
         self.sky_clouds = self._create_sky_clouds()
-        self.city = CityFactory(seed=self.city_seed, name="Karlsruhe").create_big_city(
-            matrix_size=self.city_matrix)
+        self.city = CityFactory(seed=self.city_plan.seed, name="Karlsruhe").create_big_city(
+            matrix_size=self.city_plan.matrix)
         self.rooftop_santa = SantaClaus(0.0, 0.0, 0.0, size=self.rooftop_santa_size, wave=True, seed=9)
-        self.hall_santa = SantaClaus(0.0, 0.0, 0.0, size=self.hall_santa_size, wave=True, seed=9)
+        self.hall_santa = SantaClaus(0.0, 0.0, 0.0, size=self.hall_santa_entrance.size, wave=True, seed=9)
         self.baked_surfaces = {}
         threading.Thread(target=self._bake_surfaces, daemon=True).start()
         self.snow = Snow(220, (-22.0, 22.0, -20.0, 20.0, -1.5, 18.0))
@@ -242,12 +205,25 @@ class WinterDemo(PygameDemo):
             self._finish()
 
     def _start_music(self):
-        music_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources/dzisiaj.mp3")
+        music_path = os.path.join(self.resources, "dzisiaj.mp3")
         try:
             pygame.mixer.init()
             pygame.mixer.music.load(music_path)
-            pygame.mixer.music.set_volume(1.0)
+            pygame.mixer.music.set_volume(self.music_volume)
             pygame.mixer.music.play()
+        except pygame.error:
+            pass
+
+    def _load_wish_sounds(self):
+        try:
+            return tuple(pygame.mixer.Sound(os.path.join(self.resources, sound_file))
+                         for _, _, sound_file, _ in self.wish_parts)
+        except pygame.error:
+            return None
+
+    def _set_music_volume(self, volume):
+        try:
+            pygame.mixer.music.set_volume(volume)
         except pygame.error:
             pass
 
@@ -318,8 +294,8 @@ class WinterDemo(PygameDemo):
     def _city_ground_spot(self):
         course = self._glide_direction()
         right = self._unit(self._cross(course, (0.0, 1.0, 0.0)))
-        along = self.city_ahead - self.glide_site_ahead
-        aside = self.city_aside - self.glide_site_aside
+        along = self.city_plan.ahead - self.glide.site_ahead
+        aside = self.city_plan.aside - self.glide.site_aside
         cell = 2.0 * self.land_extent / self.land_resolution
         local_x = course[0] * along + right[0] * aside + self.flatty_offset[0] / 2.0
         local_z = course[2] * along + right[2] * aside
@@ -365,10 +341,10 @@ class WinterDemo(PygameDemo):
 
     def _dive_angle(self):
         heading = math.radians(self.approach_facing + self.turn_left)
-        tilt = math.radians(self.earth_tilt)
+        tilt = math.radians(self.globe.tilt)
         across = math.sin(heading) * math.sin(tilt)
         along = math.cos(tilt)
-        return math.asin(math.sin(math.radians(self.earth_latitude)) / math.hypot(across, along))             - math.atan2(across, along)
+        return math.asin(math.sin(math.radians(self.globe.latitude)) / math.hypot(across, along))             - math.atan2(across, along)
 
     def _approach_direction(self):
         heading = math.radians(self.approach_facing + self.turn_left)
@@ -376,10 +352,10 @@ class WinterDemo(PygameDemo):
         return (math.sin(heading) * math.cos(dive), -math.sin(dive), math.cos(heading) * math.cos(dive))
 
     def _europe_spin(self):
-        tilt = math.radians(self.earth_tilt)
+        tilt = math.radians(self.globe.tilt)
         toward = tuple(-axis for axis in self._approach_direction())
         return math.degrees(math.atan2(toward[0] * math.cos(tilt) + toward[1] * math.sin(tilt),
-                                       toward[2])) - self.earth_longitude
+                                       toward[2])) - self.globe.longitude
 
     def _cruise_end(self):
         return self.planets_end - self.duration.approach
@@ -397,10 +373,10 @@ class WinterDemo(PygameDemo):
         return tuple(base[axis] + direction[axis] * span for axis in range(3))
 
     def _create_planets(self):
-        self.earth = Earth(0.0, 0.0, 0.0, radius=self.earth_radius, tilt=self.earth_tilt,
-                           spin_speed=self.earth_spin_speed, moon_orbit_scale=0.04)
+        self.earth = Earth(0.0, 0.0, 0.0, radius=self.globe.radius, tilt=self.globe.tilt,
+                           spin_speed=self.globe.spin_speed, moon_orbit_scale=0.04)
         self.earth.x, self.earth.y, self.earth.z = self._earth_center()
-        self.earth.spin = self._europe_spin() - self.earth_spin_speed * self.planets_end
+        self.earth.spin = self._europe_spin() - self.globe.spin_speed * self.planets_end
         self.saturn = Saturn(0.0, 0.0, 0.0, radius=26.0, seed=11, defer_texture=True)
         self.mars = Mars(0.0, 0.0, 0.0, radius=12.0, seed=17, defer_texture=True)
         bodies = [self.saturn, self.mars]
@@ -482,8 +458,8 @@ class WinterDemo(PygameDemo):
         if not self._in_flight():
             return 0.0
         gap = self._earth_gap()
-        near = self.earth_radius / math.sin(self.cloud_start_fill * math.radians(self.field_of_view / 2.0))
-        full = self.earth_radius / math.sin(self._half_width())
+        near = self.globe.radius / math.sin(self.cloud_start_fill * math.radians(self.field_of_view / 2.0))
+        full = self.globe.radius / math.sin(self._half_width())
         return self._ease(self._clamp01((near - gap) / (near - full)))
 
     def _create_sky_clouds(self):
@@ -491,22 +467,22 @@ class WinterDemo(PygameDemo):
         right = self._unit(self._cross(axis, (0.0, 1.0, 0.0)))
         lift = self._cross(right, axis)
         centre = self._earth_center()
-        generator = random.Random(self.sky_cloud_seed)
+        generator = random.Random(self.sky_cloud_cover.seed)
         clouds = []
-        for index in range(self.sky_cloud_count):
-            aside = self.sky_cloud_spread * generator.random() ** self.sky_cloud_crowding
+        for index in range(self.sky_cloud_cover.count):
+            aside = self.sky_cloud_cover.spread * generator.random() ** self.sky_cloud_cover.crowding
             swing = generator.uniform(0.0, math.tau)
-            reach = generator.uniform(*self.sky_cloud_shell)
+            reach = generator.uniform(*self.sky_cloud_cover.shell)
             spot = tuple(centre[axis_index] + axis[axis_index] * reach
                          + (math.cos(swing) * right[axis_index]
                             + math.sin(swing) * lift[axis_index]) * aside
                          for axis_index in range(3))
-            hazy = (aside > self.sky_cloud_core
-                    and generator.random() < self.sky_cloud_haze_share)
-            opacity = generator.uniform(*self.sky_cloud_opacity) if hazy else 1.0
+            hazy = (aside > self.sky_cloud_cover.core
+                    and generator.random() < self.sky_cloud_cover.haze_share)
+            opacity = generator.uniform(*self.sky_cloud_cover.opacity) if hazy else 1.0
             clouds.append((reach, Cloud(spot[0], spot[1], spot[2],
-                                        size=generator.uniform(*self.sky_cloud_size),
-                                        puff_count=self.sky_cloud_puffs, seed=index + 11,
+                                        size=generator.uniform(*self.sky_cloud_cover.size),
+                                        puff_count=self.sky_cloud_cover.puffs, seed=index + 11,
                                         opacity=opacity)))
         clouds.sort(key=lambda entry: entry[0])
         layered = [(rank, entry[1]) for rank, entry in enumerate(clouds)]
@@ -567,10 +543,10 @@ class WinterDemo(PygameDemo):
         span = self._glide_span()
         origin = self._glide_origin()
         course = self._glide_direction()
-        drop = self.glide_drop * self._ease(self._clamp01(span / self.glide_level))
-        return (origin[0] + course[0] * span * self.glide_speed,
+        drop = self.glide.drop * self._ease(self._clamp01(span / self.glide.level))
+        return (origin[0] + course[0] * span * self.glide.speed,
                 origin[1] - drop,
-                origin[2] + course[2] * span * self.glide_speed)
+                origin[2] + course[2] * span * self.glide.speed)
 
     def _glide_view(self):
         rider = self._glide_position()
@@ -580,7 +556,7 @@ class WinterDemo(PygameDemo):
         eye = tuple(rider[axis] - course[axis] * back + (0.0, 1.0, 0.0)[axis] * lift
                     + right[axis] * side for axis in range(3))
         target = tuple(rider[axis] + course[axis] * self.shoulder_lead for axis in range(3))
-        return eye, (target[0], target[1] - self.glide_look_down, target[2])
+        return eye, (target[0], target[1] - self.glide.look_down, target[2])
 
     def _winter_shift(self):
         if not self._gliding():
@@ -589,20 +565,20 @@ class WinterDemo(PygameDemo):
         course = self._glide_direction()
         right = self._unit(self._cross(course, (0.0, 1.0, 0.0)))
         middle = self.flatty_offset[0] / 2.0
-        return (origin[0] + course[0] * self.glide_site_ahead + right[0] * self.glide_site_aside - middle,
-                origin[1] - self.glide_drop - self.glide_altitude,
-                origin[2] + course[2] * self.glide_site_ahead + right[2] * self.glide_site_aside)
+        return (origin[0] + course[0] * self.glide.site_ahead + right[0] * self.glide.site_aside - middle,
+                origin[1] - self.glide.drop - self.glide.altitude,
+                origin[2] + course[2] * self.glide.site_ahead + right[2] * self.glide.site_aside)
 
     def _city_site(self):
         shift = self._winter_shift()
         ground = self.land.surface_height(self.city_offset[0], self.city_offset[2])
         return (shift[0] + self.city_offset[0],
-                shift[1] + ground - self.city_sink,
+                shift[1] + ground - self.city_plan.sink,
                 shift[2] + self.city_offset[2])
 
     def _sky_glide_scene(self):
         course = self._glide_direction()
-        settle = self._ease(self._clamp01(self._glide_span() / self.glide_level))
+        settle = self._ease(self._clamp01(self._glide_span() / self.glide.level))
         self.santa_ride.x, self.santa_ride.y, self.santa_ride.z = self._glide_position()
         self.city.x, self.city.y, self.city.z = self._city_site()
         self._roof_house()
@@ -636,7 +612,7 @@ class WinterDemo(PygameDemo):
         centre = (self.earth.x, self.earth.y, self.earth.z)
         rider = (self.santa_ride.x, self.santa_ride.y, self.santa_ride.z)
         gap = math.sqrt(sum((rider[axis] - centre[axis]) ** 2 for axis in range(3)))
-        return gap <= self.sky_cloud_shell[1]
+        return gap <= self.sky_cloud_cover.shell[1]
 
     def _in_flight(self):
         return self.elapsed >= self.ride_start
@@ -647,7 +623,7 @@ class WinterDemo(PygameDemo):
 
     def _space_factor(self):
         if self._gliding():
-            return 1.0 - self._ease(self._clamp01(self._glide_span() / self.glide_sky_fade))
+            return 1.0 - self._ease(self._clamp01(self._glide_span() / self.glide.sky_fade))
         if self._in_flight():
             return 1.0
         return self._ease(self._clamp01((self.eye[1] - 28.0) / 24.0))
@@ -760,13 +736,13 @@ class WinterDemo(PygameDemo):
         """Rows of desks facing the stage, in the hall's local frame, each row starting at the left wall.
         Index 0 is the row nearest the entrance, matching the build order of desk_test."""
         desks = []
-        for row in range(self.desk_rows):
-            row_z = self.desk_nearest_row_z - row * self.desk_row_spacing * self.desk_size
-            for column in range(self.desks_per_row):
+        for row in range(self.desk_layout.rows):
+            row_z = self.desk_layout.nearest_row_z - row * self.desk_layout.row_spacing * self.desk_layout.size
+            for column in range(self.desk_layout.per_row):
                 desk = Desk(0.0, 0.0, row_z, laptop_count=2 + (row + column) % 2,
-                            size=self.desk_size, seed=row * 10 + column)
-                desk_span = (desk.length + self.desk_gap) * self.desk_size
-                desk.x = -hall.wall_x + self.desk_wall_margin + desk.length * self.desk_size / 2.0 + column * desk_span
+                            size=self.desk_layout.size, seed=row * 10 + column)
+                desk_span = (desk.length + self.desk_layout.gap) * self.desk_layout.size
+                desk.x = -hall.wall_x + self.desk_layout.wall_margin + desk.length * self.desk_layout.size / 2.0 + column * desk_span
                 desks.append(desk)
         return desks
 
@@ -816,29 +792,63 @@ class WinterDemo(PygameDemo):
     def _screen_approach_start(self):
         return self._front_row_approach_start() + self.duration.front_row_approach + self.duration.front_row_hold
 
+    def _wishes_start(self):
+        return self._screen_approach_start() + self.duration.screen_approach
+
     def _interior_end(self):
-        """The hall scene lasts until the camera reaches the screen view and Santa has had time to wave."""
+        """The hall scene lasts until the camera reaches the screen view and Santa has spoken all wishes."""
         if not self.desks:
             return math.inf
-        return self._screen_approach_start() + self.duration.screen_approach + self.duration.hall_final_hold
+        return self._wishes_start() + sum(duration for _, _, _, duration in self.wish_parts)
+
+    def _current_wish(self):
+        """Index into wish_parts of the wishes shown now, or None before and after them."""
+        moment = self.elapsed - self._wishes_start()
+        if moment < 0.0:
+            return None
+        for index, (_, _, _, duration) in enumerate(self.wish_parts):
+            if moment < duration:
+                return index
+            moment -= duration
+        return None
+
+    def _show_wishes(self):
+        """Puts the current bilingual wishes on the big screen and lets Santa speak them over a quieter song."""
+        if not self.desks:
+            return
+        wish_index = self._current_wish()
+        if wish_index == self.shown_wish:
+            return
+        self.shown_wish = wish_index
+        if wish_index is None:
+            self.big_screen.clear_text()
+            self._set_music_volume(self.music_volume)
+            return
+        english_file, german_file, _, _ = self.wish_parts[wish_index]
+        self.big_screen.display_2_languages_text(os.path.join(self.resources, english_file),
+                                                 os.path.join(self.resources, german_file),
+                                                 size=self.wishes_text_size)
+        self._set_music_volume(self.music_volume_under_wishes)
+        if self.wish_sounds is not None:
+            self.wish_sounds[wish_index].play()
 
     def _hall_santa_fall_start(self):
         return self._screen_approach_start() + self.delay.hall_santa_fall
 
     def _hall_santa_spot(self):
         screen = self.big_screen
-        santa_x = screen.x - screen.width / 2.0 - screen.frame_border - self.hall_santa_side_gap
-        return santa_x, screen.z + self.hall_santa_front_offset
+        santa_x = screen.x - screen.width / 2.0 - screen.frame_border - self.hall_santa_entrance.side_gap
+        return santa_x, screen.z + self.hall_santa_entrance.front_offset
 
     def _hall_santa_height(self, fall_time):
         """Falls from under the ceiling with gravity-like easing, then one small bounce on the floor."""
-        floor = self.hall_santa_foot_depth * self.hall_santa_size
+        floor = self.hall_santa_entrance.foot_depth * self.hall_santa_entrance.size
         if fall_time < self.duration.hall_santa_fall:
             drop = (fall_time / self.duration.hall_santa_fall) ** 2
-            return self.hall_santa_drop_height - (self.hall_santa_drop_height - floor) * drop
+            return self.hall_santa_entrance.drop_height - (self.hall_santa_entrance.drop_height - floor) * drop
         bounce = (fall_time - self.duration.hall_santa_fall) / self.duration.hall_santa_bounce
         if bounce < 1.0:
-            return floor + math.sin(math.pi * bounce) * self.hall_santa_bounce_height
+            return floor + math.sin(math.pi * bounce) * self.hall_santa_entrance.bounce_height
         return floor
 
     def _draw_hall_santa(self):
@@ -934,34 +944,35 @@ class WinterDemo(PygameDemo):
 
     def _front_row_view(self, hall, sway):
         """Just behind the benches of the row nearest the entrance, looking over the sitters' shoulders."""
-        front_row = self.desks[:self.desks_per_row]
+        front_row = self.desks[:self.desk_layout.per_row]
         row_x = sum(desk.x for desk in front_row) / len(front_row)
         row_z = front_row[0].z
-        eye = (hall.x + (row_x + sway) * hall.size, hall.y + self.front_row_eye_height * hall.size,
-               hall.z + (row_z + self.front_row_eye_setback) * hall.size)
-        target = (hall.x + row_x * hall.size, hall.y + self.front_row_look_height * hall.size,
-                  hall.z + (row_z - self.front_row_look_ahead) * hall.size)
+        eye = (hall.x + (row_x + sway) * hall.size, hall.y + self.front_row_camera.eye_height * hall.size,
+               hall.z + (row_z + self.front_row_camera.eye_setback) * hall.size)
+        target = (hall.x + row_x * hall.size, hall.y + self.front_row_camera.look_height * hall.size,
+                  hall.z + (row_z - self.front_row_camera.look_ahead) * hall.size)
         return eye, target
 
     def _hall_interior_scene(self):
         hall = self._roof_house()
         moment = self.elapsed - self.rooftop_end
-        sway = math.sin(moment * self.interior_sway_speed) * self.interior_sway
+        sway = math.sin(moment * self.interior_camera.sway_speed) * self.interior_camera.sway
         half_length = hall.length / 2.0 * hall.size
-        entrance_eye = (hall.x + sway, hall.y + self.interior_eye_height,
-                        hall.z + half_length - self.interior_eye_setback)
-        entrance_target = (hall.x + sway * 0.3, hall.y + self.interior_look_height, hall.z - half_length)
+        entrance_eye = (hall.x + sway, hall.y + self.interior_camera.eye_height,
+                        hall.z + half_length - self.interior_camera.eye_setback)
+        entrance_target = (hall.x + sway * 0.3, hall.y + self.interior_camera.look_height, hall.z - half_length)
         approach = self._ease(self._clamp01((self.elapsed - self._front_row_approach_start())
                                             / self.duration.front_row_approach))
-        row_eye, row_target = self._front_row_view(hall, sway * self.front_row_sway_left)
+        row_eye, row_target = self._front_row_view(hall, sway * self.front_row_camera.sway_left)
         eye = self._lerp(entrance_eye, row_eye, approach)
         target = self._lerp(entrance_target, row_target, approach)
         forward = self._ease(self._clamp01((self.elapsed - self._screen_approach_start())
                                            / self.duration.screen_approach))
-        screen_eye = self._hall_point(hall, self.screen_view_eye, sway * self.front_row_sway_left)
+        screen_eye = self._hall_point(hall, self.screen_view_eye, sway * self.front_row_camera.sway_left)
         screen_target = self._hall_point(hall, self.screen_view_target)
         self.eye = self._lerp(eye, screen_eye, forward)
         self.target = self._lerp(target, screen_target, forward)
+        self._show_wishes()
 
     def _hall_point(self, hall, local, sway=0.0):
         return (hall.x + (local[0] + sway) * hall.size, hall.y + local[1] * hall.size, hall.z + local[2] * hall.size)
@@ -1013,7 +1024,7 @@ class WinterDemo(PygameDemo):
         glClearColor(sky[0], sky[1], sky[2], 1.0)
         glFogfv(GL_FOG_COLOR, (sky[0], sky[1], sky[2], 1.0))
         if self._gliding():
-            glFogf(GL_FOG_END, self.glide_fog_end)
+            glFogf(GL_FOG_END, self.glide.fog_end)
             reach = self.flight_far
         elif self._in_flight():
             glFogf(GL_FOG_END, self.flight_fog_end)
@@ -1094,12 +1105,14 @@ class WinterDemo(PygameDemo):
     def on_pause(self):
         try:
             pygame.mixer.music.pause()
+            pygame.mixer.pause()
         except pygame.error:
             pass
 
     def on_start(self):
         try:
             pygame.mixer.music.unpause()
+            pygame.mixer.unpause()
         except pygame.error:
             pass
 

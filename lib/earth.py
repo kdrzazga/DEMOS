@@ -6,7 +6,7 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 
 from lib.particles import Texture2D
-from lib.moon import Moon
+from lib.moon import EarthMoon
 
 
 class Earth:
@@ -51,7 +51,7 @@ class Earth:
             size = (moon_km / self.earth_radius_km) * self.radius * self.moon_size_boost
             orbit = (orbit_km / self.earth_radius_km) * self.radius * self.moon_orbit_scale
             speed = (360.0 / period_days) * self.moon_time_scale
-            moons.append(Moon(name, size, orbit, speed, inclination=inclination, color=color, phase=phase))
+            moons.append(EarthMoon(name, size, orbit, speed, inclination=inclination, color=color, phase=phase))
         return moons
 
     def _load_surface(self):

@@ -914,6 +914,11 @@ class WinterDemo(PygameDemo):
         return (top[0], hall.y + (hall.ridge + hall.roof_thickness) * hall.size + self.roof_stand_offset,
                 top[2] + self.sleigh_ridge_offset)
 
+    def _rooftop_seat(self):
+        """Where Santa stands up from the landed sleigh before jumping to the chimney."""
+        landing_spot = self._landing_spot()
+        return landing_spot[0], landing_spot[1] + self.roof_stand_offset, landing_spot[2]
+
     def _roof_view(self, turn=0.0):
         top = self._chimney_top()
         course = self._glide_direction()
@@ -935,9 +940,9 @@ class WinterDemo(PygameDemo):
         self.santa_ride.facing = math.degrees(math.atan2(course[0], course[2]))
         self.santa_ride.pitch = 0.0
         glide_eye, glide_target = self._glide_view()
-        roof_eye, roof_target = self._roof_view(settle * self.landing_turn)
+        roof_eye = self._roof_view(settle * self.landing_turn)[0]
         self.eye = self._lerp(glide_eye, roof_eye, settle)
-        self.target = self._lerp(glide_target, roof_target, settle)
+        self.target = self._lerp(glide_target, self._rooftop_seat(), settle)
 
     def _on_rooftop(self):
         return self.landing_end < self.elapsed <= self.rooftop_end
@@ -985,7 +990,7 @@ class WinterDemo(PygameDemo):
         self.santa_ride.pitch = 0.0
         self.santa_ride.carry_santa = False
         top = self._chimney_top()
-        seat = (self.santa_ride.x, self.santa_ride.y + self.roof_stand_offset, self.santa_ride.z)
+        seat = self._rooftop_seat()
         if local <= self.duration.jump:
             hop = self._clamp01(local / self.duration.jump)
             spot = self._lerp(seat, top, hop)

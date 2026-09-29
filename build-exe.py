@@ -3,7 +3,7 @@ from datetime import datetime
 build_start = datetime.now()
 
 root = "D:/code/DEMOS/"
-icon_path = root + "icons/" + "p3dscii-ico.png"   # .png or .ico both work
+icon_path = root + "icons/" + "WinterDemo26.png"   # .png or .ico both work
 exe_name = "WinterDemo26" # "P3DSCII - PETSCII 3D DEMO"   # -> dist/<exe_name>.exe
 excluded_dirs = (root + "demos/petscii",root + "demos/demo1", root + "demos/demo3", root + "demos/pc45")
 splash_image = root + "screens/splash_winter.png"

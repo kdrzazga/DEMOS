@@ -27,9 +27,9 @@ class ScreenWindingAnim:
 
         market_image = self._load_image("petscii-intro.txt", background_color=0)
         bajtek_image = self._load_image("petscii-creators.txt", background_color=1)
-        top_secret_image = self._load_image("mosaic.txt", background_color=0)
-        secret_service_image = self._load_image("logo-secret-service.txt", background_color=2)
-        secret_service_description = self._load_image("secret-service.txt", background_color=2)
+        mosaic_image = self._load_image("mosaic.txt", background_color=0)
+        winter_image = self._load_image("winter.txt", background_color=1)
+        misc = self._load_image("misc.txt", background_color=2)
         kna_image = self._load_image("kna.txt", background_color=0)
         self.font = market_image.font(char_size)
         self.cell_width, self.cell_height = self.font.size("W")
@@ -42,13 +42,13 @@ class ScreenWindingAnim:
         self.walls.add(self._build_text_wall("karate.txt", fill_speed, background_color=0, font_color=self.text_color), market_pause)
         self.walls.add(self._build_petscii_wall(bajtek_image), 0.3)
         self.walls.add(self._build_text_wall("bajtek.txt", fill_speed, background_color=1, font_color=0), 3.0)
-        self.walls.add(self._build_petscii_wall(top_secret_image), 6)
-        self.walls.add(self._build_text_wall("top-secret.txt", fill_speed, background_color=15, font_color=4), 3.0)
-        self.walls.add(self._build_text_wall("top-secret2.txt", fill_speed, background_color=15, font_color=0), 2.5)
-        self.walls.add(self._build_text_wall("top-secret3.txt", fill_speed, background_color=15, font_color=6), 2.0)
+        self.walls.add(self._build_petscii_wall(mosaic_image), 6)
+        self.walls.add(self._build_text_wall("petscii-style1.txt", fill_speed, background_color=0, font_color=7), 3.0)
+        self.walls.add(self._build_text_wall("petscii-style2.txt", fill_speed, background_color=0, font_color=4), 2.5)
+        self.walls.add(self._build_text_wall("petscii-style3.txt", fill_speed, background_color=0, font_color=14), 2.0)
         self.walls.add(self._build_text_wall("karate.txt", fill_speed, background_color=15, font_color=1),4)
-        self.walls.add(self._build_petscii_wall(secret_service_image), 0.5)
-        self.walls.add(self._build_petscii_wall(secret_service_description), 6)
+        self.walls.add(self._build_petscii_wall(winter_image), 0.5)
+        self.walls.add(self._build_petscii_wall(misc), 6)
         self.walls.add(self._build_text_wall("karate.txt", fill_speed, background_color=3, font_color=1),14)
         self.walls.add(self._build_petscii_wall(kna_image), 0.1)
 
@@ -77,6 +77,8 @@ class ScreenWindingAnim:
 
     def _build_text_wall(self, name, speed, background_color, font_color):
         text = self._load_text(os.path.join(LARGE_TEXT, name))
+        if isinstance(font_color, int):
+            font_color = Constants.PALETTE[font_color]
         return PygameTextWall(build_lines(text, Constants.COLUMNS), surface=self.surface,
                               font=self.font, antialias=False, color=font_color,
                               background_color=background_color,

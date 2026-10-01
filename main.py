@@ -71,7 +71,7 @@ DEMOS = {
     "winter": winter_demo,
 }
 
-DEFAULT_DEMO = "winter"
+DEFAULT_DEMO = "p3dscii"
 
 
 def close_boot_splash():

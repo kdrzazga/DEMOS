@@ -29,7 +29,7 @@ class ScreenWindingAnim:
         bajtek_image = self._load_image("petscii-creators.txt", background_color=1)
         mosaic_image = self._load_image("mosaic.txt", background_color=0)
         winter_image = self._load_image("winter.txt", background_color=1)
-        secret_service_description = self._load_image("secret-service.txt", background_color=2)
+        misc = self._load_image("misc.txt", background_color=2)
         kna_image = self._load_image("kna.txt", background_color=0)
         self.font = market_image.font(char_size)
         self.cell_width, self.cell_height = self.font.size("W")
@@ -48,7 +48,7 @@ class ScreenWindingAnim:
         self.walls.add(self._build_text_wall("petscii-style3.txt", fill_speed, background_color=0, font_color=14), 2.0)
         self.walls.add(self._build_text_wall("karate.txt", fill_speed, background_color=15, font_color=1),4)
         self.walls.add(self._build_petscii_wall(winter_image), 0.5)
-        self.walls.add(self._build_petscii_wall(secret_service_description), 6)
+        self.walls.add(self._build_petscii_wall(misc), 6)
         self.walls.add(self._build_text_wall("karate.txt", fill_speed, background_color=3, font_color=1),14)
         self.walls.add(self._build_petscii_wall(kna_image), 0.1)
 

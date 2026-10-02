@@ -28,7 +28,7 @@ from demos.petscii.files.c64_screen import C64Screen
 from demos.petscii.files.petscii.dj_space_thunder import DjSpaceThunder
 from demos.petscii.files.globals import Constants
 from demos.petscii.files.petscii.bruce_lee import BruceLee
-from demos.petscii.files.petscii.bruce_lee_stage1 import BruceLeeStage1, BruceLeeStage2
+from demos.petscii.files.petscii.bruce_lee_stages import BruceLeeStage1, BruceLeeStage2, BruceLeeStage3
 from demos.petscii.files.petscii.bruce_sprite import BruceSprite
 from demos.petscii.files.petscii.yamo_petscii import PetsciiYamo
 from demos.petscii.files.petscii.kna_logo import KnaLogo
@@ -149,7 +149,7 @@ class PetsciiDemo(PygameDemo):
         # will later become BruceLeeStage2 / BruceLeeStage3
         self.bruce_stage1 = BruceLeeStage1(PetsciiDemo.BRUCE_STAGE_CHAR_SIZE)
         self.bruce_stage2 = BruceLeeStage2(PetsciiDemo.BRUCE_STAGE_CHAR_SIZE)
-        self.bruce_stage3 = BruceLeeStage1(PetsciiDemo.BRUCE_STAGE_CHAR_SIZE)
+        self.bruce_stage3 = BruceLeeStage3(PetsciiDemo.BRUCE_STAGE_CHAR_SIZE)
 
         # a jump-pose Bruce sprite that falls into the central screen once the
         # right-panel stage has finished drawing; same char size as the stages

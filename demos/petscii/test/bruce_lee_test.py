@@ -39,7 +39,7 @@ from OpenGL.GLU import gluPerspective
 _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 sys.path.insert(0, _ROOT)
 
-from demos.petscii.files.petscii.bruce_lee_stage1 import BruceLeeStage1
+from demos.petscii.files.petscii.bruce_lee_stages import BruceLeeStage1
 from demos.petscii.files.petscii.bruce_lee import BruceLee
 
 CHAR_SIZE = 24

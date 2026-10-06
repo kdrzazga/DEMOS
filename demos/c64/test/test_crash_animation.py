@@ -30,7 +30,10 @@ class CrashAnimationTest(C64Viewer):
 
 	def setup(self):
 		super().setup()
-		self.animation = CrashAnimation(self.computer, self.width / self.height, self.fov, fps=self.fps)
+		self.animation = self._make_animation()
+
+	def _make_animation(self):
+		return CrashAnimation(self.computer, self.width / self.height, self.fov, fps=self.fps)
 
 	def handle_event(self, event):
 		if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:

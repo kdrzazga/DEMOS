@@ -158,16 +158,19 @@ class CrashAnimation:
 
 
 class CaptionKey:
-	"""A key gliding along a cubic Bezier curve to its place in the caption.
+	"""A key gliding along a chain of cubic Bezier curves to its place in the caption.
+
+	segments - ((start, control_start, control_end, end), ...), each one starting
+	           where the previous ended; every segment takes an equal share of the
+	           flight and eases in and out, so the key slows down at each joint.
 
 	It spins a whole number of turns on the way, so it lands in its original
 	orientation: face-on to the viewer.
 	"""
 
-	def __init__(self, key, start, control_start, control_end, target, delay, duration,
-	             spin_axis, spin_turns, hidden_before_start=False):
+	def __init__(self, key, segments, delay, duration, spin_axis, spin_turns, hidden_before_start=False):
 		self.key = key
-		self.path = (start, control_start, control_end, target)
+		self.segments = segments
 		self.delay = delay
 		self.duration = duration
 		self.spin_axis = spin_axis
@@ -186,17 +189,24 @@ class CaptionKey:
 	def update(self, seconds, gravity=None):
 		self.time += seconds
 
-	def _position(self, t):
+	@staticmethod
+	def _ease(t):
+		return t * t * (3 - 2 * t)
+
+	def _position(self, progress):
+		along = progress * len(self.segments)
+		index = min(int(along), len(self.segments) - 1)
+		t = self._ease(along - index)
 		weights = ((1 - t) ** 3, 3 * (1 - t) ** 2 * t, 3 * (1 - t) * t ** 2, t ** 3)
-		return tuple(sum(weight * point[axis] for weight, point in zip(weights, self.path)) for axis in range(3))
+		return tuple(sum(weight * point[axis] for weight, point in zip(weights, self.segments[index]))
+		             for axis in range(3))
 
 	def draw(self, slope_degrees):
 		if self.hidden_before_start and self.time < self.delay:
 			return
-		progress = self.progress
-		eased = progress * progress * (3 - 2 * progress)
+		eased = self._ease(self.progress)
 		glPushMatrix()
-		glTranslatef(*self._position(eased))
+		glTranslatef(*self._position(self.progress))
 		glRotatef(self.spin_turns * 360.0 * eased, *self.spin_axis)
 		glRotatef(slope_degrees, 1.0, 0.0, 0.0)
 		self.key.draw()
@@ -207,15 +217,16 @@ class CrashAnimationText(CrashAnimation):
 	"""The crash, but the keys spelling ``text`` escape and form a caption.
 
 	Keys whose legend (or shifted symbol) matches a character of the text dive
-	away from the viewer along curved paths and line up as the caption, parallel
-	to the screen; every other key falls as usual. A key exists once, so a
+	far away from the viewer along curved paths, turn, come back and line up as
+	the caption, parallel to the screen; every other key falls as usual. A key exists once, so a
 	repeated character leaves a gap; a second after the caption has formed,
 	copies of the missing keys sweep in from the right edge and fill the gaps.
 	Spaces and characters with no key stay empty.
 	"""
 
 	def __init__(self, computer, aspect, fov, text, caption_min_depth=15.0, caption_spacing=1.1,
-	             caption_flight_seconds=1.8, caption_stagger_seconds=0.4, gap_wait_seconds=1.0,
+	             caption_flight_seconds=4.0, caption_stagger_seconds=0.6, caption_far_depth=90.0,
+	             caption_far_spread=25.0, gap_wait_seconds=1.0,
 	             fill_flight_seconds=1.2, fill_stagger_seconds=0.3, caption_hold_seconds=2.0,
 	             caption_spin_turns=(1, 2), **animation_settings):
 		self.text = text.upper()
@@ -223,6 +234,8 @@ class CrashAnimationText(CrashAnimation):
 		self.caption_spacing = caption_spacing
 		self.caption_flight_seconds = caption_flight_seconds
 		self.caption_stagger_seconds = caption_stagger_seconds
+		self.caption_far_depth = caption_far_depth
+		self.caption_far_spread = caption_far_spread
 		self.gap_wait_seconds = gap_wait_seconds
 		self.fill_flight_seconds = fill_flight_seconds
 		self.fill_stagger_seconds = fill_stagger_seconds
@@ -285,11 +298,23 @@ class CrashAnimationText(CrashAnimation):
 			if slot is None:
 				continue
 			start = flying_key.position
+			far_point = self._offset(slot, rng.uniform(-self.caption_far_spread, self.caption_far_spread),
+			                         rng.uniform(-self.caption_far_spread, self.caption_far_spread) / 2,
+			                         -self.caption_far_depth * rng.uniform(0.8, 1.2))
+			sweep = (rng.choice((-1.0, 1.0)) * rng.uniform(15.0, 25.0), rng.uniform(-10.0, 10.0), rng.uniform(-5.0, 5.0))
+			outward = (
+				start,
+				self._offset(start, rng.uniform(-10.0, 10.0), rng.uniform(-6.0, 10.0), rng.uniform(6.0, 12.0)),
+				self._offset(far_point, *sweep),
+				far_point)
+			homeward = (
+				far_point,
+				self._offset(far_point, *(-component for component in sweep)),
+				self._offset(slot, rng.uniform(-12.0, 12.0), rng.uniform(-8.0, 8.0), -rng.uniform(4.0, 10.0)),
+				slot)
 			caption_key = CaptionKey(
-				flying_key.key, start,
-				self._offset(start, rng.uniform(-10.0, 10.0), rng.uniform(-6.0, 10.0), rng.uniform(8.0, 15.0)),
-				self._offset(slot, rng.uniform(-12.0, 12.0), rng.uniform(-8.0, 8.0), rng.uniform(2.0, 6.0)),
-				slot, rng.uniform(0.0, self.caption_stagger_seconds), self.caption_flight_seconds,
+				flying_key.key, (outward, homeward),
+				rng.uniform(0.0, self.caption_stagger_seconds), self.caption_flight_seconds,
 				self._random_axis(rng), rng.randint(*self.caption_spin_turns))
 			flying[index] = caption_key
 			self.caption_keys.append(caption_key)
@@ -298,10 +323,11 @@ class CrashAnimationText(CrashAnimation):
 		for order, (key, slot) in enumerate(missing_slots):
 			start = self._offset(self._offset(slot, right=centre[0] - slot[0]), right_edge + 3.0, rng.uniform(-4.0, 4.0))
 			self.copy_keys.append(CaptionKey(
-				key, start,
-				self._offset(start, -rng.uniform(5.0, 10.0), rng.uniform(-6.0, 6.0)),
-				self._offset(slot, rng.uniform(4.0, 8.0), rng.uniform(-4.0, 4.0)),
-				slot, order * self.fill_stagger_seconds, self.fill_flight_seconds,
+				key, ((start,
+				       self._offset(start, -rng.uniform(5.0, 10.0), rng.uniform(-6.0, 6.0)),
+				       self._offset(slot, rng.uniform(4.0, 8.0), rng.uniform(-4.0, 4.0)),
+				       slot),),
+				order * self.fill_stagger_seconds, self.fill_flight_seconds,
 				self._random_axis(rng), rng.randint(*self.caption_spin_turns), hidden_before_start=True))
 		return flying
 

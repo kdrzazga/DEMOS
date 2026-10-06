@@ -26,9 +26,8 @@ class CrashAnimationTextTest(CrashAnimationTest):
 		self.text = text
 		super().__init__(windowed=windowed, triggered=triggered)
 
-	def setup(self):
-		super().setup()
-		self.animation = CrashAnimationText(self.computer, self.width / self.height, self.fov, self.text, fps=self.fps)
+	def _make_animation(self):
+		return CrashAnimationText(self.computer, self.width / self.height, self.fov, self.text, fps=self.fps)
 
 
 if __name__ == "__main__":

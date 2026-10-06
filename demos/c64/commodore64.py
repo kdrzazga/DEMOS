@@ -401,8 +401,20 @@ class Commodore64:
 		for key in self.keys:
 			key.update()
 
-	def draw(self):
+	def key_world_positions(self):
+		"""(key, (x, y, z)) for every key's footprint centre in world coordinates."""
+		slope_front_z, slope_front_y = self.slope_origin
+		slope = math.radians(self.slope_degrees)
+		return tuple((key, (x,
+		                    slope_front_y + y * math.cos(slope) - z * math.sin(slope),
+		                    slope_front_z + y * math.sin(slope) + z * math.cos(slope)))
+		             for key, (x, y, z) in self._key_positions)
+
+	def draw_case(self):
 		glCallList(self._display_list)
+
+	def draw(self):
+		self.draw_case()
 		glPushMatrix()
 		self._enter_keyboard_frame()
 		for key, (x, y, z) in self._key_positions:

@@ -22,7 +22,7 @@ class C64Viewer(PygameDemo):
 
 	def __init__(self, windowed=False, triggered=False):
 		self.fov = 40.0
-		self.background = (0.21, 0.16, 0.47)
+		self.background = (0.0, 0.0, 0.0)
 		self.light_direction = (-0.35, 1.0, 0.7, 0.0)
 		self.yaw = -20.0
 		self.pitch = 32.0

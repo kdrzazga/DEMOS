@@ -8,21 +8,22 @@ Run from the DEMOS project root:
 
 import pygame
 from OpenGL.GL import *
-from OpenGL.GLU import gluPerspective
 
 from lib.pygame_demo import PygameDemo
 
 try:
 	from commodore64 import Commodore64
+	from scene import setup_scene
 except ModuleNotFoundError:
 	from demos.c64.commodore64 import Commodore64
+	from demos.c64.scene import setup_scene
 
 
 class C64Viewer(PygameDemo):
 
 	def __init__(self, windowed=False, triggered=False):
 		self.fov = 40.0
-		self.background = (0.21, 0.16, 0.47)
+		self.background = (0.0, 0.0, 0.0)
 		self.light_direction = (-0.35, 1.0, 0.7, 0.0)
 		self.yaw = -20.0
 		self.pitch = 32.0
@@ -36,27 +37,7 @@ class C64Viewer(PygameDemo):
 
 	def setup(self):
 		pygame.mouse.set_visible(True)
-
-		glClearColor(*self.background, 1.0)
-		glEnable(GL_DEPTH_TEST)
-		glEnable(GL_NORMALIZE)
-		glShadeModel(GL_SMOOTH)
-
-		glEnable(GL_LIGHTING)
-		glEnable(GL_LIGHT0)
-		glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE)
-		glLightModelfv(GL_LIGHT_MODEL_AMBIENT, (0.0, 0.0, 0.0, 1.0))
-		glLightfv(GL_LIGHT0, GL_AMBIENT, (0.38, 0.38, 0.38, 1.0))
-		glLightfv(GL_LIGHT0, GL_DIFFUSE, (0.75, 0.75, 0.72, 1.0))
-		glLightfv(GL_LIGHT0, GL_SPECULAR, (0.15, 0.15, 0.15, 1.0))
-		glEnable(GL_COLOR_MATERIAL)
-		glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE)
-		glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, (0.3, 0.3, 0.3, 1.0))
-		glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 24.0)
-
-		glMatrixMode(GL_PROJECTION)
-		gluPerspective(self.fov, self.width / self.height, 1.0, 400.0)
-		glMatrixMode(GL_MODELVIEW)
+		setup_scene(self.width / self.height, self.fov, self.background)
 
 		self.computer = Commodore64()
 		self.computer.build()

@@ -1,6 +1,10 @@
 import contextlib
 import io
+import os
 import sys
+
+from demos.c64.demo import c64_demo
+from demos.c64.main import C64Viewer
 
 
 def _verbose_requested():
@@ -12,7 +16,13 @@ def _import_arcade(verbose):
     notice -- arcade prints that with a bare print() to stdout (not logging or
     warnings) when this interpreter can't load the optional pymunk hitbox backend,
     so it can only be filtered at the stream level. Anything else arcade prints
-    during import is passed through untouched."""
+    during import is passed through untouched.
+
+    arcade's __init__ appends its lib folder to PATH without a ';' separator,
+    which glues it onto the last PATH entry -- pygame's DLL folder -- so SDL_image
+    can no longer find libpng16-16.dll when the first PNG is loaded. Ending PATH
+    with a separator first makes arcade's entry a separate one."""
+    os.environ["PATH"] += os.pathsep
     if verbose:
         import arcade
         return arcade
@@ -49,8 +59,12 @@ def petscii_demo(windowed, triggered):
     PetsciiDemo(windowed=windowed, triggered=triggered).run()
 
 
-def demo3(windowed, triggered):
-    Demo3(windowed=windowed, triggered=triggered).run()
+def c64(windowed, triggered):
+    c64_demo(windowed=windowed, triggered=triggered)
+
+
+def c64_viewer(windowed, triggered):
+    C64Viewer(windowed=windowed, triggered=triggered).run()
 
 
 def pixelove_ole(windowed, triggered):
@@ -66,12 +80,13 @@ DEMOS = {
     "kna": kna_demo,
     "pc45": pc45_demo,
     "p3dscii": petscii_demo,
-    "demo3": demo3,
+    "c64": c64,
+    "c64viewer": c64_viewer,
     "po": pixelove_ole, #cannot be built to exe, due to execution loop
     "winter": winter_demo,
 }
 
-DEFAULT_DEMO = "p3dscii"
+DEFAULT_DEMO = "c64"
 
 
 def close_boot_splash():

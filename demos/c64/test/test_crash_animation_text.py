@@ -1,4 +1,4 @@
-"""Plays CrashAnimationText on a loop.
+"""Plays the iny.mp4 intro once, then CrashAnimationText on a loop.
 
 Run from the DEMOS project root:
 

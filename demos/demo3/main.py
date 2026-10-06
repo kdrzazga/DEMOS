@@ -6,10 +6,11 @@ Run from the DEMOS project root:
     python -m demos.demo3.main w          # windowed
     python main.py demo3 w                # via the top-level launcher
 
-Owns the single window and OpenGL context, then plays two stages in it. Intro
-decodes iny.mp4 straight onto a GL texture (no separate video player, no
+Owns the single window and OpenGL context, then plays two stages in it. The
+intro (demos.c64.intro.IntroVideo, playing c64/resources/iny.mp4) decodes the
+movie straight onto a GL texture (no separate video player, no
 framework switch); when it ends it is destroyed and Stage1 - a 3D burst of 64
-tumbling keyb.png cards - takes over in the very same context. ESC or closing
+tumbling key photos from c64/resources/keys - takes over in the very same context. ESC or closing
 the window quits. Pass windowed=True while developing.
 """
 
@@ -23,7 +24,7 @@ from OpenGL.GLU import gluPerspective
 
 from lib import Globals
 from lib.pygame_demo import PygameDemo
-from demos.demo3.files.intro import Intro
+from demos.c64.intro import IntroVideo
 from demos.demo3.files.stage1 import Stage1
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -31,7 +32,7 @@ _ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__
 
 class Demo3(PygameDemo):
 
-    RES_PATH = os.path.join(_ROOT, "demos", "demo3", "files", "resources")
+    RES_PATH = os.path.join(_ROOT, "demos", "c64", "resources")
     FOV = 45.0
 
     def __init__(self, windowed=False, triggered=False):
@@ -45,12 +46,19 @@ class Demo3(PygameDemo):
         gluPerspective(self.FOV, self.width / self.height, 0.1, 100.0)
         glMatrixMode(GL_MODELVIEW)
 
-        self._stages = (Intro, Stage1)
+        self._stages = (self._make_intro, self._make_key_toss)
         self._index = 0
         self.stage = self._make_stage(0)
 
+    def _make_intro(self):
+        return IntroVideo(os.path.join(self.RES_PATH, "iny.mp4"), os.path.join(self.RES_PATH, "iny.wav"),
+                          self.width / self.height)
+
+    def _make_key_toss(self):
+        return Stage1(self.width, self.height, self.RES_PATH, self.FOV)
+
     def _make_stage(self, index):
-        return self._stages[index](self.width, self.height, self.RES_PATH, self.FOV)
+        return self._stages[index]()
 
     def _advance(self):
         self.stage.destroy()

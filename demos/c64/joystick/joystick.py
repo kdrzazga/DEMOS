@@ -35,7 +35,7 @@ class Joystick:
 		                   (exit_x + 0.6, 0.6, exit_z - 2.7), (exit_x + 2.5, 0.22, exit_z - 5.2),
 		                   (exit_x + 6.5, 0.22, exit_z - 5.7), (exit_x + 9.5, 0.22, exit_z - 3.2),
 		                   (exit_x + 9.0, 0.22, exit_z + 1.3), (exit_x + 7.0, 0.22, exit_z + 4.3),
-		                   (exit_x + 8.0, 0.3, exit_z + 7.8), (exit_x + 10.0, 0.7, exit_z + 10.1))
+		                   (exit_x + 8.0, 0.22, exit_z + 7.8), (exit_x + 10.0, 0.28, exit_z + 10.1))
 		self.cable = JoystickCable(self.cable_path)
 
 		self.held_directions = set()

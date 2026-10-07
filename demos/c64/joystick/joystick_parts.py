@@ -392,9 +392,9 @@ class TopButton(FireButton):
 class JoystickCable(Cable):
 	"""Black lead ending in the female 9-pin D-sub that goes into a control port."""
 
-	def __init__(self, path, radius=0.22):
+	def __init__(self, path, radius=0.22, plug_scale=1 / 2.5):
 		super().__init__(path, radius, cable_color=(26, 26, 26), grommet_color=(40, 40, 42),
-		                 grommet_radius=0.45, grommet_length=1.0)
+		                 grommet_radius=0.45, grommet_length=1.0, plug_scale=plug_scale)
 		self.hood_color = (48, 48, 50)
 		self.socket_color = (30, 30, 32)
 		self.hole_color = (120, 120, 116)

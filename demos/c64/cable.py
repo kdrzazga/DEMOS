@@ -3,7 +3,8 @@ grommet where it leaves the case and a plug at the far end.
 
 ``Cable`` draws the tube and the grommet; each peripheral subclasses it and
 draws its own plug in ``_draw_plug(entry, forward)``. ``_plug_frame`` gives the
-plug a frame lying flat on the floor, pointing along the last stretch of lead.
+plug a frame lying flat on the floor, pointing along the last stretch of lead,
+scaled by ``plug_scale`` so one plug design can be drawn at any size.
 """
 
 import math
@@ -15,13 +16,14 @@ from demos.c64.geometry import color, face_normal
 
 class Cable:
 
-	def __init__(self, path, radius, cable_color, grommet_color, grommet_radius, grommet_length):
+	def __init__(self, path, radius, cable_color, grommet_color, grommet_radius, grommet_length, plug_scale=1.0):
 		self.path = path
 		self.radius = radius
 		self.cable_color = cable_color
 		self.grommet_color = grommet_color
 		self.grommet_radius = grommet_radius
 		self.grommet_length = grommet_length
+		self.plug_scale = plug_scale
 		self.samples_per_span = 10
 		self.ring_segments = 12
 		self._display_list = None
@@ -79,14 +81,18 @@ class Cable:
 
 	def _plug_frame(self, entry, forward):
 		"""point(along, across, height) in a frame standing on the floor under
-		`entry`: along the lead's last direction (flattened), across to its side, up."""
+		`entry`: along the lead's last direction (flattened), across to its side, up;
+		all three are multiplied by plug_scale."""
 		flat_forward = self._normalized((forward[0], 0.0, forward[2]))
 		side = self._normalized(self._cross((0.0, 1.0, 0.0), flat_forward))
 		up = (0.0, 1.0, 0.0)
 		base = (entry[0], 0.0, entry[2])
 
+		scale = self.plug_scale
+
 		def point(along, across, height):
-			return tuple(b + along * f + across * s + height * u for b, f, s, u in zip(base, flat_forward, side, up))
+			return tuple(b + scale * (along * f + across * s + height * u)
+			             for b, f, s, u in zip(base, flat_forward, side, up))
 
 		return point
 

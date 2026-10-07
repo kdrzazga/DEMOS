@@ -4,8 +4,6 @@ import os
 import sys
 
 from demos.c64.demo import c64_demo
-from demos.c64.c64c.main import C64Viewer
-from demos.c64.datasette.datasette_viewer import DatasetteViewer
 
 
 def _verbose_requested():
@@ -63,14 +61,6 @@ def c64(windowed, triggered):
     c64_demo(windowed=windowed, triggered=triggered)
 
 
-def c64_viewer(windowed, triggered):
-    C64Viewer(windowed=windowed, triggered=triggered).run()
-
-
-def datasette_viewer(windowed, triggered):
-    DatasetteViewer(windowed=windowed, triggered=triggered).run()
-
-
 def pixelove_ole(windowed, triggered):
     PixeloveOle(windowed=windowed, triggered=triggered).run()
 
@@ -85,8 +75,6 @@ DEMOS = {
     "pc45": pc45_demo,
     "p3dscii": petscii_demo,
     "c64": c64,
-    "c64viewer": c64_viewer,
-    "datasette": datasette_viewer,
     "po": pixelove_ole, #cannot be built to exe, due to execution loop
     "winter": winter_demo,
 }

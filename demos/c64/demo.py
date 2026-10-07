@@ -12,11 +12,15 @@ of the machine falls away. "PROUDLY PRESENTS" is typed under the caption,
 held for a moment, and the camera flies forward through the caption. Behind
 it the cassette / Datasette sequence plays (CassetteIntoDatasette), ending in
 the plug's black slot - and the demo ends.
+Music: beat1.mp3 loops from the end of the typing until "press play on tape"
+is spoken; Dance(byRamos).mp3 starts when PLAY is pressed.
 ESC / window-close quits at any time.
 """
 
 import os
 import sys
+
+import pygame
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
@@ -44,11 +48,15 @@ class C64Demo(PygameDemo):
 		self.resources = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources")
 		self.intro_video = "iny.mp4"
 		self.intro_audio = "iny.wav"
-		self.presents_height = 1.4
+		self.presents_height = 1.1
 		self.presents_gap = 1.0
 		self.presents_hold_seconds = 1.0
 		self.fly_through_seconds = 2.2
 		self.fly_through_overshoot = 4.0
+		music = os.path.join(os.path.dirname(os.path.abspath(__file__)), "c64c", "resources")
+		self.beat_path = os.path.join(music, "beat1.mp3")
+		self.dance_path = os.path.join(music, "Dance(byRamos).mp3")
+		self.beat_fade_ms = 300
 		super().__init__(1280, 800, "Commodore 64", fps=60, windowed=windowed, triggered=triggered)
 
 	def setup(self):
@@ -72,6 +80,7 @@ class C64Demo(PygameDemo):
 		                        os.path.join(self.resources, self.intro_audio), aspect)
 		self.phase = "intro"
 		self.phase_seconds = 0.0
+		self.cassette_phase = None
 
 	def _enter(self, phase):
 		self.phase = phase
@@ -103,6 +112,7 @@ class C64Demo(PygameDemo):
 			self.presents_label.update()
 			if self.presents_label.finished:
 				self._enter("presents_hold")
+				self._play_music(self.beat_path, loops=-1)
 		elif self.phase == "presents_hold" and self.phase_seconds >= self.presents_hold_seconds:
 			self._enter("fly_through")
 		elif self.phase == "fly_through":
@@ -121,9 +131,28 @@ class C64Demo(PygameDemo):
 
 	def _cassette_step(self, seconds):
 		self.cassette_animation.update(seconds)
+		self._follow_cassette_phase(self.cassette_animation.phase)
 		self.cassette_animation.draw()
 		if self.cassette_animation.done:
 			self._finish()
+
+	def _follow_cassette_phase(self, phase):
+		"""Music cues on the cassette sequence: the beat fades out as "press play
+		on tape" is spoken, the dance starts when PLAY goes down."""
+		if phase == self.cassette_phase:
+			return
+		self.cassette_phase = phase
+		if phase == "voice":
+			pygame.mixer.music.fadeout(self.beat_fade_ms)
+		elif phase == "play":
+			self._play_music(self.dance_path)
+
+	@staticmethod
+	def _play_music(path, loops=0):
+		if not pygame.mixer.get_init():
+			pygame.mixer.init()
+		pygame.mixer.music.load(path)
+		pygame.mixer.music.play(loops)
 
 	def _finish(self):
 		self.running = False

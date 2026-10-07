@@ -49,6 +49,7 @@ class Datasette:
 		self.bay_shade = 0.8
 
 		self.door_hinge = (-2.0, -4.8)
+		self.door_width = 10.6
 		self.compartment_margin = 0.1
 
 		self.nameplate_rect = (-7.6, 4.2, 2.55, 3.85)
@@ -83,7 +84,7 @@ class Datasette:
 		self.eject_button = ButtonEject()
 		self.buttons = (self.record_button, self.play_button, self.rewind_button,
 		                self.fast_forward_button, self.stop_button, self.eject_button)
-		self.door = CassetteDoor(width=self.bay_right - self.bay_left, depth=self.nameplate_rect[2] - 0.15 - self.door_hinge[1])
+		self.door = CassetteDoor(width=self.door_width, depth=self.nameplate_rect[2] - 0.15 - self.door_hinge[1])
 		self.counter = TapeCounter()
 		self.cable = DatasetteCable(self.cable_path)
 
@@ -121,8 +122,9 @@ class Datasette:
 		"""Rectangles (x0, x1, z0, z1) missing from the flat top: the cassette
 		compartment and the button bay (which runs out past the front edge)."""
 		margin = self.compartment_margin
-		hinge_z = self.door_hinge[1]
-		return ((self.bay_left + margin, self.bay_right - margin, hinge_z + margin, hinge_z + self.door.depth - margin),
+		hinge_x, hinge_z = self.door_hinge
+		half_door = self.door.width / 2
+		return ((hinge_x - half_door + margin, hinge_x + half_door - margin, hinge_z + margin, hinge_z + self.door.depth - margin),
 		        (self.bay_left, self.bay_right, self.bay_back, self.depth))
 
 	def _top_pieces(self):
@@ -321,11 +323,20 @@ class Datasette:
 	def press(self, pygame_key, is_down):
 		for button in self.buttons:
 			if button.handles(pygame_key):
-				button.held = is_down
-				if is_down:
-					self._operate(button)
+				self.push(button, is_down)
 		if self.counter.handles(pygame_key):
 			self.counter.press_reset(is_down)
+
+	def push(self, button, is_down):
+		"""A finger goes down on (or comes up from) one of the piano keys."""
+		button.held = is_down
+		if is_down:
+			self._operate(button)
+
+	def hinge_position(self):
+		"""World position of the middle of the door hinge, level with the top."""
+		hinge_x, hinge_z = self.door_hinge
+		return hinge_x, self.top_y, hinge_z
 
 	def _operate(self, button):
 		"""The transport mechanics: RECORD, PLAY, REWIND and F.FWD lock down
@@ -368,7 +379,9 @@ class Datasette:
 	def draw_case(self):
 		glCallList(self._display_list)
 
-	def draw(self):
+	def draw_body(self):
+		"""Everything except the door lid, compartment included; anything that
+		belongs inside the compartment goes between draw_body and draw_lid."""
 		self.draw_case()
 		for index, button in enumerate(self.buttons):
 			glPushMatrix()
@@ -385,11 +398,20 @@ class Datasette:
 		self._draw_led()
 		self.cable.draw()
 
-		hinge_x, hinge_z = self.door_hinge
 		glPushMatrix()
-		glTranslatef(hinge_x, self.top_y, hinge_z)
-		self.door.draw()
+		glTranslatef(*self.hinge_position())
+		self.door.draw_compartment()
 		glPopMatrix()
+
+	def draw_lid(self):
+		glPushMatrix()
+		glTranslatef(*self.hinge_position())
+		self.door.draw_lid()
+		glPopMatrix()
+
+	def draw(self):
+		self.draw_body()
+		self.draw_lid()
 
 	def destroy(self):
 		for part in (*self.buttons, self.door, self.counter, self.cable):

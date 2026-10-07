@@ -270,14 +270,15 @@ class CassetteDoor:
 		box(-0.6, 0.6, mechanism_top, mechanism_top + 0.08, front - 2.5, front - 1.9)
 		glEnd()
 
-	def _hub_centres(self):
+	def hub_centres(self):
+		"""Spindle centres (x, z) in the door's frame."""
 		centre_z = self.depth * 0.45
 		return ((-self.hub_spacing / 2, centre_z), (self.hub_spacing / 2, centre_z))
 
 	def _draw_hubs(self):
 		floor = -self.compartment_depth
 		top = floor + self.hub_height
-		for index, (centre_x, centre_z) in enumerate(self._hub_centres()):
+		for index, (centre_x, centre_z) in enumerate(self.hub_centres()):
 			color(self.hub_color)
 			cylinder(centre_x, floor, top, centre_z, self.hub_radius)
 			disc(centre_x, top, centre_z, self.hub_radius)
@@ -353,14 +354,20 @@ class CassetteDoor:
 			self.angle = target
 		self.hub_turns += hub_turns_delta
 
-	def draw(self):
+	def draw_compartment(self):
 		glCallList(self._display_list)
 		self._draw_hubs()
+
+	def draw_lid(self):
 		glPushMatrix()
 		glRotatef(-self.angle, 1.0, 0.0, 0.0)
 		glCallList(self._display_list + 1)
 		self._draw_window()
 		glPopMatrix()
+
+	def draw(self):
+		self.draw_compartment()
+		self.draw_lid()
 
 	def destroy(self):
 		if self._display_list:

@@ -42,6 +42,20 @@ class Cable:
 	def _draw_plug(self, entry, forward):
 		"""Draw the plug whose back face takes the lead at `entry`. Override."""
 
+	def end_frame(self):
+		"""(entry, forward): where the lead meets the plug and its direction there."""
+		points = self._smooth_path()
+		return points[-1], self._direction(points[-2], points[-1])
+
+	def plug_point(self, along, across, height):
+		"""A point in the plug's frame (see _plug_frame) in the cable's coordinates."""
+		return self._plug_frame(*self.end_frame())(along, across, height)
+
+	def plug_forward(self):
+		"""Unit direction the plug points in, flat on the floor."""
+		_, forward = self.end_frame()
+		return self._normalized((forward[0], 0.0, forward[2]))
+
 	def _smooth_path(self):
 		"""Catmull-Rom spline through the path points."""
 		padded = (self.path[0],) + tuple(self.path) + (self.path[-1],)

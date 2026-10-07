@@ -519,6 +519,10 @@ class DatasetteCable(Cable):
 		self.plug_width = 4.4
 		self.plug_height = 1.1
 
+	def slot_centre(self):
+		"""Middle of the dark slot on the plug's front face."""
+		return self.plug_point(self.plug_length + 0.005, 0.0, self.plug_height * 0.5)
+
 	def _draw_plug(self, entry, forward):
 		point = self._plug_frame(entry, forward)
 		half_width, length, height = self.plug_width / 2, self.plug_length, self.plug_height

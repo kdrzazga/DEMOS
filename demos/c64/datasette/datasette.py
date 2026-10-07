@@ -69,7 +69,7 @@ class Datasette:
 
 		self.cable_path = ((-5.5, 0.84, -7.75), (-5.5, 0.8, -8.7), (-5.9, 0.45, -10.1), (-7.6, 0.26, -11.7),
 		                   (-11.0, 0.26, -12.4), (-14.0, 0.26, -10.6), (-15.0, 0.26, -6.6),
-		                   (-14.2, 0.35, -3.0), (-13.0, 0.55, -0.6))
+		                   (-14.2, 0.35, -3.0), (-13.8, 0.55, -0.6))
 
 		self.play_counts_per_second = 1.2
 		self.wind_counts_per_second = 12.0
@@ -363,10 +363,12 @@ class Datasette:
 			return self.play_counts_per_second, self.play_hub_turns_per_second
 		return 0.0, 0.0
 
-	def update(self):
-		ticks = pygame.time.get_ticks()
-		seconds = 0.0 if self._last_ticks is None else min((ticks - self._last_ticks) / 1000.0, 0.1)
-		self._last_ticks = ticks
+	def update(self, seconds=None):
+		"""Advance by `seconds`, or by the real time since the last call when not given."""
+		if seconds is None:
+			ticks = pygame.time.get_ticks()
+			seconds = 0.0 if self._last_ticks is None else min((ticks - self._last_ticks) / 1000.0, 0.1)
+			self._last_ticks = ticks
 
 		counts_per_second, hub_turns_per_second = self._transport_speeds()
 		self.counter.advance(counts_per_second * seconds)

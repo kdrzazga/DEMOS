@@ -10,11 +10,18 @@ Cassette, then call ``update(seconds)`` and ``draw()`` every frame.
 3. Super fast forward, then super rewind (super_wind_minutes_per_second, one
    minute of tape per 0.1 s), swaying all the while.
 4. It moves to the top right corner of the screen.
-5. The Datasette arrives from the distance and sways for 2 seconds.
+5. The Datasette arrives from the distance and turns over, showing the label
+   on its base; the camera zooms in on the label and straight back out, the
+   Datasette turns back and sways for 2 seconds.
 6. EJECT opens the lid; the cassette flies into the open lid (the C2N's holder
    is in the lid), sliding in along it, and rides down as the lid closes,
    ending with its hubs on the spindles.
 7. "Press play on tape" is heard, PLAY is pressed and the tape plays.
+8. Once the counter has passed play_counter_units, the camera pans a bit left
+   and turns to face the plug at the end of the cable square on (swinging a
+   little further left on the way if the case would hide the plug); white 8-bit
+   chunks ("01010010") stream out of its slot toward the viewer, and after a
+   few seconds the camera dives into the slot until the screen is black.
 
 Poses are a position (the cassette's centre, the Datasette's offset) and an
 orientation quaternion, so facing the camera, spinning, swaying and lying in
@@ -23,9 +30,13 @@ the lid all blend into each other.
 
 import math
 import os
+import random
 
 import pygame
 from OpenGL.GL import *
+from OpenGL.GLU import gluPerspective
+
+from demos.c64.geometry import upload_texture
 
 
 def axis_angle(axis, degrees):
@@ -94,10 +105,27 @@ def ease_in_out(t):
 IDENTITY = (1.0, 0.0, 0.0, 0.0)
 
 
+class ByteChunk:
+	"""One byte flying out of the plug, drawn as its eight binary digits."""
+
+	def __init__(self, value, position, velocity):
+		self.value = value
+		self.position = position
+		self.velocity = velocity
+		self.age = 0.0
+
+	def update(self, seconds):
+		self.position = tuple(p + v * seconds for p, v in zip(self.position, self.velocity))
+		self.age += seconds
+
+
 class CassetteIntoDatasette:
 
 	def __init__(self, datasette, cassette, aspect, fov, start_roll_position=20.0, play_sound=True,
-	             sound_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "PressPlayOnTape.mp3")):
+	             sound_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "PressPlayOnTape.mp3"),
+	             byte_font_path=os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
+		             os.path.abspath(__file__))))), "lib", "resources", "C64_Pro_Mono-STYLE.ttf"),
+	             play_counter_units=5.0, seed=64):
 		self.datasette = datasette
 		self.cassette = cassette
 		self.aspect = aspect
@@ -108,7 +136,32 @@ class CassetteIntoDatasette:
 		self.camera_yaw = -20.0
 		self.camera_pitch = 32.0
 		self.camera_distance = 46.0
+		self.label_zoom_distance = 7.5
 		self.light_direction = (-0.35, 1.0, 0.7, 0.0)
+		self.near_plane_ratio = 0.1
+		self.max_near_plane = 1.0
+		self.far_plane = 400.0
+
+		self.play_counter_units = play_counter_units
+		self.camera_pan_left = 6.0
+		self.connector_distance = 10.0
+		self.sight_clearance = 0.5
+		self.max_detour_degrees = 30.0
+		self._connector_detour = None
+		self.deep_zoom_distance = 0.04
+
+		self.byte_font_path = byte_font_path
+		self.byte_font_px = 64
+		self.byte_color = (255, 255, 255)
+		self.byte_height = 0.3
+		self.bytes_per_second = 14.0
+		self.byte_speed = (6.0, 10.0)
+		self.byte_spread = (1.6, 1.0)
+		self.byte_lifetime = 6.0
+		self.byte_spawn_stop = 0.85
+		self.seed = seed
+		self._byte_textures = {}
+		self._byte_font = None
 
 		self.cassette_far_depth = 300.0
 		self.cassette_present_depth = 20.0
@@ -133,8 +186,10 @@ class CassetteIntoDatasette:
 		voice_seconds = (self.sound.get_length() if self.sound else 1.6) + self.voice_tail_seconds
 		self.phases = (("cassette_arrive", 2.5), ("cassette_spin", 1.5), ("super_fast_forward", 2.0),
 		               ("super_rewind", 2.0), ("cassette_to_corner", 1.2), ("datasette_arrive", 2.0),
-		               ("datasette_sway", 2.0), ("open", 1.2), ("insert", 2.0), ("close", 1.2),
-		               ("voice", voice_seconds), ("play", 3.0))
+		               ("datasette_flip", 1.2), ("label_zoom_in", 1.2),
+		               ("label_zoom_out", 1.2), ("datasette_flip_back", 1.2), ("datasette_sway", 2.0),
+		               ("open", 1.2), ("insert", 2.0), ("close", 1.2), ("voice", voice_seconds), ("play", None),
+		               ("camera_left", 1.5), ("connector_zoom", 2.5), ("bytes_show", 3.0), ("connector_deep_zoom", 3.0))
 		self.restart()
 
 	def _load_sound(self, sound_path):
@@ -149,6 +204,10 @@ class CassetteIntoDatasette:
 		self.datasette.door.is_open = False
 		self.datasette.door.angle = 0.0
 		self.cassette.roll_position = self.start_roll_position
+		self.datasette.counter.value = 0.0
+		self.byte_chunks = []
+		self._byte_debt = 0.0
+		self._random = random.Random(self.seed)
 		if self.sound:
 			self.sound.stop()
 		self.phase_index = 0
@@ -165,7 +224,16 @@ class CassetteIntoDatasette:
 		return self.phases[self.phase_index][0]
 
 	def _phase_progress(self):
-		return min(1.0, self.phase_elapsed / self.phases[self.phase_index][1])
+		duration = self.phases[self.phase_index][1]
+		return 0.0 if duration is None else min(1.0, self.phase_elapsed / duration)
+
+	def _phase_finished(self):
+		"""Timed phases end after their duration; PLAY runs until the counter
+		has passed play_counter_units."""
+		duration = self.phases[self.phase_index][1]
+		if duration is None:
+			return self.datasette.counter.value >= self.play_counter_units
+		return self.phase_elapsed >= duration
 
 	def _enter_phase(self):
 		datasette = self.datasette
@@ -201,15 +269,50 @@ class CassetteIntoDatasette:
 		elif self.datasette.play_button.latched:
 			self.cassette.wind(self.play_minutes_per_second * seconds)
 
+	def _bytes_flowing(self):
+		if self.phase == "bytes_show":
+			return True
+		return self.phase == "connector_deep_zoom" and self._phase_progress() < self.byte_spawn_stop
+
+	def _spawn_byte(self):
+		cable = self.datasette.cable
+		forward = cable.plug_forward()
+		side = (forward[2], 0.0, -forward[0])
+		slot_half_width = cable.plug_width * 0.82 / 2 * cable.plug_scale
+		rng = self._random
+		across = rng.uniform(-0.8, 0.8) * slot_half_width
+		height = rng.uniform(-0.04, 0.04)
+		start = tuple(c + 0.05 * f + across * s + height * u
+		              for c, f, s, u in zip(cable.slot_centre(), forward, side, (0.0, 1.0, 0.0)))
+		speed = rng.uniform(*self.byte_speed)
+		spread_side, spread_up = (rng.uniform(-1.0, 1.0) * spread for spread in self.byte_spread)
+		velocity = tuple(speed * f + spread_side * s + spread_up * u for f, s, u in zip(forward, side, (0.0, 1.0, 0.0)))
+		self.byte_chunks.append(ByteChunk(rng.randrange(256), start, velocity))
+
+	def _update_bytes(self, seconds):
+		if self._bytes_flowing():
+			self._byte_debt += self.bytes_per_second * seconds
+			while self._byte_debt >= 1.0:
+				self._byte_debt -= 1.0
+				self._spawn_byte()
+		for chunk in self.byte_chunks:
+			chunk.update(seconds)
+		slot = self.datasette.cable.slot_centre()
+		forward = self.datasette.cable.plug_forward()
+		_, camera_distance, _, _ = self._camera()
+		self.byte_chunks = [chunk for chunk in self.byte_chunks if chunk.age < self.byte_lifetime and
+		                    sum((p - c) * f for p, c, f in zip(chunk.position, slot, forward)) < camera_distance]
+
 	def update(self, seconds):
 		self._release_tap(seconds)
 		self._move_tape(seconds)
-		self.datasette.update()
+		self.datasette.update(seconds)
+		self._update_bytes(seconds)
 		self.sway_seconds += seconds
 		if self.done:
 			return
 		self.phase_elapsed += seconds
-		if self.phase_elapsed >= self.phases[self.phase_index][1]:
+		if self._phase_finished():
 			if self.phase_index + 1 < len(self.phases):
 				self.phase_index += 1
 				self.phase_elapsed = 0.0
@@ -218,17 +321,111 @@ class CassetteIntoDatasette:
 				self.done = True
 
 
+	def _label_up(self):
+		"""Datasette orientation (about datasette_pivot) with its base square to
+		the overview camera: turned over toward the viewer, so the label reads upright."""
+		return chain(self._orientation(self.camera_yaw, self.camera_pitch), axis_angle((1, 0, 0), -90.0))
+
+	def _label_position(self):
+		"""World position of the label's centre while the Datasette shows it."""
+		label_centre = (0.0, self.datasette.rings[0][0] - 0.01, 0.0)
+		relative = tuple(c - p for c, p in zip(label_centre, self.datasette_pivot))
+		return tuple(p + r for p, r in zip(self.datasette_pivot, rotate(self._label_up(), relative)))
+
+	def _connector_view(self):
+		"""(target, distance, yaw, pitch) looking straight at the plug's front face."""
+		forward = self.datasette.cable.plug_forward()
+		yaw = math.degrees(math.atan2(-forward[0], forward[2]))
+		return self.datasette.cable.slot_centre(), self.connector_distance, yaw, 0.0
+
+	def _panned_left_target(self, amount):
+		left = rotate(self._orientation(self.camera_yaw, self.camera_pitch), (-self.camera_pan_left * amount, 0.0, 0.0))
+		return tuple(t + l for t, l in zip(self.camera_target, left))
+
+	def _camera(self):
+		"""(target, distance, yaw, pitch) of the camera for the current phase."""
+		overview = (self.camera_target, self.camera_distance, self.camera_yaw, self.camera_pitch)
+		phase, progress = self.phase, self._phase_progress()
+		if phase in ("label_zoom_in", "label_zoom_out"):
+			zoom = ease_in_out(progress) if phase == "label_zoom_in" else 1.0 - ease_in_out(progress)
+			target = lerp(self.camera_target, self._label_position(), zoom)
+			return (target, self.camera_distance + (self.label_zoom_distance - self.camera_distance) * zoom,
+			        self.camera_yaw, self.camera_pitch)
+		if phase == "camera_left":
+			return (self._panned_left_target(ease_in_out(progress)), *overview[1:])
+		if phase == "connector_zoom":
+			return self._connector_zoom_camera(progress, self._connector_detour_degrees())
+		if phase == "bytes_show":
+			return self._connector_view()
+		if phase == "connector_deep_zoom":
+			target, distance, yaw, pitch = self._connector_view()
+			t = progress * progress
+			return target, distance * (self.deep_zoom_distance / distance) ** t, yaw, pitch
+		return overview
+
+	def _connector_zoom_camera(self, progress, detour_degrees):
+		"""Glide from the panned overview to the connector view; detour_degrees
+		swings the camera to its left around the target, most at half way."""
+		t = ease_in_out(progress)
+		target, distance, yaw, pitch = self._connector_view()
+		swing = detour_degrees * math.sin(math.pi * progress)
+		return (lerp(self._panned_left_target(1.0), target, t),
+		        self.camera_distance * (distance / self.camera_distance) ** t,
+		        self.camera_yaw + (yaw - self.camera_yaw) * t + swing, self.camera_pitch + (pitch - self.camera_pitch) * t)
+
+	def _inside_case(self, point):
+		"""How deep (cm) a point is inside the Datasette's rounded box grown by
+		sight_clearance; negative when it is outside."""
+		datasette, margin = self.datasette, self.sight_clearance
+		x, y, z = point
+		half_width, half_depth = datasette.width / 2 + margin, datasette.depth / 2 + margin
+		radius = datasette.corner_radius + margin
+		if not (-margin <= y <= datasette.top_y + margin) or abs(x) > half_width or abs(z) > half_depth:
+			return -1.0
+		corner_x, corner_z = max(abs(x) - (half_width - radius), 0.0), max(abs(z) - (half_depth - radius), 0.0)
+		return radius - math.hypot(corner_x, corner_z)
+
+	def _case_blocks_glide(self, detour_degrees, samples=24, steps_along_sight=120):
+		"""Whether the case comes between the camera and the slot, or around the
+		camera, at any point of the glide with this detour."""
+		slot = self.datasette.cable.slot_centre()
+		for sample in range(samples + 1):
+			target, distance, yaw, pitch = self._connector_zoom_camera(sample / samples, detour_degrees)
+			camera = tuple(t + o for t, o in zip(target, rotate(self._orientation(yaw, pitch), (0.0, 0.0, distance))))
+			for step in range(steps_along_sight):
+				point = lerp(camera, slot, step / steps_along_sight)
+				if self._inside_case(point) > 0.0:
+					return True
+		return False
+
+	def _connector_detour_degrees(self):
+		"""Smallest swing (whole degrees, up to max_detour_degrees) that keeps the
+		case out of the way; 0 when the straight glide is already clear. Worked
+		out once, the scene does not move during the glide."""
+		if self._connector_detour is None:
+			self._connector_detour = 0.0
+			for degrees in range(int(self.max_detour_degrees) + 1):
+				if not self._case_blocks_glide(float(degrees)):
+					self._connector_detour = float(degrees)
+					break
+		return self._connector_detour
+
+	@staticmethod
+	def _orientation(yaw, pitch):
+		"""Camera orientation in the world (inverse of the view rotation)."""
+		return chain(axis_angle((0, 1, 0), -yaw), axis_angle((1, 0, 0), -pitch))
+
 	def _camera_to_world(self):
-		"""Orientation of the camera in the world (inverse of the view rotation)."""
-		return chain(axis_angle((0, 1, 0), -self.camera_yaw), axis_angle((1, 0, 0), -self.camera_pitch))
+		_, _, yaw, pitch = self._camera()
+		return self._orientation(yaw, pitch)
 
 	def _camera_point(self, screen_x, screen_y, depth):
 		"""World point at `depth` in front of the camera that projects to
 		(screen_x, screen_y) in -1..1 screen coordinates (y up)."""
+		target, distance, _, _ = self._camera()
 		tan_half = math.tan(math.radians(self.fov / 2))
-		in_camera = (screen_x * depth * tan_half * self.aspect, screen_y * depth * tan_half,
-		             self.camera_distance - depth)
-		return tuple(t + o for t, o in zip(self.camera_target, rotate(self._camera_to_world(), in_camera)))
+		in_camera = (screen_x * depth * tan_half * self.aspect, screen_y * depth * tan_half, distance - depth)
+		return tuple(t + o for t, o in zip(target, rotate(self._camera_to_world(), in_camera)))
 
 	def _facing_camera(self, *turns):
 		"""Side A toward the viewer, label upright, with extra turns in camera
@@ -290,7 +487,8 @@ class CassetteIntoDatasette:
 			corner_position, _ = self._corner_pose()
 			sway = self.wind_sway_degrees + (self.corner_sway_degrees - self.wind_sway_degrees) * t
 			return lerp(self._present_position(), corner_position, t), self._facing_camera(self._sway(sway))
-		if phase in ("datasette_arrive", "datasette_sway", "open"):
+		if phase in ("datasette_arrive", "datasette_flip", "label_zoom_in", "label_zoom_out",
+		             "datasette_flip_back", "datasette_sway", "open"):
 			return self._corner_pose()
 		if phase == "insert":
 			return self._insert_pose(progress)
@@ -305,6 +503,12 @@ class CassetteIntoDatasette:
 			forward = rotate(self._camera_to_world(), (0.0, 0.0, -1.0))
 			far = tuple(c * self.datasette_far_distance for c in forward)
 			return lerp(far, (0.0, 0.0, 0.0), ease_out(progress)), IDENTITY
+		if phase == "datasette_flip":
+			return (0.0, 0.0, 0.0), slerp(IDENTITY, self._label_up(), ease_in_out(progress))
+		if phase in ("label_zoom_in", "label_zoom_out"):
+			return (0.0, 0.0, 0.0), self._label_up()
+		if phase == "datasette_flip_back":
+			return (0.0, 0.0, 0.0), slerp(self._label_up(), IDENTITY, ease_in_out(progress))
 		if phase == "datasette_sway":
 			fade = math.sin(math.pi * progress)
 			return (0.0, 0.0, 0.0), self._sway(self.datasette_sway_degrees * fade)
@@ -318,13 +522,59 @@ class CassetteIntoDatasette:
 		glMultMatrixf(gl_matrix(orientation))
 		glTranslatef(*(-c for c in self.datasette_pivot))
 
-	def draw(self):
+	def _byte_texture(self, value):
+		"""(texture, width / height) of a byte's eight digits, made on first use."""
+		if value not in self._byte_textures:
+			if self._byte_font is None:
+				self._byte_font = pygame.font.Font(self.byte_font_path, self.byte_font_px)
+			image = self._byte_font.render(f"{value:08b}", True, self.byte_color)
+			self._byte_textures[value] = upload_texture(image), image.get_width() / image.get_height()
+		return self._byte_textures[value]
+
+	def _draw_bytes(self):
+		if not self.byte_chunks:
+			return
+		orientation = self._camera_to_world()
+		right, up, toward_viewer = (rotate(orientation, axis) for axis in ((1, 0, 0), (0, 1, 0), (0, 0, 1)))
+		chunks = sorted(self.byte_chunks, key=lambda chunk: sum(p * t for p, t in zip(chunk.position, toward_viewer)))
+		glDisable(GL_LIGHTING)
+		glEnable(GL_BLEND)
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+		glDepthMask(GL_FALSE)
+		glEnable(GL_TEXTURE_2D)
+		glColor3f(1.0, 1.0, 1.0)
+		for chunk in chunks:
+			texture, aspect = self._byte_texture(chunk.value)
+			half_up = tuple(u * self.byte_height / 2 for u in up)
+			half_right = tuple(r * self.byte_height * aspect / 2 for r in right)
+			glBindTexture(GL_TEXTURE_2D, texture)
+			glBegin(GL_QUADS)
+			for (s, t), (side, height) in (((0, 0), (-1, -1)), ((1, 0), (1, -1)), ((1, 1), (1, 1)), ((0, 1), (-1, 1))):
+				glTexCoord2f(s, t)
+				glVertex3f(*(p + side * r + height * u for p, r, u in zip(chunk.position, half_right, half_up)))
+			glEnd()
+		glDisable(GL_TEXTURE_2D)
+		glDepthMask(GL_TRUE)
+		glDisable(GL_BLEND)
+		glEnable(GL_LIGHTING)
+
+	def _set_projection(self, distance):
+		"""Perspective whose near plane follows the camera in, so the dive into
+		the plug's slot is not clipped."""
+		glMatrixMode(GL_PROJECTION)
 		glLoadIdentity()
-		glTranslatef(0.0, 0.0, -self.camera_distance)
-		glRotatef(self.camera_pitch, 1.0, 0.0, 0.0)
-		glRotatef(self.camera_yaw, 0.0, 1.0, 0.0)
+		gluPerspective(self.fov, self.aspect, min(self.max_near_plane, distance * self.near_plane_ratio), self.far_plane)
+		glMatrixMode(GL_MODELVIEW)
+
+	def draw(self):
+		target, distance, yaw, pitch = self._camera()
+		self._set_projection(distance)
+		glLoadIdentity()
+		glTranslatef(0.0, 0.0, -distance)
+		glRotatef(pitch, 1.0, 0.0, 0.0)
+		glRotatef(yaw, 0.0, 1.0, 0.0)
 		glLightfv(GL_LIGHT0, GL_POSITION, self.light_direction)
-		glTranslatef(*(-c for c in self.camera_target))
+		glTranslatef(*(-c for c in target))
 
 		datasette_pose = self.datasette_pose()
 		if datasette_pose:
@@ -346,3 +596,10 @@ class CassetteIntoDatasette:
 			self._place_datasette(datasette_pose)
 			self.datasette.draw_lid()
 			glPopMatrix()
+
+		self._draw_bytes()
+
+	def destroy(self):
+		if self._byte_textures:
+			glDeleteTextures([texture for texture, _ in self._byte_textures.values()])
+		self._byte_textures = {}

@@ -1,23 +1,24 @@
 import math
+import os
 import random
 from array import array
 
 import pygame
 
-from demos.petscii.files.globals import Constants
+FONT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "C64_Pro_Mono-STYLE.ttf")
 
 
 class Typer:
 
 	COLOR = (255, 255, 255)
 
-	def __init__(self, start_frame, text, surface, start_x, start_y, font_size=12):
+	def __init__(self, start_frame, text, surface, start_x, start_y, font_size=12, font_path=FONT_PATH):
 		pygame.font.init()
 		self.start_frame = start_frame
 
 		self.text = text
 		self.font_size = font_size
-		self.font = pygame.font.Font(Constants.FONT_PATH, font_size)
+		self.font = pygame.font.Font(font_path, font_size)
 
 		self.surface = surface
 		self.start_x = start_x

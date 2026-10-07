@@ -50,7 +50,7 @@ from OpenGL.GLU import gluPerspective
 from lib.rotator import Rotator
 from demos.petscii.files.globals import Constants
 from demos.petscii.files.mesh import PetsciiMesh
-from demos.petscii.files.typer import Typer
+from lib.typer import Typer
 
 
 class C64BaseScreen:

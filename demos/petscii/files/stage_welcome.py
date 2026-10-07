@@ -2,7 +2,7 @@ import pygame
 
 from demos.petscii.files.globals import Constants
 from demos.petscii.files.tilt_screen import TiltScreen
-from demos.petscii.files.typer import Typer
+from lib.typer import Typer
 
 
 class WelcomeStage:

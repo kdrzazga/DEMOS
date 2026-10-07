@@ -4,7 +4,6 @@ import os
 import sys
 
 from demos.c64.demo import c64_demo
-from demos.c64.main import C64Viewer
 
 
 def _verbose_requested():
@@ -39,7 +38,6 @@ def _import_arcade(verbose):
 arcade = _import_arcade(_verbose_requested())
 
 from demos.demo1.main import Demo1
-from demos.demo3.main import Demo3
 from demos.pc45.main import GlDemo
 from demos.pixeloveole.main import PixeloveOle
 from demos.petscii.files.petsciidemo import PetsciiDemo
@@ -63,10 +61,6 @@ def c64(windowed, triggered):
     c64_demo(windowed=windowed, triggered=triggered)
 
 
-def c64_viewer(windowed, triggered):
-    C64Viewer(windowed=windowed, triggered=triggered).run()
-
-
 def pixelove_ole(windowed, triggered):
     PixeloveOle(windowed=windowed, triggered=triggered).run()
 
@@ -81,7 +75,6 @@ DEMOS = {
     "pc45": pc45_demo,
     "p3dscii": petscii_demo,
     "c64": c64,
-    "c64viewer": c64_viewer,
     "po": pixelove_ole, #cannot be built to exe, due to execution loop
     "winter": winter_demo,
 }
@@ -104,7 +97,6 @@ def close_boot_splash():
 
 
 if __name__ == "__main__":
-    #print("Bienvenido a la DEMO de P3DSCII !!! / Welcome to P3DSCII demo !!!")
     args = [arg.lower() for arg in sys.argv[1:]]
     triggered = any(arg in ("t", "trigger", "triggered") for arg in args)
     windowed = any(arg in ("w", "window", "windowed") for arg in args)

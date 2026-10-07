@@ -2,7 +2,7 @@
 
 Run from the DEMOS project root:
 
-    python -m demos.c64.test.test_crash_animation
+    python -m demos.c64.c64c.test.test_crash_animation
 
 SPACE skips the intro; after it, SPACE replays the animation at once, otherwise
 it replays a second after it ends. ESC / window-close quits.
@@ -15,13 +15,13 @@ import pygame
 from OpenGL.GL import *
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(
-	os.path.dirname(os.path.abspath(__file__))))))
+	os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))))
 
-from demos.c64.crash_animation import CrashAnimation
+from demos.c64.c64c.crash_animation import CrashAnimation
+from demos.c64.c64c.main import C64Viewer
 from demos.c64.intro import IntroVideo
-from demos.c64.main import C64Viewer
 
-RESOURCES = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "resources")
+RESOURCES = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "resources")
 
 
 class CrashAnimationTest(C64Viewer):

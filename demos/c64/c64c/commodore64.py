@@ -18,12 +18,8 @@ import os
 
 from OpenGL.GL import *
 
-try:
-	import keys as k
-	from geometry import color, image_texture, quad, text_texture, textured_quad
-except ModuleNotFoundError:
-	import demos.c64.keys as k
-	from demos.c64.geometry import color, image_texture, quad, text_texture, textured_quad
+import demos.c64.c64c.keys as k
+from demos.c64.geometry import color, image_texture, quad, text_texture, textured_quad
 
 
 class Commodore64:

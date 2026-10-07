@@ -21,8 +21,8 @@ from OpenGL.GL import *
 
 from lib import Globals
 from lib.pygame_demo import PygameDemo
-from demos.c64.commodore64 import Commodore64
-from demos.c64.crash_animation import CrashAnimationText
+from demos.c64.c64c.commodore64 import Commodore64
+from demos.c64.c64c.crash_animation import CrashAnimationText
 from demos.c64.intro import IntroVideo
 from demos.c64.scene import setup_scene
 

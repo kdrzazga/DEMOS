@@ -1,8 +1,9 @@
-"""Komoda magazine 3D model viewer - pygame + OpenGL.
+"""Magazine 3D model viewer - pygame + OpenGL.
 
 Run from the DEMOS project root:
 
-    python -m demos.c64.magazine.magazine_viewer
+    python -m demos.c64.magazine.magazine_viewer          (Komoda issue 1)
+    python -m demos.c64.magazine.magazine_viewer kna      (K&A Plus issue 1)
 
 or directly as a script (python demos\\c64\\magazine\\magazine_viewer.py).
 """
@@ -16,13 +17,15 @@ from OpenGL.GL import *
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 
 from lib.pygame_demo import PygameDemo
+from demos.c64.magazine.kna_plus import KnA_Plus
 from demos.c64.magazine.komoda_01 import Komoda_01
 from demos.c64.scene import setup_scene
 
 
 class MagazineViewer(PygameDemo):
 
-	def __init__(self, windowed=False, triggered=False):
+	def __init__(self, magazine_class=Komoda_01, windowed=False, triggered=False):
+		self.magazine_class = magazine_class
 		self.fov = 40.0
 		self.background = (0.0, 0.0, 0.0)
 		self.light_direction = (-0.3, 1.0, 0.6, 0.0)
@@ -33,13 +36,13 @@ class MagazineViewer(PygameDemo):
 		self.drag_degrees_per_pixel = 0.35
 		self.forward_keys = (pygame.K_RIGHT, pygame.K_SPACE, pygame.K_PAGEDOWN)
 		self.back_keys = (pygame.K_LEFT, pygame.K_BACKSPACE, pygame.K_PAGEUP)
-		super().__init__(1280, 800, "Komoda magazine", fps=60, windowed=windowed, triggered=triggered)
+		super().__init__(1280, 800, "Magazine", fps=60, windowed=windowed, triggered=triggered)
 
 	def setup(self):
 		pygame.mouse.set_visible(True)
 		setup_scene(self.width / self.height, self.fov, self.background)
 
-		self.magazine = Komoda_01()
+		self.magazine = self.magazine_class()
 		self.magazine.build()
 
 	def handle_event(self, event):
@@ -79,4 +82,5 @@ if __name__ == "__main__":
 
 	print(info)
 
-	MagazineViewer(windowed=True).run()
+	magazine_class = KnA_Plus if "kna" in sys.argv[1:] else Komoda_01
+	MagazineViewer(magazine_class, windowed=True).run()

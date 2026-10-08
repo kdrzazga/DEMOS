@@ -17,16 +17,36 @@ numbered pages, a subclass supplies the real ones.
 """
 
 import math
+import os
 
 import pygame
 from OpenGL.GL import *
 
 from demos.c64.geometry import upload_texture
 
+C64_RESOURCES = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "resources")
+MAGAZINE_RESOURCES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources")
+
 
 def smoothstep(value):
 	value = max(0.0, min(1.0, value))
 	return value * value * (3.0 - 2.0 * value)
+
+
+def page_file_name(number):
+	return f"page_{number:02d}.jpg"
+
+
+def convert_pdf_pages(pdf_path, pages_dir, render_width=1024, jpeg_quality=90):
+	import pymupdf
+
+	os.makedirs(pages_dir, exist_ok=True)
+	with pymupdf.open(pdf_path) as document:
+		for index, page in enumerate(document):
+			zoom = render_width / page.rect.width
+			pixmap = page.get_pixmap(matrix=pymupdf.Matrix(zoom, zoom), alpha=False)
+			pixmap.save(os.path.join(pages_dir, page_file_name(index + 1)), jpg_quality=jpeg_quality)
+		return document.page_count
 
 
 class Magazine:
@@ -45,50 +65,51 @@ class Magazine:
 		self.edge_lead = edge_lead
 		self.paper_color = paper_color
 
-		self.turned_count = 0
-		self._turning_sheet = None
-		self._turn_progress = 0.0
-		self._turn_direction = 0
+		# per sheet: where it should end up (0 = right stack, 1 = left stack), how
+		# far its spine has turned and how far its free edge has (both 0..1)
+		self._targets = [0] * self.sheet_count
+		self._spine_progress = [0.0] * self.sheet_count
+		self._edge_progress = [0.0] * self.sheet_count
 		self._front_textures = []
 		self._back_textures = []
 
 	@property
+	def turned_count(self):
+		"""Sheets turned, or on their way, onto the left stack."""
+		return sum(self._targets)
+
+	@property
 	def turning(self):
-		return self._turning_sheet is not None
+		return any(progress != target for progress, target in zip(self._spine_progress, self._targets))
 
 	def turn_page(self):
-		"""Start turning the top sheet of the right stack onto the left one.
-		Ignored (returns False) while a sheet is turning or at the back cover."""
-		if self.turning or self.turned_count == self.sheet_count:
+		"""Send the next sheet still bound for the right stack over to the left one -
+		even while earlier sheets are in the air. Returns False at the back cover."""
+		if self.turned_count == self.sheet_count:
 			return False
-		self._turning_sheet = self.turned_count
-		self._turn_progress = 0.0
-		self._turn_direction = 1
+		self._targets[self.turned_count] = 1
 		return True
 
 	def turn_back(self):
-		"""Start turning the top sheet of the left stack back onto the right one.
-		Ignored (returns False) while a sheet is turning or at the front cover."""
-		if self.turning or self.turned_count == 0:
+		"""Send the last sheet bound for the left stack back to the right one; a sheet
+		still in the air just reverses. Returns False at the front cover."""
+		if self.turned_count == 0:
 			return False
-		self.turned_count -= 1
-		self._turning_sheet = self.turned_count
-		self._turn_progress = 1.0
-		self._turn_direction = -1
+		self._targets[self.turned_count - 1] = 0
 		return True
 
 	def update(self, seconds):
-		"""Advance the turning sheet, if any, by `seconds` of animation."""
-		if not self.turning:
-			return
-		self._turn_progress += self._turn_direction * seconds / self.turn_seconds
-		if 0.0 < self._turn_progress < 1.0:
-			return
-		if self._turn_direction > 0:
-			self.turned_count += 1
-		self._turning_sheet = None
-		self._turn_progress = 0.0
-		self._turn_direction = 0
+		"""Move every sheet toward its stack by `seconds` of animation. The free edge
+		moves 1 / edge_lead times faster than the spine, so it leads either way."""
+		spine_step = seconds / self.turn_seconds
+		edge_step = spine_step / self.edge_lead
+		for sheet, target in enumerate(self._targets):
+			self._spine_progress[sheet] = self._approach(self._spine_progress[sheet], target, spine_step)
+			self._edge_progress[sheet] = self._approach(self._edge_progress[sheet], target, edge_step)
+
+	@staticmethod
+	def _approach(value, target, step):
+		return min(target, value + step) if value < target else max(target, value - step)
 
 	def visible_pages(self):
 		"""Page numbers (1-based) lying open on the left and right, None where there is no page."""
@@ -99,7 +120,7 @@ class Magazine:
 	def centre_x(self):
 		"""x of the middle of what is showing: the cover alone (closed), an open
 		spread, or the back cover alone - for a camera that keeps the magazine centred."""
-		position = self.turned_count + (smoothstep(self._turn_progress) if self.turning else 0.0)
+		position = sum(smoothstep(progress) for progress in self._spine_progress)
 		if position < 1.0:
 			return self.page_width / 2 * (1.0 - position)
 		last_spread = self.sheet_count - 1
@@ -133,16 +154,6 @@ class Magazine:
 
 	def _left_stack_height(self, sheet):
 		return sheet * self.sheet_gap
-
-	def _turn_angles(self):
-		"""(spine angle, free-edge angle) of the turning sheet; 0 = flat right, pi = flat left.
-		The free edge runs ahead of the spine in whichever direction the sheet turns."""
-		progress = self._turn_progress
-		if self._turn_direction > 0:
-			edge_progress = min(1.0, progress / self.edge_lead)
-		else:
-			edge_progress = max(0.0, 1.0 - (1.0 - progress) / self.edge_lead)
-		return math.pi * smoothstep(progress), math.pi * smoothstep(edge_progress)
 
 	def _strip(self, spine_height, spine_angle, edge_angle, columns):
 		"""Points along the sheet from spine to free edge as (distance along the
@@ -189,15 +200,12 @@ class Magazine:
 		glFrontFace(GL_CCW)
 		glEnable(GL_TEXTURE_2D)
 		for sheet in range(self.sheet_count):
-			if sheet == self._turning_sheet:
-				right, left = self._right_stack_height(sheet), self._left_stack_height(sheet)
-				spine_height = right + (left - right) * smoothstep(self._turn_progress)
-				spine_angle, edge_angle = self._turn_angles()
-				self._draw_sheet(sheet, self._strip(spine_height, spine_angle, edge_angle, self.turn_columns))
-			elif sheet < self.turned_count:
-				self._draw_sheet(sheet, self._strip(self._left_stack_height(sheet), math.pi, math.pi, 1))
-			else:
-				self._draw_sheet(sheet, self._strip(self._right_stack_height(sheet), 0.0, 0.0, 1))
+			spine_progress, edge_progress = self._spine_progress[sheet], self._edge_progress[sheet]
+			right, left = self._right_stack_height(sheet), self._left_stack_height(sheet)
+			spine_height = right + (left - right) * smoothstep(spine_progress)
+			spine_angle, edge_angle = math.pi * smoothstep(spine_progress), math.pi * smoothstep(edge_progress)
+			columns = 1 if spine_progress == edge_progress else self.turn_columns
+			self._draw_sheet(sheet, self._strip(spine_height, spine_angle, edge_angle, columns))
 		glPopAttrib()
 
 	def destroy(self):
@@ -206,3 +214,30 @@ class Magazine:
 			glDeleteTextures(textures)
 		self._front_textures = []
 		self._back_textures = []
+
+
+class PdfMagazine(Magazine):
+	"""A magazine whose pages are rendered from a PDF into pages_dir/page_NN.jpg.
+	The pictures are made once by convert(), or on build() if any is missing;
+	after that only they are loaded, so PyMuPDF is needed just for converting."""
+
+	def __init__(self, pdf_path, pages_dir, page_count, **magazine_options):
+		super().__init__(page_count, **magazine_options)
+		self.pdf_path = pdf_path
+		self.pages_dir = pages_dir
+
+	def page_paths(self):
+		return [os.path.join(self.pages_dir, page_file_name(number)) for number in range(1, self.page_count + 1)]
+
+	def convert(self):
+		"""Render (or re-render) every PDF page; returns the number of pages written."""
+		return convert_pdf_pages(self.pdf_path, self.pages_dir)
+
+	def ensure_pages(self):
+		"""Convert the PDF if any page picture is missing."""
+		if not all(os.path.exists(path) for path in self.page_paths()):
+			self.convert()
+
+	def page_surfaces(self):
+		self.ensure_pages()
+		return [pygame.image.load(path) for path in self.page_paths()]

@@ -24,15 +24,18 @@ from demos.c64.surfaces import draw_ring_surface, ring, rounded_rect_outline
 
 
 class CassetteHub:
-	"""One white hub: a ring with drive teeth inside, seen on both faces.
+	"""One white hub: a thin ring with drive teeth inside, deep in the shell,
+	seen through the hub window from either side.
 
 	Local frame: origin at the hub's axis, half-way through the cassette;
-	the faces are at +-face_offset. turns rotates it about y; positive turns
-	go counter-clockwise seen from side A."""
+	the ring sits at height y, half_thickness thick, its top lit from side A
+	and its bottom from side B. turns rotates it about y; positive turns go
+	counter-clockwise seen from side A."""
 
-	def __init__(self, face_offset, outer_radius=0.6, inner_radius=0.45, tooth_radius=0.3, tooth_count=6,
-	             hub_color=(238, 238, 232)):
-		self.face_offset = face_offset
+	def __init__(self, y=0.0, half_thickness=0.01, outer_radius=0.6, inner_radius=0.45, tooth_radius=0.3,
+	             tooth_count=6, hub_color=(238, 238, 232)):
+		self.y = y
+		self.half_thickness = half_thickness
 		self.outer_radius = outer_radius
 		self.inner_radius = inner_radius
 		self.tooth_radius = tooth_radius
@@ -50,8 +53,8 @@ class CassetteHub:
 		self._display_list = glGenLists(1)
 		glNewList(self._display_list, GL_COMPILE)
 		color(self.hub_color)
-		self._draw_face(self.face_offset, facing_up=True)
-		self._draw_face(-self.face_offset, facing_up=False)
+		self._draw_face(self.y + self.half_thickness, facing_up=True)
+		self._draw_face(self.y - self.half_thickness, facing_up=False)
 		glEndList()
 
 	def _draw_face(self, y, facing_up):
@@ -176,8 +179,8 @@ class Cassette:
 		self.front_openings = ((-3.4, -2.4), (-1.9, -1.5), (-0.6, 0.6), (1.5, 1.9), (2.4, 3.4))
 		self.front_opening_height = (0.3, 0.9)
 
-		self.left_hub = CassetteHub(face_offset=thickness / 2 - 0.08)
-		self.right_hub = CassetteHub(face_offset=thickness / 2 - 0.08)
+		self.left_hub = CassetteHub()
+		self.right_hub = CassetteHub()
 		self.hubs = (self.left_hub, self.right_hub)
 		self.left_roll = TapeRoll(core_radius=self.left_hub.outer_radius, tape_color=self.tape_color)
 		self.right_roll = TapeRoll(core_radius=self.right_hub.outer_radius, tape_color=self.tape_color)

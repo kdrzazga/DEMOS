@@ -80,6 +80,7 @@ class CrashAnimation:
 
 	def restart(self):
 		self.elapsed = 0.0
+		self.camera_advance = 0.0
 		self.case_drop = 0.0
 		self.case_fall_speed = 0.0
 		self.case_tilt = 0.0
@@ -137,13 +138,19 @@ class CrashAnimation:
 			self.case_tilt += self.case_tilt_speed * self.frame_seconds
 		self.elapsed += self.frame_seconds
 
-	def draw(self):
+	def apply_camera(self):
+		"""Load the view: looking at the keyboard face-on, moved forward along the
+		view by camera_advance. Leaves the modelview in world coordinates, so
+		callers can draw their own things in the same scene after draw()."""
 		glLoadIdentity()
-		glTranslatef(0.0, 0.0, -self.view_distance)
+		glTranslatef(0.0, 0.0, -(self.view_distance - self.camera_advance))
 		glRotatef(self.view_pitch, 1.0, 0.0, 0.0)
 		glLightfv(GL_LIGHT0, GL_POSITION, self.light_direction)
 		target_x, target_y, target_z = self.view_target
 		glTranslatef(-target_x, -target_y, -target_z)
+
+	def draw(self):
+		self.apply_camera()
 
 		glPushMatrix()
 		glTranslatef(*(component * self.case_drop for component in self.screen_down))
@@ -330,6 +337,14 @@ class CrashAnimationText(CrashAnimation):
 				order * self.fill_stagger_seconds, self.fill_flight_seconds,
 				self._random_axis(rng), rng.randint(*self.caption_spin_turns), hidden_before_start=True))
 		return flying
+
+	def caption_frame(self):
+		"""(centre, right, up, distance): the caption's middle, the screen's right
+		and up directions there, and how far it is in front of the unmoved camera."""
+		_, centre, _ = self._caption_layout()
+		depth = sum((t - c) * v for t, c, v in zip(self.view_target, centre, self.toward_viewer))
+		up = tuple(-component for component in self.screen_down)
+		return centre, (1.0, 0.0, 0.0), up, self.view_distance + depth
 
 	@staticmethod
 	def _random_axis(rng):

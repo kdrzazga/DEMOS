@@ -56,7 +56,7 @@ from lib.cequals import Cequals
 from demos.petscii.files.petscii.images.multi_petscii_image_manager import MultiPetsciiImageManager
 from demos.petscii.files.outro.sound_and_talk import SoundAndTalk
 from demos.petscii.files.petscii.images.caption_groups import CAPTION_GROUPS
-from demos.petscii.files.typer import Typer
+from lib.typer import Typer
 
 
 class Outro:

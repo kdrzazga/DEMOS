@@ -32,10 +32,12 @@ class FadeOverlay:
 
 class IntroWindow:
 	"""Runs a scene built by `scene_factory(viewport)`; the scene needs draw(scene_time, view_projection, viewport).
-	The intro lasts as long as the audio plus `end_hold`."""
+	The intro lasts as long as the audio plus `end_hold`; with `loop` the audio repeats and it runs until Esc.
+	`camera_motion(scene_time)`, if given, returns a 4x4 transform of the scene around the origin (e.g. a gentle sway)."""
 
 	def __init__(self, caption, audio_path, windowed=True, window_size=(960, 720), fov_y=math.radians(30),
-			visible_height=3.6, end_hold=0.3, fade_in=(0.0, 0.0), fallback_duration=10.0):
+			visible_height=3.6, end_hold=10.3, fade_in=(0.0, 0.0), fallback_duration=10.0, camera_motion=None,
+			loop=False):
 		self.caption = caption
 		self.audio_path = audio_path
 		self.windowed = windowed
@@ -45,6 +47,8 @@ class IntroWindow:
 		self.end_hold = end_hold
 		self.fade_in = fade_in      # (start, duration) of the fade from black
 		self.fallback_duration = fallback_duration
+		self.camera_motion = camera_motion
+		self.loop = loop
 
 	def _open_window(self):
 		pygame.display.gl_set_attribute(pygame.GL_MULTISAMPLEBUFFERS, 1)
@@ -92,11 +96,11 @@ class IntroWindow:
 		scene = scene_factory(viewport)
 		fade = FadeOverlay()
 		projection = perspective(self.fov_y, viewport[0] / viewport[1], 0.1, 100.0)
-		view_projection = projection @ translate(0.0, 0.0, -self.camera_distance)
-		duration = self._audio_length() + self.end_hold
+		view = translate(0.0, 0.0, -self.camera_distance)
+		duration = math.inf if self.loop else self._audio_length() + self.end_hold
 
 		pygame.mixer.music.load(self.audio_path)
-		pygame.mixer.music.play()
+		pygame.mixer.music.play(-1 if self.loop else 0)
 		started = time.perf_counter()
 		clock = pygame.time.Clock()
 		running = True
@@ -107,6 +111,10 @@ class IntroWindow:
 			scene_time = time.perf_counter() - started
 			if scene_time > duration:
 				break
+
+			view_projection = projection @ view
+			if self.camera_motion:
+				view_projection = view_projection @ self.camera_motion(scene_time)
 
 			glClearColor(0.0, 0.0, 0.0, 1.0)
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)

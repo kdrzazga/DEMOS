@@ -251,3 +251,35 @@ void main() {
 
 def glyph_fragment(environment_glsl):
 	return COMMON_GLSL + environment_glsl + _GLYPH_FRAGMENT_BODY
+
+# --------------------------------------------------------------------------- flat-coloured lit meshes
+
+COLORED_MESH_VERTEX = """
+#version 330 core
+layout(location = 0) in vec3 a_pos;
+layout(location = 1) in vec3 a_normal;
+layout(location = 2) in vec3 a_color;
+uniform mat4 u_mvp;
+uniform mat3 u_normal_matrix;
+out vec3 v_normal;
+out vec3 v_color;
+void main() {
+	v_normal = u_normal_matrix * a_normal;
+	v_color = a_color;
+	gl_Position = u_mvp * vec4(a_pos, 1.0);
+}
+"""
+
+COLORED_MESH_FRAGMENT = """
+#version 330 core
+in vec3 v_normal;
+in vec3 v_color;
+uniform vec3  u_to_light;
+uniform float u_shadow_level;   // brightness of faces turned away from the light
+uniform float u_alpha;
+out vec4 frag_color;
+void main() {
+	float light = mix(u_shadow_level, 1.0, max(dot(normalize(v_normal), u_to_light), 0.0));
+	frag_color = vec4(v_color * light, u_alpha);
+}
+"""

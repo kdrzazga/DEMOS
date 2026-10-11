@@ -130,6 +130,12 @@ class WinterDemo(PygameDemo):
         self.music_volume = 1.0
         self.music_volume_under_wishes = 0.75
         self.shown_wish = None
+        self.credit_items = (("text", "WINTER DEMO 26", 120),
+                             ("text", "delivered to you by:", 50),
+                             ("image", os.path.join(self.resources, "k&a+.png"), 1.6),
+                             ("text", "Code and Graphics by KD", 35),
+                             ("text", "Music based on Polish Christmas carol 'Dzisiaj w Betlejem'", 35))
+        self.credits_shown = False
         self._start_music()
         self.wish_sounds = self._load_wish_sounds()
         self._init_gl()
@@ -795,11 +801,14 @@ class WinterDemo(PygameDemo):
     def _wishes_start(self):
         return self._screen_approach_start() + self.duration.screen_approach
 
+    def _wishes_end(self):
+        return self._wishes_start() + sum(duration for _, _, _, duration in self.wish_parts)
+
     def _interior_end(self):
         """The hall scene lasts until the camera reaches the screen view and Santa has spoken all wishes."""
         if not self.desks:
             return math.inf
-        return self._wishes_start() + sum(duration for _, _, _, duration in self.wish_parts) + 12
+        return self._wishes_end() + 12
 
     def _current_wish(self):
         """Index into wish_parts of the wishes shown now, or None before and after them."""
@@ -831,6 +840,15 @@ class WinterDemo(PygameDemo):
         self._set_music_volume(self.music_volume_under_wishes)
         if self.wish_sounds is not None:
             self.wish_sounds[wish_index].play()
+
+    def _show_credits(self):
+        """A moment after the wishes, the big screen reveals the demo credits item by item."""
+        if not self.desks or self.credits_shown:
+            return
+        if self.elapsed < self._wishes_end() + self.delay.credits:
+            return
+        self.credits_shown = True
+        self.big_screen.display_credits(self.credit_items, reveal_interval=self.delay.credit_item)
 
     def _hall_santa_fall_start(self):
         return self._screen_approach_start() + self.delay.hall_santa_fall
@@ -978,6 +996,7 @@ class WinterDemo(PygameDemo):
         self.eye = self._lerp(eye, screen_eye, forward)
         self.target = self._lerp(target, screen_target, forward)
         self._show_wishes()
+        self._show_credits()
 
     def _hall_point(self, hall, local, sway=0.0):
         return (hall.x + (local[0] + sway) * hall.size, hall.y + local[1] * hall.size, hall.z + local[2] * hall.size)

@@ -47,6 +47,8 @@ class Delay:
         self.desk_item = 0.35
         self.desk_start = 0.6
         self.hall_santa_fall = 2.0
+        self.credits = 1.0
+        self.credit_item = 0.8
 
 
 class Globe:

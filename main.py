@@ -79,7 +79,7 @@ DEMOS = {
     "winter": winter_demo,
 }
 
-DEFAULT_DEMO = "c64"
+DEFAULT_DEMO = "winter"
 
 
 def close_boot_splash():

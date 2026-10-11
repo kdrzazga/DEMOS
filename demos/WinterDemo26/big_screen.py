@@ -9,7 +9,8 @@ class BigScreen:
     """Party projection screen on two stands: a dark frame around an unlit, animated plasma picture.
 
     Local frame: centred on x, standing on y=0, the picture faces +z.
-    display_text() puts the lines of a UTF-8 text file on top of the picture.
+    display_text() puts the lines of a UTF-8 text file on top of the picture,
+    display_credits() reveals text lines and pictures one after another.
     """
 
     def __init__(self, x, y, z, width=12.0, height=6.75, lift=1.6, columns=32, rows=18):
@@ -50,6 +51,11 @@ class BigScreen:
         self.interference_streak_count = 80
         self.interference_streak_thickness = (3, 10)
         self.interference_random = random.Random(3)
+        self.credit_items = None
+        self.credit_reveal_interval = 0.8
+        self.credits_started = 0.0
+        self.shown_credit_count = 0
+        self.credit_gap = 24
         self.display_list = self._compile()
 
     def _box(self, min_corner, max_corner):
@@ -92,6 +98,11 @@ class BigScreen:
             language_file, self.text_interfered = self._language_phase()
             if language_file != self.shown_file:
                 self.display_text(language_file, self.language_font, self.language_size)
+        if self.credit_items is not None:
+            revealed = min(len(self.credit_items),
+                           int((self.time - self.credits_started) / self.credit_reveal_interval) + 1)
+            if revealed != self.shown_credit_count:
+                self._show_credit_items(revealed)
 
     def _plasma_color(self, u, v, brightness):
         moment = self.time * self.plasma_speed
@@ -135,12 +146,69 @@ class BigScreen:
         file1 until the cycle repeats. During interference the text shakes and streaks cover it.
         Both texts use the same font size: the largest up to size at which no line of either file has to wrap.
         """
+        self.credit_items = None
         self.language_files = (file1, file2)
         self.language_font = font
         self.language_size = self._size_fitting_without_wrap(self.language_files, font, size)
         self.languages_started = self.time
         self.text_interfered = False
         self.display_text(file1, font, self.language_size)
+
+    def display_credits(self, items, reveal_interval=0.8, font=None):
+        """Reveals the items one by one, every reveal_interval seconds, centred as one block.
+
+        An item is ("text", line, size) or ("image", file, scale). Text lines of the same size share
+        the largest font size up to that size at which none of them is wider than the screen.
+        """
+        self.language_files = None
+        self.text_interfered = False
+        self.credit_items = self._render_credit_items(items, font)
+        self.credit_reveal_interval = reveal_interval
+        self.credits_started = self.time
+        self._show_credit_items(1)
+
+    def _render_credit_items(self, items, font):
+        """Returns a (picture, shadow or None) pair of surfaces per item."""
+        fitted_sizes = {}
+        for size in {size for kind, _, size in items if kind == "text"}:
+            lines = [line for kind, line, line_size in items if kind == "text" and line_size == size]
+            fitted_sizes[size] = self._size_fitting_lines(lines, font, size)
+        surfaces = []
+        for kind, content, size in items:
+            if kind == "text":
+                text_font = self._load_font(font, fitted_sizes[size])
+                surfaces.append((text_font.render(content, True, self.text_color),
+                                 text_font.render(content, True, self.text_shadow_color)))
+            else:
+                surfaces.append((self._load_scaled_image(content, size), None))
+        return tuple(surfaces)
+
+    def _load_scaled_image(self, file, scale):
+        image = pygame.image.load(file)
+        with_alpha = pygame.Surface(image.get_size(), pygame.SRCALPHA)
+        with_alpha.blit(image, (0, 0))
+        scaled_size = (round(image.get_width() * scale), round(image.get_height() * scale))
+        return pygame.transform.smoothscale(with_alpha, scaled_size)
+
+    def _show_credit_items(self, count):
+        """Draws the first count credit items where they stand once all of them are shown."""
+        texture_width, texture_height = self.text_resolution
+        surface = pygame.Surface(self.text_resolution, pygame.SRCALPHA)
+        block_height = (sum(picture.get_height() for picture, _ in self.credit_items)
+                        + self.credit_gap * (len(self.credit_items) - 1))
+        item_top = max(self.text_margin, (texture_height - block_height) // 2)
+        line_areas = []
+        for picture, shadow in self.credit_items[:count]:
+            item_left = (texture_width - picture.get_width()) // 2
+            if shadow is not None:
+                surface.blit(shadow, (item_left + self.text_shadow_offset, item_top + self.text_shadow_offset))
+            surface.blit(picture, (item_left, item_top))
+            line_areas.append((item_left, item_top, picture.get_width(), picture.get_height()))
+            item_top += picture.get_height() + self.credit_gap
+        self._delete_text_texture()
+        self.text_texture = self._surface_to_texture(surface)
+        self.text_line_areas = tuple(line_areas)
+        self.shown_credit_count = count
 
     def _read_paragraphs(self, file):
         with open(file, encoding="utf-8") as text_file:
@@ -152,8 +220,11 @@ class BigScreen:
         return pygame.font.Font(font, size)
 
     def _size_fitting_without_wrap(self, files, font, size):
-        usable_width = self.text_resolution[0] - 2 * self.text_margin
         lines = [line for file in files for line in self._read_paragraphs(file)]
+        return self._size_fitting_lines(lines, font, size)
+
+    def _size_fitting_lines(self, lines, font, size):
+        usable_width = self.text_resolution[0] - 2 * self.text_margin
         while size > 1:
             text_font = self._load_font(font, size)
             if all(text_font.size(line)[0] <= usable_width for line in lines):
@@ -163,6 +234,8 @@ class BigScreen:
 
     def clear_text(self):
         self.language_files = None
+        self.credit_items = None
+        self.shown_credit_count = 0
         self.text_interfered = False
         self._delete_text_texture()
 
@@ -223,6 +296,10 @@ class BigScreen:
             surface.blit(shadow, (line_left + self.text_shadow_offset, line_top + self.text_shadow_offset))
             surface.blit(text, (line_left, line_top))
             line_areas.append((line_left, line_top, text.get_width(), font_height))
+        return self._surface_to_texture(surface), tuple(line_areas)
+
+    def _surface_to_texture(self, surface):
+        texture_width, texture_height = self.text_resolution
         pixels = pygame.image.tobytes(surface, "RGBA", True)
         texture = glGenTextures(1)
         glBindTexture(GL_TEXTURE_2D, texture)
@@ -234,7 +311,7 @@ class BigScreen:
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture_width, texture_height, 0,
                      GL_RGBA, GL_UNSIGNED_BYTE, pixels)
         glBindTexture(GL_TEXTURE_2D, 0)
-        return texture, tuple(line_areas)
+        return texture
 
     def _texture_pixel_size(self):
         return self.width / self.text_resolution[0]

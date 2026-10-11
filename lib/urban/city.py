@@ -80,7 +80,7 @@ class City:
 
 
 class CityEntranceSign:
-    def __init__(self, city_name: str, sign_size: int, nesw: str):
+    def __init__(self, city_name: str, sign_size: int, nesw: str, board_color=(247, 196, 0)):
         self.city_name = city_name
         self.sign_size = sign_size
         self.nesw = nesw.upper()
@@ -88,7 +88,7 @@ class CityEntranceSign:
         self.y = 0.0
         self.z = 0.0
 
-        self.sign_yellow = (247, 196, 0)
+        self.board_color = board_color
         self.frame_black = (18, 18, 18)
         self.back_color = (0.42, 0.43, 0.45)
         self.post_color = (0.46, 0.47, 0.49)
@@ -132,7 +132,7 @@ class CityEntranceSign:
         corner = int(height * self.corner_share)
         rim = max(1, int(height * self.rim_share))
         frame = max(1, int(height * self.frame_share))
-        pygame.draw.rect(surface, self.sign_yellow, outline, border_radius=corner)
+        pygame.draw.rect(surface, self.board_color, outline, border_radius=corner)
         pygame.draw.rect(surface, self.frame_black, outline.inflate(-2 * rim, -2 * rim),
                          width=frame, border_radius=max(0, corner - rim))
         surface.blit(caption, caption.get_rect(center=outline.center))

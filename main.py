@@ -4,6 +4,7 @@ import os
 import sys
 
 from demos.c64.demo import c64_demo
+from demos.retrosfera10.main import Retrosfera10Demo
 
 
 def _verbose_requested():
@@ -69,6 +70,10 @@ def winter_demo(windowed, triggered):
     WinterDemo(windowed=windowed, triggered=triggered).run()
 
 
+def retrosfera10_demo(windowed, triggered):
+    Retrosfera10Demo(windowed=windowed, triggered=triggered).run()
+
+
 # demo name -> launcher; every launcher takes the same (windowed, triggered)
 DEMOS = {
     "kna": kna_demo,
@@ -77,9 +82,10 @@ DEMOS = {
     "c64": c64,
     "po": pixelove_ole, #cannot be built to exe, due to execution loop
     "winter": winter_demo,
+    "retrosfera10": retrosfera10_demo,
 }
 
-DEFAULT_DEMO = "winter"
+DEFAULT_DEMO = "retrosfera10"
 
 
 def close_boot_splash():

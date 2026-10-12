@@ -57,9 +57,10 @@ class PixeloveOleLogo:
             part.go_home()
         self.lower_row.snap(self.lower_row.word)
 
-    def draw(self):
+    def draw(self, exclude=()):
         for part in self.parts():
-            part.draw()
+            if part not in exclude:
+                part.draw()
 
     def release(self):
         for part in self.parts():

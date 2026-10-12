@@ -9,6 +9,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 from lib.base_demo import BaseDemo
 from demos.pixeloveole3.logo_phases import build_logo_phases
 from demos.pixeloveole3.logo_show import LogoShow
+from demos.pixeloveole3.stage2 import build_stage2_phases
 
 
 class PixeloveOle3(BaseDemo):
@@ -28,7 +29,7 @@ class PixeloveOle3(BaseDemo):
 		pygame.mouse.set_visible(False)
 		self._init_display()
 		self.show = LogoShow(self.width, self.height) if self.opengl else None
-		self.phases = build_logo_phases(self.show) if self.show else []
+		self.phases = build_logo_phases(self.show) + build_stage2_phases(self.show) if self.show else []
 		self.phase_index = 0
 		if self.phases:
 			self.current_phase().begin(None)

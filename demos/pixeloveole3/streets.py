@@ -14,26 +14,19 @@ class PathSample:
 
 
 class RoadPath:
-    def __init__(self, west_x=-13.0, front_z=22.0, radius=14.0, north_z=-300.0, east_x=300.0, step=4.0,
-                 arc_segments=24):
-        self.west_x = west_x
-        self.front_z = front_z
-        self.radius = radius
-        self.corner_x = west_x + radius
-        self.corner_z = front_z - radius
+    """Straight centre line from `start` to `end` (x, z), sampled every `step`.
+    Sample normals point to the left of the direction of travel."""
+
+    def __init__(self, start, end, step=4.0):
         self.samples = []
-        z = north_z
-        while z < self.corner_z:
-            self._append(west_x, z, 0.0, 1.0)
-            z += step
-        for index in range(arc_segments):
-            angle = math.pi - (math.pi / 2.0) * index / arc_segments
-            self._append(self.corner_x + radius * math.cos(angle), self.corner_z + radius * math.sin(angle),
-                         math.sin(angle), -math.cos(angle))
-        x = self.corner_x
-        while x <= east_x:
-            self._append(x, front_z, 1.0, 0.0)
-            x += step
+        (start_x, start_z), (end_x, end_z) = start, end
+        length = math.hypot(end_x - start_x, end_z - start_z)
+        direction_x, direction_z = (end_x - start_x) / length, (end_z - start_z) / length
+        count = max(1, int(math.ceil(length / step)))
+        for index in range(count + 1):
+            blend = index / count
+            self._append(start_x + (end_x - start_x) * blend, start_z + (end_z - start_z) * blend,
+                         direction_x, direction_z)
 
     def _append(self, x, z, direction_x, direction_z):
         distance = 0.0
@@ -57,10 +50,64 @@ class RoadPath:
                                   distance)
         return self.samples[-1]
 
-    def arc_point(self, angle, inset):
-        radius = self.radius - inset
-        return (self.corner_x + radius * math.cos(angle), self.corner_z + radius * math.sin(angle),
-                -math.cos(angle), -math.sin(angle))
+
+class RoadArm:
+    """Straight road leaving the junction centre along `direction`.
+    Positive offsets lie to the side its path normals point to."""
+
+    def __init__(self, center, direction, length, step=4.0):
+        direction_length = math.hypot(*direction)
+        self.center = center
+        self.direction = (direction[0] / direction_length, direction[1] / direction_length)
+        self.normal = (self.direction[1], -self.direction[0])
+        self.length = length
+        self.path = RoadPath(center, self.point(length, 0.0)[::2], step)
+
+    def point(self, along, offset, height=0.0):
+        return (self.center[0] + self.direction[0] * along + self.normal[0] * offset,
+                height,
+                self.center[1] + self.direction[1] * along + self.normal[1] * offset)
+
+
+class Corner:
+    """Where the +`offset` side of `first` meets the -`offset` side of
+    `second` (the next arm turning towards first.normal): a mitred joint."""
+
+    def __init__(self, first, second, offset):
+        (ax, az), (bx, bz) = first.direction, second.direction
+        (nax, naz), (nbx, nbz) = first.normal, second.normal
+        # first.center + t*a + offset*na == second.center + u*b - offset*nb
+        right_x, right_z = -offset * (nax + nbx), -offset * (naz + nbz)
+        determinant = ax * -bz - (-bx) * az
+        self.first_along = (right_x * -bz - (-bx) * right_z) / determinant
+        self.second_along = (ax * right_z - az * right_x) / determinant
+        x, _, z = first.point(self.first_along, offset)
+        self.x, self.z = x, z
+
+    def at(self, height):
+        return self.x, height, self.z
+
+
+class YJunction:
+    """Y-shaped crossroad centred in front of the library's west corner: the
+    front street runs east, the north street runs north, and the branch
+    leaves south-west at `branch_angle` degrees off the straight line.
+    Arms are listed in turning order, so each consecutive pair (wrapping
+    around) bounds one wedge; the first wedge (east -> north) is the
+    library's plaza."""
+
+    def __init__(self, center=(-13.0, 22.0), half_width=5.0, branch_angle=30.0, east_length=313.0,
+                 north_length=322.0, branch_length=250.0):
+        angle = math.radians(branch_angle)
+        self.center = center
+        self.half_width = half_width
+        self.east = RoadArm(center, (1.0, 0.0), east_length)
+        self.north = RoadArm(center, (0.0, -1.0), north_length)
+        self.branch = RoadArm(center, (-math.cos(angle), math.sin(angle)), branch_length)
+        self.arms = (self.east, self.north, self.branch)
+
+    def wedges(self):
+        return tuple(zip(self.arms, self.arms[1:] + self.arms[:1]))
 
 
 class StreetPalette:
@@ -125,42 +172,56 @@ class Fence:
 
 
 class StreetScape:
-    def __init__(self, path, paving_texture):
-        self.path = path
+    def __init__(self, junction, paving_texture):
+        self.junction = junction
         self.paving_texture = paving_texture
         self.palette = StreetPalette()
-        self.half_width = 5.0
+        self.half_width = junction.half_width
         self.sidewalk_width = 6.0
         self.curb = 0.15
         self.block_limit_x = 130.0
         self.block_limit_z = -100.0
-        self.front_samples = tuple(sample for sample in path.samples
-                                   if -9.0 <= sample.x <= 140.0 and sample.z >= path.corner_z)
-        self.fence = Fence(tuple(sample.offset(8.9, self.curb) for sample in self.front_samples), self.palette.fence)
+        center_x, center_z = junction.center
+        plaza_wedge, *sidewalk_wedges = junction.wedges()
+        self.plaza_wedge = plaza_wedge
+        self.sidewalk_wedges = tuple(sidewalk_wedges)
+        self.verge = RoadPath((center_x + self.half_width, center_z), (140.0, center_z))
+        self.fence = Fence(tuple(sample.offset(8.9, self.curb) for sample in self.verge.samples), self.palette.fence)
         self.lamps = self._create_lamps()
 
     def _create_lamps(self):
         palette = self.palette
-        path = self.path
-        lamps = [LampPost(x, path.front_z - 6.8, 0.0, 1.0, self.curb, palette) for x in (14.0, 42.0, 70.0, 98.0, 126.0)]
-        arc_x, arc_z, arm_x, arm_z = path.arc_point(math.pi * 0.75, 6.8)
-        lamps.append(LampPost(arc_x, arc_z, -arm_x, -arm_z, self.curb, palette))
-        lamps.extend(LampPost(path.west_x + 6.8, z, -1.0, 0.0, self.curb, palette) for z in (-18.0, -48.0, -78.0, -108.0))
-        lamps.extend(LampPost(path.west_x - 9.5, z, 1.0, 0.0, self.curb, palette) for z in (-30.0, -70.0, -110.0))
+        center_x, center_z = self.junction.center
+        branch = self.junction.branch
+        lamps = [LampPost(x, center_z - 6.8, 0.0, 1.0, self.curb, palette) for x in (14.0, 42.0, 70.0, 98.0, 126.0)]
+        lamps.append(LampPost(center_x, center_z + 6.8, 0.0, -1.0, self.curb, palette))
+        lamps.extend(LampPost(center_x + 6.8, z, -1.0, 0.0, self.curb, palette) for z in (-18.0, -48.0, -78.0, -108.0))
+        lamps.extend(LampPost(center_x - 9.5, z, 1.0, 0.0, self.curb, palette) for z in (-30.0, -70.0, -110.0))
+        for along in (30.0, 60.0, 90.0):
+            x, _, z = branch.point(along, 6.8)
+            lamps.append(LampPost(x, z, -branch.normal[0], -branch.normal[1], self.curb, palette))
         return lamps
 
     def draw(self, shapes):
         palette = self.palette
-        samples = self.path.samples
-        half = self.half_width
+        half, sidewalk = self.half_width, self.sidewalk_width
         self._draw_ground(shapes)
         self._draw_block(shapes)
-        self._draw_ribbon(shapes, samples, -half, half, 0.05, palette.asphalt, False)
-        self._draw_ribbon(shapes, samples, -half - self.sidewalk_width, -half, self.curb, palette.sidewalk, True)
-        self._draw_curb(shapes, samples, half, -1.0)
-        self._draw_curb(shapes, samples, -half, 1.0)
-        self._draw_curb(shapes, samples, -half - self.sidewalk_width, -1.0)
-        self._draw_ribbon(shapes, self.front_samples, half + 0.25, half + 3.7, self.curb + 0.02, palette.grass, False)
+        for arm in self.junction.arms:
+            self._draw_band(shapes, self._straight_pairs(arm, -half, half, 0.05), palette.asphalt, False)
+        middle = [Corner(first, second, half).at(0.05) for first, second in self.junction.wedges()]
+        shapes.polygon(middle, palette.asphalt, (0.0, 1.0, 0.0))
+        for first, second in self.sidewalk_wedges:
+            for arm, side in ((first, 1.0), (second, -1.0)):
+                self._draw_band(shapes, self._mitred_pairs(first, second, arm, side, half, half + sidewalk, self.curb),
+                                palette.sidewalk, True)
+                self._draw_curb(shapes, first, second, arm, side, half, -1.0)
+                self._draw_curb(shapes, first, second, arm, side, half + sidewalk, 1.0)
+        first, second = self.plaza_wedge
+        for arm, side in ((first, 1.0), (second, -1.0)):
+            self._draw_curb(shapes, first, second, arm, side, half, -1.0)
+        self._draw_band(shapes, [(sample.offset(half + 0.25, self.curb + 0.02), sample.offset(half + 3.7, self.curb + 0.02))
+                                 for sample in self.verge.samples], palette.grass, False)
         self._draw_markings(shapes)
         self._draw_crosswalk(shapes)
         self._draw_parking(shapes)
@@ -176,33 +237,57 @@ class StreetScape:
         shapes.polygon(lawn, self.palette.grass, (0.0, 1.0, 0.0))
 
     def _draw_block(self, shapes):
-        edge = [sample.offset(self.half_width, self.curb) for sample in self.path.samples]
-        edge = [point for point in edge if point[0] <= self.block_limit_x and point[2] >= self.block_limit_z]
-        edge.append((edge[-1][0], self.curb, self.block_limit_z))
+        """Paved plaza in the corner between the north street and the east arm."""
+        corner = Corner(*self.plaza_wedge, self.half_width)
+        edge = ((corner.x, self.curb, self.block_limit_z), (corner.x, self.curb, corner.z),
+                (self.block_limit_x, self.curb, corner.z), (self.block_limit_x, self.curb, self.block_limit_z))
         with shapes.textured(self.paving_texture):
             shapes.polygon(edge, self.palette.plaza, (0.0, 1.0, 0.0), [(x / 2.5, z / 2.5) for x, _, z in edge])
 
-    def _draw_ribbon(self, shapes, samples, inner, outer, height, color, textured):
-        pairs = [(sample.offset(inner, height), sample.offset(outer, height)) for sample in samples]
+    def _straight_pairs(self, arm, inner, outer, height):
+        return [(sample.offset(inner, height), sample.offset(outer, height)) for sample in arm.path.samples]
+
+    def _mitred_pairs(self, first, second, arm, side, inner, outer, height):
+        """Band between two offsets on one side of `arm`, its end at the
+        junction cut along the mitre shared with the neighbouring arm."""
+        inner_corner, outer_corner = Corner(first, second, inner), Corner(first, second, outer)
+        along_of = (lambda corner: corner.first_along) if arm is first else (lambda corner: corner.second_along)
+        start = max(along_of(inner_corner), along_of(outer_corner))
+        pairs = [(inner_corner.at(height), outer_corner.at(height))]
+        for sample in arm.path.samples:
+            if sample.distance > start:
+                pairs.append((sample.offset(side * inner, height), sample.offset(side * outer, height)))
+        return pairs
+
+    def _draw_band(self, shapes, pairs, color, textured):
         uvs = [((first[0] / 2.5, first[2] / 2.5), (second[0] / 2.5, second[2] / 2.5)) for first, second in pairs]
         with shapes.textured(self.paving_texture if textured else None):
             shapes.strip(pairs, [(0.0, 1.0, 0.0)] * len(pairs), color, uvs if textured else None)
 
-    def _draw_curb(self, shapes, samples, offset, facing):
-        pairs = [(sample.offset(offset, 0.0), sample.offset(offset, self.curb)) for sample in samples]
-        normals = [(sample.normal_x * facing, 0.0, sample.normal_z * facing) for sample in samples]
-        shapes.strip(pairs, normals, self.palette.curb)
+    def _draw_curb(self, shapes, first, second, arm, side, offset, facing):
+        """Curb along `offset` on one side of `arm`; facing -1 looks back at
+        the road, +1 away from it."""
+        line = [inner for inner, _ in self._mitred_pairs(first, second, arm, side, offset, offset, 0.0)]
+        pairs = [((x, 0.0, z), (x, self.curb, z)) for x, _, z in line]
+        normal = (arm.normal[0] * side * facing, 0.0, arm.normal[1] * side * facing)
+        shapes.strip(pairs, [normal] * len(pairs), self.palette.curb)
 
     def _draw_markings(self, shapes):
-        for offset in (4.45, -4.6):
-            self._draw_ribbon(shapes, self.path.samples, offset, offset + 0.15, 0.07, self.palette.marking, False)
-        distance = 0.0
-        while distance < self.path.length() - 3.0:
-            start = self.path.point_at(distance)
-            end = self.path.point_at(distance + 3.0)
-            if not (start.x < self.path.west_x + 1.0 and -1.0 < start.z < 7.5):
-                self._draw_dash(shapes, start, end)
-            distance += 6.0
+        """Edge lines mitre at the corners like the curbs; centre dashes start
+        just outside the junction on every arm."""
+        for first, second in self.junction.wedges():
+            for arm, side in ((first, 1.0), (second, -1.0)):
+                self._draw_band(shapes, self._mitred_pairs(first, second, arm, side, 4.45, 4.6, 0.07),
+                                self.palette.marking, False)
+        crossing_z = (-1.0, 7.5)
+        for arm in self.junction.arms:
+            distance = self.half_width + 1.0
+            while distance < arm.path.length() - 3.0:
+                start = arm.path.point_at(distance)
+                end = arm.path.point_at(distance + 3.0)
+                if not (arm is self.junction.north and crossing_z[0] < start.z < crossing_z[1]):
+                    self._draw_dash(shapes, start, end)
+                distance += 6.0
 
     def _draw_dash(self, shapes, start, end):
         width = 0.08
@@ -211,7 +296,7 @@ class StreetScape:
         shapes.polygon(quad, self.palette.marking, (0.0, 1.0, 0.0))
 
     def _draw_crosswalk(self, shapes):
-        left = self.path.west_x - self.half_width + 0.5
+        left = self.junction.center[0] - self.half_width + 0.5
         for index in range(9):
             x = left + index * 1.0
             shapes.box(x, 0.05, 1.5, x + 0.5, 0.07, 5.5, self.palette.marking)

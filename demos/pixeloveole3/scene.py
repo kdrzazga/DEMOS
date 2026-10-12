@@ -8,7 +8,7 @@ from demos.pixeloveole3.library import Library
 from lib.urban.residential import BuildingStyle, Footprint, PlainBuilding, Tenement
 from lib.urban.shapes import Shapes
 from demos.pixeloveole3.sky import Sky
-from demos.pixeloveole3.streets import RoadPath, StreetScape
+from demos.pixeloveole3.streets import StreetScape, YJunction
 from lib.urban.textures import TextureFactory
 from demos.pixeloveole3.vegetation import Grove
 
@@ -37,6 +37,7 @@ class LibraryScene:
         self.zenith = (0.33, 0.56, 0.86)
         self.horizon = (0.80, 0.86, 0.93)
         self.sun_direction = (-0.35, 0.9, 0.55, 0.0)
+        self.field_of_view = 50.0
         self._init_gl()
         self.shapes = Shapes()
         factory = TextureFactory()
@@ -45,7 +46,7 @@ class LibraryScene:
         self.library = Library(roof_texture, factory)
         self.office = self._create_office(roof_texture)
         self.tenement = self._create_tenement(roof_texture)
-        self.street = StreetScape(RoadPath(), paving_texture)
+        self.street = StreetScape(YJunction(), paving_texture)
         self.city = DistantCity(roof_texture)
         self.grove = Grove(((20.0, -36.0), (27.0, -44.0), (18.0, -50.0), (36.0, -28.0), (45.0, -33.0),
                             (53.0, -27.0), (61.0, -38.0), (66.0, -24.0), (90.0, -40.0), (94.0, -18.0),
@@ -76,7 +77,7 @@ class LibraryScene:
         glClearColor(*self.horizon, 1.0)
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-        gluPerspective(50.0, self.width / self.height, 1.0, 1600.0)
+        gluPerspective(self.field_of_view, self.width / self.height, 1.0, 1600.0)
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
 

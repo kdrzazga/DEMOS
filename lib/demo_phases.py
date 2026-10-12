@@ -5,14 +5,14 @@ from OpenGL.GL import (
 from OpenGL.GLU import gluLookAt, gluPerspective
 
 
-class Easing:
+class CameraInterpolationHelper:
 	@staticmethod
 	def clamp(value):
 		return max(0.0, min(1.0, value))
 
 	@staticmethod
 	def smooth(value):
-		value = Easing.clamp(value)
+		value = CameraInterpolationHelper.clamp(value)
 		return value * value * (3.0 - 2.0 * value)
 
 	@staticmethod
@@ -21,7 +21,7 @@ class Easing:
 
 	@staticmethod
 	def curve(start, bend, end, factor):
-		return Easing.blend(Easing.blend(start, bend, factor), Easing.blend(bend, end, factor), factor)
+		return CameraInterpolationHelper.blend(CameraInterpolationHelper.blend(start, bend, factor), CameraInterpolationHelper.blend(bend, end, factor), factor)
 
 
 class GeoPoint:
@@ -30,13 +30,13 @@ class GeoPoint:
 		self.longitude = longitude
 
 
-class PhaseCursor:
+class PhaseStepSequencer:
 	def __init__(self, time):
 		self.time = time
 		self.start = 0.0
 
 	def advance(self, duration):
-		progress = Easing.clamp((self.time - self.start) / duration)
+		progress = CameraInterpolationHelper.clamp((self.time - self.start) / duration)
 		self.start += duration
 		return progress
 
@@ -77,14 +77,7 @@ class Camera:
 		gluLookAt(eye.x, eye.y, eye.z, target.x, target.y, target.z, up.x, up.y, up.z)
 
 
-class Handover:
-	def __init__(self, earth_texture_id, surface_brightness, altitude_degrees):
-		self.earth_texture_id = earth_texture_id
-		self.surface_brightness = surface_brightness
-		self.altitude_degrees = altitude_degrees
-
-
-class Phase:
+class DemoPhase:
 	def __init__(self, camera):
 		self.camera = camera
 		self.elapsed = 0.0

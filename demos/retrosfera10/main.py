@@ -6,11 +6,11 @@ from OpenGL.GL import (
 	GL_SMOOTH, glColorMaterial, glEnable, glShadeModel, glViewport,
 )
 
+from lib.demo_phases import Camera
 from lib.pygame_demo import PygameDemo
-from demos.retrosfera10.phases.brzeg_city import BrzegPhase
-from demos.retrosfera10.phases.common import Camera
-from demos.retrosfera10.phases.cosmic import CosmicPhase
-from demos.retrosfera10.phases.main_hall import MainHallPhase
+from demos.retrosfera10.phases.brzeg_city import BrzegDemoPhase
+from demos.retrosfera10.phases.cosmic import CosmicDemoPhase
+from demos.retrosfera10.phases.main_hall import MainHallDemoPhase
 from demos.retrosfera10.soundtrack import Soundtrack
 
 
@@ -28,9 +28,9 @@ class Retrosfera10Demo(PygameDemo):
 		self.init_gl(screen_width, screen_height)
 		camera = Camera(screen_width, screen_height, self.field_of_view)
 		self.soundtrack = Soundtrack(self.music_path, self.music_start_seconds)
-		brzeg_phase = BrzegPhase(camera)
-		cosmic_phase = CosmicPhase(camera, self.soundtrack, brzeg_phase.arrival_site)
-		self.phases = [cosmic_phase, brzeg_phase, MainHallPhase(camera)]
+		brzeg_phase = BrzegDemoPhase(camera)
+		cosmic_phase = CosmicDemoPhase(camera, self.soundtrack, brzeg_phase.arrival_site)
+		self.phases = [cosmic_phase, brzeg_phase, MainHallDemoPhase(camera)]
 		self.phase_index = 0
 
 	def init_gl(self, screen_width, screen_height):

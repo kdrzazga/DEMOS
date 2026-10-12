@@ -6,9 +6,9 @@ from OpenGL.GL import (
 	glDisable, glEnable, glEnd, glPopMatrix, glPushMatrix, glScalef, glTexCoord2f, glVertex3f,
 )
 
+from lib.demo_phases import CameraInterpolationHelper, GeoPoint, Light, DemoPhase, PhaseStepSequencer
 from demos.retrosfera10.models.brzeg import Brzeg
 from demos.retrosfera10.models.townhall import Vector3
-from demos.retrosfera10.phases.common import Easing, GeoPoint, Light, Phase, PhaseCursor
 
 
 class BrzegTimeline:
@@ -27,14 +27,14 @@ class BrzegTimeline:
 
 class CityProgress:
 	def __init__(self, timeline, time):
-		cursor = PhaseCursor(time)
-		self.magnify = Easing.smooth(cursor.advance(timeline.magnify))
-		self.landing = Easing.smooth(cursor.advance(timeline.landing))
-		self.glide = Easing.smooth(cursor.advance(timeline.glide))
+		cursor = PhaseStepSequencer(time)
+		self.magnify = CameraInterpolationHelper.smooth(cursor.advance(timeline.magnify))
+		self.landing = CameraInterpolationHelper.smooth(cursor.advance(timeline.landing))
+		self.glide = CameraInterpolationHelper.smooth(cursor.advance(timeline.glide))
 		self.sway = cursor.advance(timeline.sway)
-		self.hall = Easing.smooth(cursor.advance(timeline.hall_zoom))
-		self.orbit = Easing.smooth(cursor.advance(timeline.hall_orbit))
-		self.descent = Easing.smooth(cursor.advance(timeline.descent))
+		self.hall = CameraInterpolationHelper.smooth(cursor.advance(timeline.hall_zoom))
+		self.orbit = CameraInterpolationHelper.smooth(cursor.advance(timeline.hall_orbit))
+		self.descent = CameraInterpolationHelper.smooth(cursor.advance(timeline.descent))
 		entry = cursor.advance(timeline.entry)
 		self.entry = entry * entry
 		self.finished = cursor.finished()
@@ -88,7 +88,7 @@ class MagnifiedGround:
 		glEnable(GL_LIGHTING)
 
 
-class BrzegPhase(Phase):
+class BrzegDemoPhase(DemoPhase):
 	def __init__(self, camera, timeline=None):
 		super().__init__(camera)
 		self.timeline = timeline or BrzegTimeline()
@@ -150,17 +150,17 @@ class BrzegPhase(Phase):
 		focus = self.sign_focus()
 		landed_eye = self.landing_eye(focus)
 		sign_eye = focus + self.view_line() * self.sign_view_distance
-		gliding_eye = Easing.blend(landed_eye, sign_eye, progress.glide)
+		gliding_eye = CameraInterpolationHelper.blend(landed_eye, sign_eye, progress.glide)
 		sway_offset = Vector3(self.sway_amplitude * math.sin(math.tau * self.timeline.sway_count * progress.sway), 0.0, 0.0)
-		hall_eye = self.orbit_eye(Easing.curve(sign_eye, self.hall_waypoint, self.hall_eye, progress.hall), progress.orbit)
-		eye = Easing.blend(self.arrival.at_height(self.top_view_height), gliding_eye, progress.landing)
+		hall_eye = self.orbit_eye(CameraInterpolationHelper.curve(sign_eye, self.hall_waypoint, self.hall_eye, progress.hall), progress.orbit)
+		eye = CameraInterpolationHelper.blend(self.arrival.at_height(self.top_view_height), gliding_eye, progress.landing)
 		if progress.glide >= 1.0:
 			eye = hall_eye + sway_offset
 		if progress.descent > 0.0:
-			eye = Easing.blend(Easing.blend(hall_eye, self.window_approach_eye, progress.descent), self.window_stop_eye, progress.entry)
-		target = Easing.blend(Easing.blend(self.arrival, focus, progress.landing), self.hall_target, progress.hall)
-		target = Easing.blend(target, self.window_target, progress.descent)
-		up = Easing.blend(Vector3(0.0, 0.0, -1.0), Vector3.up(), progress.landing).normalized()
+			eye = CameraInterpolationHelper.blend(CameraInterpolationHelper.blend(hall_eye, self.window_approach_eye, progress.descent), self.window_stop_eye, progress.entry)
+		target = CameraInterpolationHelper.blend(CameraInterpolationHelper.blend(self.arrival, focus, progress.landing), self.hall_target, progress.hall)
+		target = CameraInterpolationHelper.blend(target, self.window_target, progress.descent)
+		up = CameraInterpolationHelper.blend(Vector3(0.0, 0.0, -1.0), Vector3.up(), progress.landing).normalized()
 		return eye, target, up
 
 	def update(self, seconds):
@@ -169,14 +169,14 @@ class BrzegPhase(Phase):
 
 	def render(self):
 		progress = CityProgress(self.timeline, self.elapsed)
-		sky = [Easing.blend(0.0, channel, progress.magnify) for channel in self.sky_color]
+		sky = [CameraInterpolationHelper.blend(0.0, channel, progress.magnify) for channel in self.sky_color]
 		glClearColor(sky[0], sky[1], sky[2], 1.0)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		self.camera.apply_projection(0.5, 4000.0)
 		eye, target, up = self.city_view(progress)
 		self.camera.look(eye, target, up)
 		self.light.apply()
-		self.ground.draw(progress.magnify, Easing.blend(self.surface_brightness, 1.0, progress.magnify))
+		self.ground.draw(progress.magnify, CameraInterpolationHelper.blend(self.surface_brightness, 1.0, progress.magnify))
 		if progress.landing > 0.0:
 			glPushMatrix()
 			glScalef(1.0, max(0.01, progress.landing), 1.0)

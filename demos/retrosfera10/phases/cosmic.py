@@ -14,9 +14,16 @@ from OpenGL.GL import (
 from OpenGL.GLU import gluOrtho2D
 
 from lib.earth import Earth
+from lib.demo_phases import CameraInterpolationHelper, GeoPoint, Light, DemoPhase
 from lib.typer import Typer
 from demos.retrosfera10.models.townhall import Vector3
-from demos.retrosfera10.phases.common import Easing, GeoPoint, Handover, Light, Phase
+
+
+class InterPhaseDataHandover:
+	def __init__(self, earth_texture_id, surface_brightness, altitude_degrees):
+		self.earth_texture_id = earth_texture_id
+		self.surface_brightness = surface_brightness
+		self.altitude_degrees = altitude_degrees
 
 
 class CosmicTimeline:
@@ -100,7 +107,7 @@ class SpaceFlight:
 		self.radius = geometry.earth.radius
 
 	def view(self, progress):
-		eased = Easing.smooth(progress)
+		eased = CameraInterpolationHelper.smooth(progress)
 		target_direction = self.geometry.direction(self.site)
 		start_direction = self.start_eye.normalized()
 		start_altitude = self.start_eye.length() - self.radius
@@ -214,13 +221,13 @@ class CaptionPanel:
 		glMatrixMode(GL_MODELVIEW)
 
 
-class CosmicPhase(Phase):
+class CosmicDemoPhase(DemoPhase):
 	def __init__(self, camera, soundtrack, target_site, timeline=None):
 		super().__init__(camera)
 		self.soundtrack = soundtrack
 		self.target_site = target_site
 		self.timeline = timeline or CosmicTimeline()
-		self.caption_lines = ("RETROSFERA 10-lecie", "RSX 2027", "14 - 16 maja 2027", "WYRUSZAMY !!!")
+		self.caption_lines = ("RSX 2027", "10-lecie RETROSFERY", "14 - 16 maja 2027", "WYRUSZAMY !!!")
 		self.font_path = os.path.join(
 			os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "resources", "fonts", "pocket_calcuatlor_tt.ttf")
 		self.light = Light(Vector3(-0.5, 0.35, 0.8), (0.2, 0.2, 0.24, 1.0), (1.0, 1.0, 0.95, 1.0))
@@ -251,13 +258,13 @@ class CosmicPhase(Phase):
 			self.done = True
 
 	def caption_alpha(self):
-		return 1.0 - Easing.clamp((self.elapsed - self.travel_start) / self.timeline.caption_fade)
+		return 1.0 - CameraInterpolationHelper.clamp((self.elapsed - self.travel_start) / self.timeline.caption_fade)
 
 	def render(self):
 		glClearColor(0.0, 0.0, 0.0, 1.0)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		self.camera.apply_projection(0.05, 600.0)
-		progress = Easing.clamp((self.elapsed - self.travel_start) / self.timeline.travel)
+		progress = CameraInterpolationHelper.clamp((self.elapsed - self.travel_start) / self.timeline.travel)
 		eye, target, up = self.flight.view(progress)
 		self.camera.look(eye, target, up)
 		self.light.apply()
@@ -266,7 +273,7 @@ class CosmicPhase(Phase):
 		self.caption.draw(self.elapsed, self.caption_alpha(), self.camera.screen_width, self.camera.screen_height)
 
 	def handover(self):
-		return Handover(
+		return InterPhaseDataHandover(
 			self.earth.surface.id,
 			self.light.brightness(self.geometry.direction(self.target_site)),
 			math.degrees(self.end_altitude / self.earth.radius),

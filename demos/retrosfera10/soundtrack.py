@@ -23,4 +23,4 @@ class Soundtrack:
 
 	def handle_event(self, event):
 		if self.playing and event.type == self.end_event:
-			self.play_from_start_point()
+			pass#self.play_from_start_point()

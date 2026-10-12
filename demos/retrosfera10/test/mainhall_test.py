@@ -10,8 +10,9 @@ from OpenGL.GL import (
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 
-from demos.retrosfera10.phases.common import Camera, Handover
-from demos.retrosfera10.phases.main_hall import MainHallPhase
+from lib.demo_phases import Camera
+from demos.retrosfera10.phases.cosmic import InterPhaseDataHandover
+from demos.retrosfera10.phases.main_hall import MainHallDemoPhase
 
 
 class MainHallTestApp:
@@ -35,8 +36,8 @@ class MainHallTestApp:
 		pygame.display.set_mode((self.width, self.height), DOUBLEBUF | OPENGL)
 		pygame.display.set_caption("Main hall test - ESC quit")
 		self.setup_gl()
-		phase = MainHallPhase(Camera(self.width, self.height))
-		phase.begin(Handover(None, 1.0, 0.0))
+		phase = MainHallDemoPhase(Camera(self.width, self.height))
+		phase.begin(InterPhaseDataHandover(None, 1.0, 0.0))
 		clock = pygame.time.Clock()
 		while self.running:
 			for event in pygame.event.get():

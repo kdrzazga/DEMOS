@@ -272,9 +272,10 @@ class WindowedWall:
 
 
 class Stage:
-	def __init__(self, palette, half_width, back_z, depth=4.0, steps=3, rise=0.17, tread=0.4):
+	def __init__(self, palette, left_x, right_x, back_z, depth=4.0, steps=3, rise=0.17, tread=0.4):
 		self.palette = palette
-		self.half_width = half_width
+		self.left_x = left_x
+		self.right_x = right_x
 		self.back_z = back_z
 		self.depth = depth
 		self.steps = steps
@@ -284,12 +285,15 @@ class Stage:
 	def front_z(self):
 		return self.back_z + self.depth
 
+	def top(self):
+		return self.rise * self.steps
+
 	def build(self, builder):
 		for index in range(self.steps):
 			height = self.rise * (self.steps - index)
 			front = self.front_z() + self.tread * index
-			builder.box(self.palette.stage_wood, Vector3(-self.half_width, 0.0, self.back_z), Vector3(self.half_width, height, front))
-			builder.box(self.palette.step_edge, Vector3(-self.half_width, height - 0.04, front - 0.06), Vector3(self.half_width, height + 0.01, front + 0.02))
+			builder.box(self.palette.stage_wood, Vector3(self.left_x, 0.0, self.back_z), Vector3(self.right_x, height, front))
+			builder.box(self.palette.step_edge, Vector3(self.left_x, height - 0.04, front - 0.06), Vector3(self.right_x, height + 0.01, front + 0.02))
 
 
 class Ceiling:
@@ -326,7 +330,8 @@ class Ceiling:
 
 class MainHall:
 	def __init__(self, half_width=8.0, half_length=20.0, height=6.5, windows_per_side=6, chandelier_rows=(-3.6, 3.6),
-			chandelier_positions=(-14.0, -7.0, 0.0, 7.0, 14.0), chandelier_height=4.3):
+			chandelier_positions=(-14.0, -7.0, 0.0, 7.0, 14.0), chandelier_height=4.3, passage_width_share=0.15,
+			passage_side_gap=0.8, passage_height=3.0, passage_depth=1.6):
 		self.half_width = half_width
 		self.half_length = half_length
 		self.height = height
@@ -334,8 +339,12 @@ class MainHall:
 		self.chandelier_rows = chandelier_rows
 		self.chandelier_positions = chandelier_positions
 		self.chandelier_height = chandelier_height
+		self.passage_width_share = passage_width_share
+		self.passage_side_gap = passage_side_gap
+		self.passage_height = passage_height
+		self.passage_depth = passage_depth
 		self.palette = MainHallPalette()
-		self.stage = Stage(self.palette, half_width, -half_length)
+		self.stage = Stage(self.palette, self.passage_span()[1] + self.passage_side_gap, half_width, -half_length)
 		self.ceiling = Ceiling(self.palette, half_width, half_length, height)
 		self.parts = self.create_parts()
 		builder = MeshBuilder()
@@ -372,12 +381,40 @@ class MainHall:
 			self.palette.parquet,
 			Vector3(-width, 0.0, -length), Vector3(width, 0.0, -length), Vector3(width, 0.0, length), Vector3(-width, 0.0, length),
 		)
-		for z in (-length, length):
-			builder.polygon(
-				self.palette.plaster,
-				Vector3(-width, 0.0, z), Vector3(width, 0.0, z), Vector3(width, self.height, z), Vector3(-width, self.height, z),
-			)
-			builder.box(self.palette.furniture_wood, Vector3(-width, 0.0, z - 0.03), Vector3(width, 0.15, z + 0.03))
+		builder.polygon(
+			self.palette.plaster,
+			Vector3(-width, 0.0, length), Vector3(width, 0.0, length), Vector3(width, self.height, length), Vector3(-width, self.height, length),
+		)
+		builder.box(self.palette.furniture_wood, Vector3(-width, 0.0, length - 0.03), Vector3(width, 0.15, length + 0.03))
+		self.build_back_wall(builder)
+
+	def passage_span(self):
+		left = -self.half_width + self.passage_side_gap
+		return left, left + 2 * self.half_width * self.passage_width_share
+
+	def build_back_wall(self, builder):
+		z = -self.half_length
+		width = self.half_width
+		left, right = self.passage_span()
+		floor = 0.0
+		top = floor + self.passage_height
+		pieces = (
+			(-width, left, 0.0, self.height),
+			(right, width, 0.0, self.height),
+			(left, right, top, self.height),
+			(left, right, 0.0, floor),
+		)
+		for x0, x1, y0, y1 in pieces:
+			builder.polygon(self.palette.plaster, Vector3(x0, y0, z), Vector3(x1, y0, z), Vector3(x1, y1, z), Vector3(x0, y1, z))
+		back = z - self.passage_depth
+		for x in (left, right):
+			builder.polygon(self.palette.plaster, Vector3(x, floor, z), Vector3(x, top, z), Vector3(x, top, back), Vector3(x, floor, back))
+		builder.polygon(self.palette.plaster, Vector3(left, top, z), Vector3(right, top, z), Vector3(right, top, back), Vector3(left, top, back))
+		builder.polygon(self.palette.parquet, Vector3(left, floor, z), Vector3(right, floor, z), Vector3(right, floor, back), Vector3(left, floor, back))
+		builder.polygon(self.palette.shadow, Vector3(left, floor, back), Vector3(right, floor, back), Vector3(right, top, back), Vector3(left, top, back))
+		builder.box(self.palette.trim, Vector3(left - 0.12, floor, z - 0.02), Vector3(left, top + 0.12, z + 0.06))
+		builder.box(self.palette.trim, Vector3(right, floor, z - 0.02), Vector3(right + 0.12, top + 0.12, z + 0.06))
+		builder.box(self.palette.trim, Vector3(left - 0.12, top, z - 0.02), Vector3(right + 0.12, top + 0.12, z + 0.06))
 
 	def stage_front(self):
 		return self.stage.front_z()

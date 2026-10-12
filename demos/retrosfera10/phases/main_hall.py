@@ -1,8 +1,8 @@
 from OpenGL.GL import GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT, glClear, glClearColor
 
+from lib.demo_phases import CameraInterpolationHelper, Light, DemoPhase
 from demos.retrosfera10.models.mainhall import MainHall
 from demos.retrosfera10.models.townhall import Vector3
-from demos.retrosfera10.phases.common import Easing, Light, Phase
 
 
 class MainHallTimeline:
@@ -10,7 +10,7 @@ class MainHallTimeline:
 		self.walk = walk
 
 
-class MainHallPhase(Phase):
+class MainHallDemoPhase(DemoPhase):
 	def __init__(self, camera, timeline=None):
 		super().__init__(camera)
 		self.timeline = timeline or MainHallTimeline()
@@ -27,9 +27,9 @@ class MainHallPhase(Phase):
 		glClearColor(*self.background_color, 1.0)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		self.camera.apply_projection(0.1, 200.0)
-		walk = Easing.smooth(self.elapsed / self.timeline.walk)
-		eye = Easing.blend(self.start_eye, self.end_eye, walk)
-		target = Easing.blend(self.start_target, self.end_target, walk)
+		walk = CameraInterpolationHelper.smooth(self.elapsed / self.timeline.walk)
+		eye = CameraInterpolationHelper.blend(self.start_eye, self.end_eye, walk)
+		target = CameraInterpolationHelper.blend(self.start_target, self.end_target, walk)
 		self.camera.look(eye, target, Vector3.up())
 		self.light.apply()
 		self.hall.draw()

@@ -6,10 +6,26 @@ from demos.retrosfera10.models.townhall import Vector3
 
 
 class MainHallTimeline:
-	def __init__(self, walk=18.0, screen_delay=3.0, screen_appear=1.5):
+	def __init__(self, walk=18.0, screen_delay=3.0, screen_appear=1.5, caption_hold=5.0):
 		self.walk = walk
 		self.screen_delay = screen_delay
 		self.screen_appear = screen_appear
+		self.caption_hold = caption_hold
+
+	def logo_time(self):
+		return self.screen_delay + self.screen_appear + self.caption_hold
+
+
+class TimedEvent:
+	def __init__(self, time, action):
+		self.time = time
+		self.action = action
+		self.fired = False
+
+	def fire_if_due(self, elapsed):
+		if not self.fired and elapsed >= self.time:
+			self.fired = True
+			self.action()
 
 
 class MainHallDemoPhase(DemoPhase):
@@ -24,10 +40,16 @@ class MainHallDemoPhase(DemoPhase):
 		self.end_eye = Vector3(0.0, 1.9, self.hall.stage_front() + 9.0)
 		self.start_target = Vector3(0.0, 2.6, far_wall)
 		self.end_target = Vector3(0.0, 1.6, far_wall)
+		self.events = (
+			TimedEvent(self.timeline.screen_delay, self.hall.start_dolls_jumping),
+			TimedEvent(self.timeline.logo_time(), self.hall.show_screen_logo),
+		)
 
 	def update(self, seconds):
 		super().update(seconds)
 		self.hall.update(seconds)
+		for event in self.events:
+			event.fire_if_due(self.elapsed)
 
 	def render(self):
 		glClearColor(*self.background_color, 1.0)

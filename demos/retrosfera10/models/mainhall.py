@@ -342,7 +342,8 @@ class MainHall:
 	def __init__(self, half_width=8.0, half_length=20.0, height=6.5, windows_per_side=6, chandelier_rows=(-3.6, 3.6),
 			chandelier_positions=(-14.0, -7.0, 0.0, 7.0, 14.0), chandelier_height=4.3, passage_width_share=0.15,
 			passage_side_gap=0.8, passage_height=3.0, passage_depth=1.6,
-			stage_performers=None, performer_edge_margin=1.0, screen_width=6.0, screen_caption="RSX - RetroSfera 2027"):
+			stage_performers=None, performer_edge_margin=1.0, screen_width=6.0, screen_caption="RSX - RetroSfera 2027",
+			screen_logo="logo1.png"):
 		self.half_width = half_width
 		self.half_length = half_length
 		self.height = height
@@ -358,6 +359,7 @@ class MainHall:
 		self.performer_edge_margin = performer_edge_margin
 		self.screen_width = screen_width
 		self.screen_caption = screen_caption
+		self.screen_logo = screen_logo
 		self.resources_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "resources")
 		self.palette = MainHallPalette()
 		self.stage = Stage(self.palette, self.passage_span()[1] + self.passage_side_gap, half_width, -half_length)
@@ -410,6 +412,14 @@ class MainHall:
 	def update(self, seconds):
 		for doll in self.dolls:
 			doll.update(seconds)
+		self.big_screen.update(seconds)
+
+	def start_dolls_jumping(self):
+		for doll in self.dolls:
+			doll.jump()
+
+	def show_screen_logo(self):
+		self.big_screen.display_image(os.path.join(self.resources_path, self.screen_logo))
 
 	def window_centers(self):
 		first = self.stage.depth + 1.4

@@ -6,11 +6,8 @@ from lib.pixelove_ole.part import LogoPart
 
 class NeonFloor(LogoPart):
     """Synthwave checkerboard plane the logo stands on, with neon grid lines
-    that fade towards the far edge.
-
-    `opacity` fades the whole floor without recompiling: the display list
-    blends with the GL constant alpha, which draw() sets from `opacity`.
-    `fade_to()` + `update()` animate it."""
+    that fade towards the far edge. Always blended with the part's constant
+    alpha, so fade_to() fades tiles and lines together."""
 
     def __init__(self, x=0.0, y=-2.6, z=0.8, half_width=6.0, near_depth=4.0, far_depth=3.2, tile_size=0.5):
         super().__init__("floor", x, y, z)
@@ -22,23 +19,6 @@ class NeonFloor(LogoPart):
         self.light_tile = (0.1, 0.02, 0.18)
         self.near_line = (1.0, 0.2, 0.85)
         self.far_line = (0.35, 0.15, 0.9)
-        self.opacity = 1.0
-        self.target_opacity = 1.0
-        self.fade_speed = 1.0
-
-    def fade_to(self, opacity, duration=1.5):
-        self.target_opacity = opacity
-        self.fade_speed = abs(opacity - self.opacity) / duration if duration > 0 else float("inf")
-        if opacity > 0.0:
-            self.visible = True
-
-    def update(self, delta_seconds):
-        step = self.fade_speed * delta_seconds
-        if self.opacity < self.target_opacity:
-            self.opacity = min(self.target_opacity, self.opacity + step)
-        else:
-            self.opacity = max(self.target_opacity, self.opacity - step)
-        self.visible = self.opacity > 0.0
 
     def line_color(self, z):
         distance = (self.near_depth - z) / (self.near_depth + self.far_depth)
@@ -87,11 +67,4 @@ class NeonFloor(LogoPart):
                 glVertex3f(xs[0], lift, z)
                 glVertex3f(xs[-1], lift, z)
             glEnd()
-        glDepthMask(GL_TRUE)
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-        glDisable(GL_BLEND)
 
-    def draw(self):
-        glBlendColor(0.0, 0.0, 0.0, self.opacity)
-        super().draw()
-        glBlendColor(0.0, 0.0, 0.0, 0.0)

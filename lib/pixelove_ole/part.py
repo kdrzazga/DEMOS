@@ -9,6 +9,10 @@ class LogoPart:
     so instances may be created before the GL context exists. Position,
     rotation (degrees), scale and visibility can be animated freely; `home`
     remembers where the part sits in the assembled logo.
+
+    `opacity` fades the part without recompiling: draw() puts it into the GL
+    constant alpha, which plain geometry and the additive glows both blend
+    with. `fade_to()` + `update()` animate it.
     """
 
     def __init__(self, name, x=0.0, y=0.0, z=0.0):
@@ -21,9 +25,32 @@ class LogoPart:
         self.scale = 1.0
         self.visible = True
         self.display_list = 0
+        self.opacity = 1.0
+        self.target_opacity = 1.0
+        self.fade_speed = 0.0
 
     def build(self):
         raise NotImplementedError
+
+    @property
+    def fading(self):
+        return self.opacity != self.target_opacity
+
+    def fade_to(self, opacity, duration=1.5):
+        self.target_opacity = opacity
+        self.fade_speed = abs(opacity - self.opacity) / duration if duration > 0 else float("inf")
+        if opacity > 0.0:
+            self.visible = True
+
+    def update(self, delta_seconds):
+        if not self.fading:
+            return
+        step = self.fade_speed * delta_seconds
+        if self.opacity < self.target_opacity:
+            self.opacity = min(self.target_opacity, self.opacity + step)
+        else:
+            self.opacity = max(self.target_opacity, self.opacity - step)
+        self.visible = self.opacity > 0.0
 
     def go_home(self):
         self.x, self.y, self.z = self.home
@@ -51,6 +78,11 @@ class LogoPart:
         glDisable(GL_TEXTURE_2D)
         glDisable(GL_CULL_FACE)
         glEnable(GL_DEPTH_TEST)
+        glBlendColor(0.0, 0.0, 0.0, self.opacity)
+        if self.opacity < 1.0:
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA)
+            glDepthMask(GL_FALSE)
         glPushMatrix()
         glTranslatef(self.x, self.y, self.z)
         glRotatef(self.yaw, 0.0, 1.0, 0.0)

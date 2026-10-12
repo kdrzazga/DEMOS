@@ -49,7 +49,8 @@ class PixeloveOleLogo:
 
     def update(self, delta_seconds):
         self.lower_row.update(delta_seconds)
-        self.floor.update(delta_seconds)
+        for part in self.parts():
+            part.update(delta_seconds)
 
     def go_home(self):
         for part in self.parts():

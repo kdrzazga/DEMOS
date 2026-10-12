@@ -5,8 +5,9 @@ Run from the DEMOS folder:  python -m lib.pixelove_ole.preview
     mouse drag   orbit            wheel   zoom
     SPACE        lower row LOVE <-> OLE (animated)
     ENTER        fade the floor out / back in
-    X            explode / assemble the parts along z
-    A            toggle the automatic sway
+    A..Z         fade the details (triangle, frame, comet, star, pixels) out / back in
+    F1           toggle the automatic sway
+    F2           explode / assemble the parts along z
     ESC          quit
 """
 import math
@@ -14,8 +15,8 @@ import os
 import sys
 
 import pygame
-from pygame.locals import (DOUBLEBUF, K_ESCAPE, K_RETURN, K_SPACE, K_a, K_x, KEYDOWN, MOUSEBUTTONDOWN, MOUSEBUTTONUP,
-                           MOUSEMOTION, MOUSEWHEEL, OPENGL, QUIT)
+from pygame.locals import (DOUBLEBUF, K_ESCAPE, K_F1, K_F2, K_RETURN, K_SPACE, K_a, K_z, KEYDOWN,
+                           MOUSEBUTTONDOWN, MOUSEBUTTONUP, MOUSEMOTION, MOUSEWHEEL, OPENGL, QUIT)
 from OpenGL.GL import *
 from OpenGL.GLU import gluLookAt, gluPerspective
 
@@ -60,9 +61,12 @@ class LogoPreview:
         elif event.type == KEYDOWN and event.key == K_RETURN:
             floor = self.logo.floor
             floor.fade_to(1.0 if floor.target_opacity == 0.0 else 0.0)
-        elif event.type == KEYDOWN and event.key == K_x:
+        elif event.type == KEYDOWN and K_a <= event.key <= K_z:
+            details = self.logo.details
+            details.fade_to(1.0 if details.target_opacity == 0.0 else 0.0)
+        elif event.type == KEYDOWN and event.key == K_F2:
             self.explode_target = 0.0 if self.explode_target else 1.0
-        elif event.type == KEYDOWN and event.key == K_a:
+        elif event.type == KEYDOWN and event.key == K_F1:
             self.auto_sway = not self.auto_sway
         elif event.type == MOUSEBUTTONDOWN and event.button == 1:
             self.dragging = True

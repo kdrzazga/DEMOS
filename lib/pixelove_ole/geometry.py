@@ -297,15 +297,17 @@ def voxel_block(rows, cell_width, cell_height, depth, style, offset=(0.0, 0.0, 0
 
 @contextmanager
 def additive_blending():
+    """Additive glow that still honours the part's fade: colours are
+    premultiplied by their alpha and scaled by the GL constant alpha, which
+    LogoPart.draw() sets from its opacity. Restores the previous blend state."""
+    glPushAttrib(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glEnable(GL_BLEND)
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE)
+    glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE)
     glDepthMask(GL_FALSE)
     try:
         yield
     finally:
-        glDepthMask(GL_TRUE)
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-        glDisable(GL_BLEND)
+        glPopAttrib()
 
 
 def glow_segment(start, end, z, width, color, alpha=0.45):
@@ -315,10 +317,10 @@ def glow_segment(start, end, z, width, color, alpha=0.45):
     across_x, across_y = -(y1 - y0) / length * width / 2, (x1 - x0) / length * width / 2
     glBegin(GL_QUADS)
     for direction in (1.0, -1.0):
-        glColor4f(*color[:3], alpha)
+        glColor3f(*shade(color, alpha))
         glVertex3f(x0, y0, z)
         glVertex3f(x1, y1, z)
-        glColor4f(*color[:3], 0.0)
+        glColor3f(0.0, 0.0, 0.0)
         glVertex3f(x1 + across_x * direction, y1 + across_y * direction, z)
         glVertex3f(x0 + across_x * direction, y0 + across_y * direction, z)
     glEnd()
@@ -327,9 +329,9 @@ def glow_segment(start, end, z, width, color, alpha=0.45):
 def glow_disc(center_x, center_y, z, radius, color, alpha=0.4, segments=40):
     """Radial halo; call inside additive_blending()."""
     glBegin(GL_TRIANGLE_FAN)
-    glColor4f(*color[:3], alpha)
+    glColor3f(*shade(color, alpha))
     glVertex3f(center_x, center_y, z)
-    glColor4f(*color[:3], 0.0)
+    glColor3f(0.0, 0.0, 0.0)
     for index in range(segments + 1):
         angle = 2.0 * math.pi * index / segments
         glVertex3f(center_x + radius * math.cos(angle), center_y + radius * math.sin(angle), z)

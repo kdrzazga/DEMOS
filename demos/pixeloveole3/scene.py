@@ -105,11 +105,12 @@ class LibraryScene:
         glEndList()
         return display_list
 
-    def render(self, elapsed):
+    def render(self, elapsed, view=None):
+        """`view` = (eye, target) overrides the orbiting camera."""
         glClearColor(*self.horizon, 1.0)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glLoadIdentity()
-        eye, target = self.camera.view(elapsed)
+        eye, target = view or self.camera.view(elapsed)
         gluLookAt(eye[0], eye[1], eye[2], target[0], target[1], target[2], 0.0, 1.0, 0.0)
         self.sky.draw(eye)
         glLightfv(GL_LIGHT0, GL_POSITION, self.sun_direction)

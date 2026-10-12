@@ -41,6 +41,7 @@ arcade = _import_arcade(_verbose_requested())
 from demos.demo1.main import Demo1
 from demos.pc45.main import GlDemo
 from demos.pixeloveole.main import PixeloveOle
+from demos.pixeloveole3.main import PixeloveOle3
 from demos.petscii.files.petsciidemo import PetsciiDemo
 from demos.WinterDemo26.main import WinterDemo
 
@@ -66,6 +67,10 @@ def pixelove_ole(windowed, triggered):
     PixeloveOle(windowed=windowed, triggered=triggered).run()
 
 
+def pixelove_ole3(windowed, triggered):
+    PixeloveOle3(1280, 720, "Pixelove Ole 3", windowed=windowed, triggered=triggered).run()
+
+
 def winter_demo(windowed, triggered):
     WinterDemo(windowed=windowed, triggered=triggered).run()
 
@@ -81,11 +86,12 @@ DEMOS = {
     "p3dscii": petscii_demo,
     "c64": c64,
     "po": pixelove_ole, #cannot be built to exe, due to execution loop
+    "pixeloveole3": pixelove_ole3,
     "winter": winter_demo,
     "retrosfera10": retrosfera10_demo,
 }
 
-DEFAULT_DEMO = "retrosfera10"
+DEFAULT_DEMO = "pixeloveole3"
 
 
 def close_boot_splash():

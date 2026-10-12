@@ -46,40 +46,40 @@ from demos.petscii.files.petsciidemo import PetsciiDemo
 from demos.WinterDemo26.main import WinterDemo
 
 
-def kna_demo(windowed, triggered):
+def kna_demo(windowed, triggered, house_style):
     Demo1(windowed=windowed, triggered=triggered)
     arcade.run()
 
 
-def pc45_demo(windowed, triggered):
+def pc45_demo(windowed, triggered, house_style):
     GlDemo(windowed=windowed, triggered=triggered).run()
 
 
-def petscii_demo(windowed, triggered):
+def petscii_demo(windowed, triggered, house_style):
     PetsciiDemo(windowed=windowed, triggered=triggered).run()
 
 
-def c64(windowed, triggered):
+def c64(windowed, triggered, house_style):
     c64_demo(windowed=windowed, triggered=triggered)
 
 
-def pixelove_ole(windowed, triggered):
+def pixelove_ole(windowed, triggered, house_style):
     PixeloveOle(windowed=windowed, triggered=triggered).run()
 
 
-def pixelove_ole3(windowed, triggered):
+def pixelove_ole3(windowed, triggered, house_style):
     PixeloveOle3(1280, 720, "Pixelove Ole 3", windowed=windowed, triggered=triggered).run()
 
 
-def winter_demo(windowed, triggered):
-    WinterDemo(windowed=windowed, triggered=triggered).run()
+def winter_demo(windowed, triggered, house_style):
+    WinterDemo(windowed=windowed, triggered=triggered, house_style=house_style).run()
 
 
-def retrosfera10_demo(windowed, triggered):
-    Retrosfera10Demo(windowed=windowed, triggered=triggered).run()
+def retrosfera10_demo(windowed, triggered, house_style):
+    Retrosfera10Demo(windowed=windowed, triggered=triggered, house_style=house_style).run()
 
 
-# demo name -> launcher; every launcher takes the same (windowed, triggered)
+# demo name -> launcher; every launcher takes the same (windowed, triggered, house_style)
 DEMOS = {
     "kna": kna_demo,
     "pc45": pc45_demo,
@@ -112,8 +112,9 @@ if __name__ == "__main__":
     args = [arg.lower() for arg in sys.argv[1:]]
     triggered = any(arg in ("t", "trigger", "triggered") for arg in args)
     windowed = any(arg in ("w", "window", "windowed") for arg in args)
+    house_style = "detailed" if any(arg in ("d", "detailed") for arg in args) else "simple"
     name = next((arg for arg in args if arg in DEMOS), DEFAULT_DEMO)
     # extraction + the heavy arcade/pyglet imports above are done; the demo window
     # opens next, so drop the splash now.
     close_boot_splash()
-    DEMOS[name](windowed, triggered)
+    DEMOS[name](windowed, triggered, house_style)

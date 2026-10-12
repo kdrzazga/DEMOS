@@ -7,13 +7,13 @@ from OpenGL.GL import (
 	glPopMatrix, glPushAttrib, glPushMatrix, glTranslatef,
 )
 
-from lib.urban.house import House
+from lib.urban.house_factory import HouseFactories
 from lib.urban.city import CityEntranceSign
 from demos.retrosfera10.models.townhall import TownHall, Vector3
 
 
 class HouseRow:
-	def __init__(self, origin, axis, inward, length, street_width, facade_colors, randomizer, missing_chance=0.0, flip_chance=0.0):
+	def __init__(self, origin, axis, inward, length, street_width, facade_colors, randomizer, house_factory, missing_chance=0.0, flip_chance=0.0):
 		self.origin = origin
 		self.axis = axis
 		self.inward = inward
@@ -23,6 +23,7 @@ class HouseRow:
 		self.random = randomizer
 		self.missing_chance = missing_chance
 		self.flip_chance = flip_chance
+		self.house_factory = house_factory
 		self.bay_width = 1.45
 		self.window_choices = (3, 3, 4, 4, 5)
 		self.minimum_windows = 2
@@ -64,7 +65,7 @@ class HouseRow:
 		return houses
 
 	def create_house(self, position, windows):
-		house = House(
+		house = self.house_factory.create(
 			0.0, 0.0, 0.0, self.random.choice((3, 3, 4)), windows,
 			color=self.random.choice(self.facade_colors), facing=self.facing_degrees(),
 			chimney_scale=self.random.uniform(0.8, 1.2),
@@ -77,7 +78,8 @@ class HouseRow:
 
 class Brzeg:
 	def __init__(self, square_half_width=26.0, square_half_depth=28.0, street_width=6.0, seed=1248,
-			ring_spacing=14.0, missing_chances=(0.04, 0.12, 0.2), flip_chances=(0.15, 0.35, 0.35), sign_size=14.0):
+			ring_spacing=14.0, missing_chances=(0.04, 0.12, 0.2), flip_chances=(0.15, 0.35, 0.35), sign_size=14.0,
+			house_style="simple"):
 		self.town_hall = TownHall()
 		self.center = Vector3(0.0, 0.0, 0.0)
 		self.height = self.town_hall.height
@@ -89,6 +91,7 @@ class Brzeg:
 		self.sign_size = sign_size
 		self.flip_chances = flip_chances
 		self.random = random.Random(seed)
+		self.house_factory = HouseFactories().create(house_style)
 		self.facade_colors = (
 			(0.93, 0.84, 0.62), (0.86, 0.66, 0.52), (0.72, 0.8, 0.66), (0.92, 0.9, 0.82),
 			(0.84, 0.58, 0.5), (0.66, 0.76, 0.84), (0.95, 0.78, 0.55), (0.8, 0.72, 0.84),
@@ -110,7 +113,7 @@ class Brzeg:
 			(Vector3(half_width, 0.0, -half_depth), south, -east, 2 * half_depth),
 		)
 		return [
-			HouseRow(origin, axis, inward, length, self.street_width, self.facade_colors, self.random, missing_chance, flip_chance)
+			HouseRow(origin, axis, inward, length, self.street_width, self.facade_colors, self.random, self.house_factory, missing_chance, flip_chance)
 			for origin, axis, inward, length in frontages
 		]
 

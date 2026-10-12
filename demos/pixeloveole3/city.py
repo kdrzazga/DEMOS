@@ -1,7 +1,7 @@
 import random
 
-from demos.pixeloveole3.residential import Footprint
-from demos.pixeloveole3.roofs import HipRoof
+from lib.urban.residential import Footprint
+from lib.urban.roofs import HipRoof
 from demos.pixeloveole3.vegetation import Grove
 
 

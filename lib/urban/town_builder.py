@@ -9,7 +9,7 @@ class TownBuilder:
     def __init__(self, blocks_across=3, blocks_deep=2, quarter_rows=2, quarter_columns=3,
                  road_width=7.0, floor_range=(1, 4), windows_range=(2, 4),
                  palette=WALL_PALETTE, house_spacing=(1.6, 2.6), density=1.0,
-                 road_marking=True, library=None, road_library=None, seed=0):
+                 road_marking=True, library=None, road_library=None, seed=0, house_factory=None):
         self.blocks_across = max(1, blocks_across)
         self.blocks_deep = max(1, blocks_deep)
         self.quarter_rows = quarter_rows
@@ -24,6 +24,7 @@ class TownBuilder:
         self.library = library
         self.road_library = road_library
         self.seed = seed
+        self.house_factory = house_factory
 
     def _create_blocks(self):
         generator = random.Random(self.seed)
@@ -41,7 +42,7 @@ class TownBuilder:
         return Quarter(0.0, 0.0, 0.0, rows=self.quarter_rows, columns=self.quarter_columns,
                        floor_range=self.floor_range, windows_range=self.windows_range,
                        palette=self.palette, spacing=self.house_spacing, density=self.density,
-                       seed=generator.randrange(1000000))
+                       seed=generator.randrange(1000000), house_factory=self.house_factory)
 
     def _place_blocks(self, blocks):
         column_widths = tuple(max(blocks[row][column].width for row in range(self.blocks_deep))

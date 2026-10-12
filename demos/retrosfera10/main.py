@@ -15,7 +15,8 @@ from demos.retrosfera10.soundtrack import Soundtrack
 
 
 class Retrosfera10Demo(PygameDemo):
-	def __init__(self, windowed=False, triggered=False):
+	def __init__(self, windowed=False, triggered=False, house_style="simple"):
+		self.house_style = house_style
 		self.fps = 60
 		self.field_of_view = 45.0
 		self.music_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "DoubleShit_byRamos.mp3")
@@ -28,7 +29,7 @@ class Retrosfera10Demo(PygameDemo):
 		self.init_gl(screen_width, screen_height)
 		camera = Camera(screen_width, screen_height, self.field_of_view)
 		self.soundtrack = Soundtrack(self.music_path, self.music_start_seconds)
-		brzeg_phase = BrzegDemoPhase(camera)
+		brzeg_phase = BrzegDemoPhase(camera, house_style=self.house_style)
 		cosmic_phase = CosmicDemoPhase(camera, self.soundtrack, brzeg_phase.arrival_site)
 		self.phases = [cosmic_phase, brzeg_phase, MainHallDemoPhase(camera)]
 		self.phase_index = 0

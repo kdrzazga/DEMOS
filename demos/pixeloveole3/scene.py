@@ -5,11 +5,11 @@ from OpenGL.GLU import *
 
 from demos.pixeloveole3.city import DistantCity
 from demos.pixeloveole3.library import Library
-from demos.pixeloveole3.residential import BuildingStyle, Footprint, PlainBuilding, Tenement
-from demos.pixeloveole3.shapes import Shapes
+from lib.urban.residential import BuildingStyle, Footprint, PlainBuilding, Tenement
+from lib.urban.shapes import Shapes
 from demos.pixeloveole3.sky import Sky
 from demos.pixeloveole3.streets import RoadPath, StreetScape
-from demos.pixeloveole3.textures import TextureFactory
+from lib.urban.textures import TextureFactory
 from demos.pixeloveole3.vegetation import Grove
 
 

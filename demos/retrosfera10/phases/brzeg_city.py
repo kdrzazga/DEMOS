@@ -89,7 +89,7 @@ class MagnifiedGround:
 
 
 class BrzegDemoPhase(DemoPhase):
-	def __init__(self, camera, timeline=None):
+	def __init__(self, camera, timeline=None, house_style="simple"):
 		super().__init__(camera)
 		self.timeline = timeline or BrzegTimeline()
 		self.site = GeoPoint(50.86, 17.47)
@@ -108,7 +108,7 @@ class BrzegDemoPhase(DemoPhase):
 		self.window_approach_eye = Vector3(0.25, 7.225, 24.0)
 		self.window_stop_eye = Vector3(0.25, 7.225, 12.7)
 		self.final_degrees_per_unit = 3.5e-4
-		self.brzeg = Brzeg()
+		self.brzeg = Brzeg(house_style=house_style)
 		self.arrival = self.landing_eye(self.sign_focus()).at_height(0.0)
 		self.arrival_site = self.site_at(self.arrival)
 		self.ground = None

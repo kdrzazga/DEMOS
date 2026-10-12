@@ -1,9 +1,9 @@
 import math
 
-from demos.pixeloveole3.facade_parts import (ArcadeWall, ArchedWindow, Cornice, DentilCourse, RectWindow,
+from lib.urban.facade_parts import (ArcadeWall, ArchedWindow, Cornice, DentilCourse, RectWindow,
                                              Rustication, WindowStyle)
 from demos.pixeloveole3.flag import Flag
-from demos.pixeloveole3.roofs import HipRoof
+from lib.urban.roofs import HipRoof
 
 
 class LibraryPalette:

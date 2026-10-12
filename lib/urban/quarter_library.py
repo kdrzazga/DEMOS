@@ -7,7 +7,7 @@ from lib.urban.quarter_copy import QuarterCopy
 class QuarterLibrary:
     def __init__(self, size=43, rows=2, columns=3, floor_range=(1, 4), windows_range=(2, 4),
                  palette=WALL_PALETTE, spacing=(1.6, 2.6),
-                 densities=(1.0, 0.7, 0.5, 0.4, 0.3, 0.2, 0.1), seed=0):
+                 densities=(1.0, 0.7, 0.5, 0.4, 0.3, 0.2, 0.1), seed=0, house_factory=None):
         self.size = max(1, size)
         self.rows = rows
         self.columns = columns
@@ -17,6 +17,7 @@ class QuarterLibrary:
         self.spacing = spacing
         self.densities = densities
         self.seed = seed
+        self.house_factory = house_factory
         self.prototypes = self._create_prototypes()
 
     def _create_prototypes(self):
@@ -28,7 +29,8 @@ class QuarterLibrary:
                                       windows_range=self.windows_range, palette=self.palette,
                                       spacing=self.spacing,
                                       density=self.densities[index % len(self.densities)],
-                                      seed=generator.randrange(1000000)))
+                                      seed=generator.randrange(1000000),
+                                      house_factory=self.house_factory))
         return tuple(prototypes)
 
     def nearest_density(self, density):

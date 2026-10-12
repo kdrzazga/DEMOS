@@ -31,13 +31,14 @@ from demos.WinterDemo26.santa_claus import SantaClaus
 from lib.urban.city_factory import CityFactory
 from demos.WinterDemo26.hall import Hall
 from demos.WinterDemo26.desk import Desk
-from demos.WinterDemo26.big_screen import BigScreen
+from lib.big_screen import BigScreen
 from demos.WinterDemo26.settings import (Duration, Delay, Globe, SkyCloudCover, Glide, CityPlan,
                                          InteriorCamera, DeskLayout, FrontRowCamera, HallSantaEntrance)
 
 
 class WinterDemo(PygameDemo):
-    def __init__(self, windowed=False, triggered=False):
+    def __init__(self, windowed=False, triggered=False, house_style="simple"):
+        self.house_style = house_style
         super().__init__(1100, 700, "3D Winter", fps=60, opengl=True,
                          windowed=windowed, triggered=triggered)
 
@@ -167,7 +168,8 @@ class WinterDemo(PygameDemo):
         self.santa_ride = self._create_santa_ride()
         self.planets = self._create_planets()
         self.sky_clouds = self._create_sky_clouds()
-        self.city = CityFactory(seed=self.city_plan.seed, name="Karlsruhe").create_big_city(
+        self.city = CityFactory(seed=self.city_plan.seed, name="Karlsruhe",
+                                house_style=self.house_style).create_big_city(
             matrix_size=self.city_plan.matrix)
         self.rooftop_santa = SantaClaus(0.0, 0.0, 0.0, size=self.rooftop_santa_size, wave=True, seed=9)
         self.hall_santa = SantaClaus(0.0, 0.0, 0.0, size=self.hall_santa_entrance.size, wave=True, seed=9)
@@ -1217,7 +1219,8 @@ def main():
     args = [arg.lower() for arg in sys.argv[1:]]
     windowed = any(arg in ("w", "window", "windowed") for arg in args)
     triggered = any(arg in ("t", "trigger", "triggered") for arg in args)
-    WinterDemo(windowed=windowed, triggered=triggered).run()
+    house_style = "detailed" if any(arg in ("d", "detailed") for arg in args) else "simple"
+    WinterDemo(windowed=windowed, triggered=triggered, house_style=house_style).run()
 
 
 if __name__ == "__main__":

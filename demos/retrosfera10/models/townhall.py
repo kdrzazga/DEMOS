@@ -168,11 +168,16 @@ class RoofTileTexture(ProceduralTexture):
 
 
 class Material:
-	def __init__(self, color, texture=None):
+	def __init__(self, color, texture=None, lit=True):
 		self.color = color
 		self.texture = texture
+		self.lit = lit
 
 	def apply(self):
+		if self.lit:
+			glEnable(GL_LIGHTING)
+		else:
+			glDisable(GL_LIGHTING)
 		if self.texture is None:
 			glDisable(GL_TEXTURE_2D)
 		else:

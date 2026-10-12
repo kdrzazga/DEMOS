@@ -13,7 +13,8 @@ class BigScreen:
     display_credits() reveals text lines and pictures one after another.
     """
 
-    def __init__(self, x, y, z, width=12.0, height=6.75, lift=1.6, columns=32, rows=18):
+    def __init__(self, x, y, z, width=12.0, height=6.75, lift=1.6, columns=32, rows=18, plasma=True,
+                 picture_color=(0.04, 0.06, 0.16)):
         self.x = x
         self.y = y
         self.z = z
@@ -22,6 +23,8 @@ class BigScreen:
         self.lift = lift
         self.columns = columns
         self.rows = rows
+        self.plasma = plasma
+        self.picture_color = picture_color
         self.frame_border = 0.25
         self.frame_depth = 0.2
         self.stand_width = 0.18
@@ -115,7 +118,24 @@ class BigScreen:
         blue = 0.5 + 0.5 * math.sin(math.pi * wave + 4.2)
         return red * brightness, green * brightness, blue * brightness
 
+    def _draw_plain_picture(self, brightness):
+        left = -self.width / 2.0
+        right = self.width / 2.0
+        front = self.frame_depth / 2.0 + 0.005
+        glDisable(GL_LIGHTING)
+        glColor3f(*(channel * brightness for channel in self.picture_color))
+        glBegin(GL_QUADS)
+        glVertex3f(left, self.lift, front)
+        glVertex3f(right, self.lift, front)
+        glVertex3f(right, self.lift + self.height, front)
+        glVertex3f(left, self.lift + self.height, front)
+        glEnd()
+        glEnable(GL_LIGHTING)
+
     def _draw_picture(self, brightness):
+        if not self.plasma:
+            self._draw_plain_picture(brightness)
+            return
         left = -self.width / 2.0
         front = self.frame_depth / 2.0 + 0.005
         glDisable(GL_LIGHTING)
@@ -134,12 +154,16 @@ class BigScreen:
         glEnable(GL_LIGHTING)
 
     def display_text(self, file, font=None, size=48):
-        paragraphs = self._read_paragraphs(file)
+        self.display_lines(self._read_paragraphs(file), font, size)
+        self.shown_file = file
+
+    def display_lines(self, paragraphs, font=None, size=48, fit_width=False):
+        if fit_width:
+            size = self._size_fitting_lines(paragraphs, font, size)
         text_font = self._load_font(font, size)
         self._delete_text_texture()
         self.text_texture, self.text_line_areas = self._text_to_texture(self._wrap_lines(paragraphs, text_font),
                                                                         text_font)
-        self.shown_file = file
 
     def display_2_languages_text(self, file1, file2, font=None, size=48):
         """Alternates two texts in a 10 s cycle: file1 3 s, interference 1 s, file2 2 s, interference 1 s,
@@ -166,6 +190,12 @@ class BigScreen:
         self.credit_reveal_interval = reveal_interval
         self.credits_started = self.time
         self._show_credit_items(1)
+
+    def display_image(self, file, fill_share=0.95):
+        image_width, image_height = pygame.image.load(file).get_size()
+        texture_width, texture_height = self.text_resolution
+        scale = min(texture_width / image_width, texture_height / image_height) * fill_share
+        self.display_credits([("image", file, scale)])
 
     def _render_credit_items(self, items, font):
         """Returns a (picture, shadow or None) pair of surfaces per item."""

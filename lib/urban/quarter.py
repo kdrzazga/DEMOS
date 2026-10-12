@@ -1,7 +1,7 @@
 import random
 from OpenGL.GL import *
 
-from lib.urban.house import House
+from lib.urban.house_factory import SimpleHouseFactory
 
 WALL_PALETTE = ((0.46, 0.44, 0.42), (0.52, 0.40, 0.34), (0.38, 0.42, 0.48),
                 (0.50, 0.47, 0.36), (0.44, 0.34, 0.36))
@@ -10,7 +10,7 @@ WALL_PALETTE = ((0.46, 0.44, 0.42), (0.52, 0.40, 0.34), (0.38, 0.42, 0.48),
 class Quarter:
     def __init__(self, x, y, z, rows=2, columns=3, floor_range=(1, 4), windows_range=(2, 4),
                  palette=WALL_PALETTE, spacing=(1.6, 2.6), density=1.0, snow_share=0.35,
-                 snow_cover=(0.45, 0.80), facing=0.0, seed=0):
+                 snow_cover=(0.45, 0.80), facing=0.0, seed=0, house_factory=None):
         self.x = x
         self.y = y
         self.z = z
@@ -25,6 +25,7 @@ class Quarter:
         self.snow_cover = snow_cover
         self.facing = facing
         self.seed = seed
+        self.house_factory = house_factory or SimpleHouseFactory()
 
         self.random_generator = random.Random(seed)
         self.grid = self._create_grid()
@@ -45,8 +46,9 @@ class Quarter:
                 street_side = 180.0 if row < self.rows / 2.0 else 0.0
                 snow_top = (generator.uniform(*self.snow_cover)
                             if generator.random() < self.snow_share else 0.0)
-                line.append(House(0.0, 0.0, 0.0, floor_count, windows_per_floor=windows_per_floor,
-                                  color=color, facing=street_side, snow_top=snow_top))
+                line.append(self.house_factory.create(0.0, 0.0, 0.0, floor_count,
+                                                      windows_per_floor=windows_per_floor, color=color,
+                                                      facing=street_side, snow_top=snow_top))
             grid.append(line)
         return grid
 

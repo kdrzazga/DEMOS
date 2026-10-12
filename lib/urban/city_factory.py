@@ -2,6 +2,7 @@ import math
 import random
 
 from lib.urban.city import City
+from lib.urban.house_factory import HouseFactories
 from lib.urban.quarter import Quarter, WALL_PALETTE
 from lib.urban.quarter_library import QuarterLibrary
 from lib.urban.road import RoadLibrary
@@ -12,7 +13,7 @@ class CityFactory:
     def __init__(self, quarter_rows=2, quarter_columns=3, road_width=6.0, town_spacing=0.0,
                  floor_range=(1, 4), windows_range=(2, 4), palette=WALL_PALETTE,
                  house_spacing=(1.6, 2.6), matrix_size=7, quarter_variants=43,
-                 library=None, name="City", seed=0):
+                 library=None, name="City", seed=0, house_style="simple"):
         self.quarter_rows = quarter_rows
         self.quarter_columns = quarter_columns
         self.road_width = road_width
@@ -26,6 +27,8 @@ class CityFactory:
         self.library = library
         self.name = name
         self.seed = seed
+        self.house_style = house_style
+        self.house_factory = HouseFactories().create(house_style)
 
         self.ring_densities = (1.0, 0.7, 0.5)
         self.outer_density_range = (0.1, 0.4)
@@ -41,7 +44,8 @@ class CityFactory:
         if self.quarter_size is None:
             probe = Quarter(0.0, 0.0, 0.0, rows=self.quarter_rows, columns=self.quarter_columns,
                             floor_range=self.floor_range, windows_range=self.windows_range,
-                            palette=self.palette, spacing=self.house_spacing, density=0.0, seed=0)
+                            palette=self.palette, spacing=self.house_spacing, density=0.0, seed=0,
+                            house_factory=self.house_factory)
             self.quarter_size = (probe.width, probe.depth)
         return self.quarter_size
 
@@ -84,7 +88,8 @@ class CityFactory:
                               road_width=self.road_width, floor_range=self.floor_range,
                               windows_range=self.windows_range, palette=self.palette,
                               house_spacing=self.house_spacing, density=density, library=library,
-                              road_library=self.road_library, seed=generator.randrange(1000000))
+                              road_library=self.road_library, seed=generator.randrange(1000000),
+                              house_factory=self.house_factory)
         return builder.build()
 
     def _build_rings(self, x, y, z, factor, matrix_size, library):
@@ -107,7 +112,8 @@ class CityFactory:
                                           columns=self.quarter_columns,
                                           floor_range=self.floor_range,
                                           windows_range=self.windows_range, palette=self.palette,
-                                          spacing=self.house_spacing, seed=self.seed)
+                                          spacing=self.house_spacing, seed=self.seed,
+                                          house_factory=self.house_factory)
         return self.library
 
     def create_with_dense_center(self, x=0.0, y=0.0, z=0.0):

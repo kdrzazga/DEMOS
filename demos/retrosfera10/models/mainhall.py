@@ -1,13 +1,16 @@
 import math
+import os
 import random
 
 import pygame
 from OpenGL.GL import (
 	GL_AMBIENT_AND_DIFFUSE, GL_COLOR_MATERIAL, GL_ENABLE_BIT, GL_FRONT_AND_BACK, GL_LIGHTING, GL_LIGHTING_BIT,
 	GL_LIGHT_MODEL_TWO_SIDE, GL_NORMALIZE, GL_TEXTURE_BIT, GL_TRUE, glCallList, glColorMaterial, glDeleteLists,
-	glEnable, glLightModeli, glPopAttrib, glPushAttrib,
+	glEnable, glLightModeli, glPopAttrib, glPopMatrix, glPushAttrib, glPushMatrix, glScalef, glTranslatef,
 )
 
+from lib.big_screen import BigScreen
+from demos.retrosfera10.models.doll import Doll, DollLook
 from demos.retrosfera10.models.townhall import Facade, Material, MeshBuilder, ProceduralTexture, Vector3
 
 
@@ -328,10 +331,18 @@ class Ceiling:
 			builder.oriented_box(self.palette.beam_wood, Vector3(0.0, 0.0, z), east, south, self.half_width, 0.28, girder_bottom, self.underside())
 
 
+class StagePerformer:
+	def __init__(self, look, stage_side, waving_arm):
+		self.look = look
+		self.stage_side = stage_side
+		self.waving_arm = waving_arm
+
+
 class MainHall:
 	def __init__(self, half_width=8.0, half_length=20.0, height=6.5, windows_per_side=6, chandelier_rows=(-3.6, 3.6),
 			chandelier_positions=(-14.0, -7.0, 0.0, 7.0, 14.0), chandelier_height=4.3, passage_width_share=0.15,
-			passage_side_gap=0.8, passage_height=3.0, passage_depth=1.6):
+			passage_side_gap=0.8, passage_height=3.0, passage_depth=1.6,
+			stage_performers=None, performer_edge_margin=1.0, screen_width=6.0, screen_caption="RSX - RetroSfera 2027"):
 		self.half_width = half_width
 		self.half_length = half_length
 		self.height = height
@@ -343,6 +354,11 @@ class MainHall:
 		self.passage_side_gap = passage_side_gap
 		self.passage_height = passage_height
 		self.passage_depth = passage_depth
+		self.stage_performers = stage_performers or self.default_performers()
+		self.performer_edge_margin = performer_edge_margin
+		self.screen_width = screen_width
+		self.screen_caption = screen_caption
+		self.resources_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "resources")
 		self.palette = MainHallPalette()
 		self.stage = Stage(self.palette, self.passage_span()[1] + self.passage_side_gap, half_width, -half_length)
 		self.ceiling = Ceiling(self.palette, half_width, half_length, height)
@@ -352,6 +368,48 @@ class MainHall:
 		for part in self.parts:
 			part.build(builder)
 		self.display_list = builder.compile()
+		self.dolls = self.create_dolls()
+		self.big_screen = self.create_big_screen()
+
+	def default_performers(self):
+		return (
+			StagePerformer(
+				DollLook("KasiaHead.png", hair_color=(0.45, 0.33, 0.22), suit_color=(0.42, 0.29, 0.18), legs_color=(0.1, 0.1, 0.11)),
+				stage_side="left", waving_arm="left",
+			),
+			StagePerformer(
+				DollLook("AndrzejHead.png", hair_color=(0.33, 0.25, 0.18), suit_color=(0.12, 0.12, 0.13), legs_color=(0.17, 0.17, 0.2)),
+				stage_side="right", waving_arm="right",
+			),
+		)
+
+	def performer_x(self, stage_side):
+		if stage_side == "left":
+			return self.stage.left_x + self.performer_edge_margin
+		return self.stage.right_x - self.performer_edge_margin
+
+	def create_dolls(self):
+		doll_z = self.stage.back_z + self.stage.depth * 0.55
+		return [
+			Doll(
+				performer.look, self.resources_path, self.performer_x(performer.stage_side), doll_z,
+				base_height=self.stage.top(), wave_phase=index * 1.3, waving_arm=performer.waving_arm,
+			)
+			for index, performer in enumerate(self.stage_performers)
+		]
+
+	def create_big_screen(self):
+		screen = BigScreen(0.0, 0.0, 0.0, width=self.screen_width, height=self.screen_width * 9 / 16, lift=1.1, plasma=False)
+		caption_font = os.path.join(self.resources_path, "fonts", "pocket_calcuatlor_tt.ttf")
+		screen.display_lines([self.screen_caption], caption_font, size=96, fit_width=True)
+		return screen
+
+	def screen_position(self):
+		return Vector3((self.stage.left_x + self.stage.right_x) / 2, self.stage.top(), self.stage.back_z + 0.6)
+
+	def update(self, seconds):
+		for doll in self.dolls:
+			doll.update(seconds)
 
 	def window_centers(self):
 		first = self.stage.depth + 1.4
@@ -419,7 +477,7 @@ class MainHall:
 	def stage_front(self):
 		return self.stage.front_z()
 
-	def draw(self):
+	def draw(self, screen_visibility=0.0):
 		glPushAttrib(GL_ENABLE_BIT | GL_LIGHTING_BIT | GL_TEXTURE_BIT)
 		glEnable(GL_LIGHTING)
 		glEnable(GL_NORMALIZE)
@@ -428,7 +486,23 @@ class MainHall:
 		glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE)
 		glCallList(self.display_list)
 		glPopAttrib()
+		for doll in self.dolls:
+			doll.draw()
+		if screen_visibility > 0.0:
+			self.draw_big_screen(screen_visibility)
+
+	def draw_big_screen(self, visibility):
+		position = self.screen_position()
+		glPushMatrix()
+		glTranslatef(position.x, position.y, position.z)
+		glScalef(visibility, visibility, visibility)
+		self.big_screen.draw(visibility)
+		glPopMatrix()
 
 	def release(self):
 		glDeleteLists(self.display_list, 1)
+		for doll in self.dolls:
+			doll.release()
+		self.big_screen.clear_text()
+		glDeleteLists(self.big_screen.display_list, 1)
 		self.palette.release()

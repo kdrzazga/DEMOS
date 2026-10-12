@@ -99,24 +99,26 @@ class EarthGeometry:
 
 
 class SpaceFlight:
-	def __init__(self, geometry, site, start_eye, end_altitude):
+	def __init__(self, geometry, site, start_eye, end_altitude, aim_share=0.35):
 		self.geometry = geometry
 		self.site = site
 		self.start_eye = start_eye
 		self.end_altitude = end_altitude
+		self.aim_share = aim_share
 		self.radius = geometry.earth.radius
 
 	def view(self, progress):
-		eased = CameraInterpolationHelper.smooth(progress)
+		aim = CameraInterpolationHelper.smooth(progress / self.aim_share)
+		descent = CameraInterpolationHelper.smooth(progress)
 		target_direction = self.geometry.direction(self.site)
 		start_direction = self.start_eye.normalized()
 		start_altitude = self.start_eye.length() - self.radius
-		direction = (start_direction + (target_direction - start_direction) * eased).normalized()
-		altitude = start_altitude * (self.end_altitude / start_altitude) ** eased
+		direction = (start_direction + (target_direction - start_direction) * aim).normalized()
+		altitude = start_altitude * (self.end_altitude / start_altitude) ** descent
 		eye = direction * (self.radius + altitude)
-		look = target_direction * (self.radius * eased)
+		look = target_direction * (self.radius * aim)
 		up = Vector3.up()
-		up = (up + (self.geometry.north(self.site) - up) * eased).normalized()
+		up = (up + (self.geometry.north(self.site) - up) * aim).normalized()
 		return eye, look, up
 
 
@@ -246,7 +248,8 @@ class CosmicDemoPhase(DemoPhase):
 		self.music_time = self.caption.last_line_end_time()
 		self.flight = SpaceFlight(self.geometry, self.target_site, self.start_eye, self.end_altitude)
 		facing = self.geometry.facing_spin(self.target_site, self.start_eye.normalized())
-		self.earth.spin = facing - self.earth.spin_speed * (self.travel_end - self.timeline.travel * 0.3)
+		facing_time = self.travel_start + self.timeline.travel * self.flight.aim_share / 2
+		self.earth.spin = facing - self.earth.spin_speed * facing_time
 
 	def update(self, seconds):
 		super().update(seconds)

@@ -6,8 +6,10 @@ from demos.retrosfera10.models.townhall import Vector3
 
 
 class MainHallTimeline:
-	def __init__(self, walk=18.0):
+	def __init__(self, walk=18.0, screen_delay=3.0, screen_appear=1.5):
 		self.walk = walk
+		self.screen_delay = screen_delay
+		self.screen_appear = screen_appear
 
 
 class MainHallDemoPhase(DemoPhase):
@@ -23,6 +25,10 @@ class MainHallDemoPhase(DemoPhase):
 		self.start_target = Vector3(0.0, 2.6, far_wall)
 		self.end_target = Vector3(0.0, 1.6, far_wall)
 
+	def update(self, seconds):
+		super().update(seconds)
+		self.hall.update(seconds)
+
 	def render(self):
 		glClearColor(*self.background_color, 1.0)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -32,4 +38,5 @@ class MainHallDemoPhase(DemoPhase):
 		target = CameraInterpolationHelper.blend(self.start_target, self.end_target, walk)
 		self.camera.look(eye, target, Vector3.up())
 		self.light.apply()
-		self.hall.draw()
+		screen_visibility = CameraInterpolationHelper.smooth((self.elapsed - self.timeline.screen_delay) / self.timeline.screen_appear)
+		self.hall.draw(screen_visibility)

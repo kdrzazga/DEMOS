@@ -8,7 +8,7 @@ from OpenGL.GLU import *
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..")))
 
-from demos.WinterDemo26.big_screen import BigScreen
+from lib.big_screen import BigScreen
 
 
 class BigScreenTest:

@@ -31,7 +31,7 @@ from demos.WinterDemo26.santa_claus import SantaClaus
 from lib.urban.city_factory import CityFactory
 from demos.WinterDemo26.hall import Hall
 from demos.WinterDemo26.desk import Desk
-from demos.WinterDemo26.big_screen import BigScreen
+from lib.big_screen import BigScreen
 from demos.WinterDemo26.settings import (Duration, Delay, Globe, SkyCloudCover, Glide, CityPlan,
                                          InteriorCamera, DeskLayout, FrontRowCamera, HallSantaEntrance)
 

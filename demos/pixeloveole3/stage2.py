@@ -5,7 +5,7 @@ from demos.pixeloveole3.logo_phases import HoldPhase, LogoShowPhase
 
 class EnterHallPhase(LogoShowPhase):
 
-    def __init__(self, show, duration, fade_seconds=1.0, flight_seconds=5.0, eye=(2.6, 2.1, -8.2),
+    def __init__(self, show, duration, fade_seconds=1.0, flight_seconds=5.0, eye=(2.6, 2.3, -5.5),
                  start=(-4.6, 1.6, -9.5), waypoints=((-3.2, 1.7, -9.5), (-2.2, 1.9, -10.0)),
                  circle_center=(-1.2, 2.1, -10.8), circle_radius=1.1, grow_share=0.6):
         super().__init__(show, duration)

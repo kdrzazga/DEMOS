@@ -3,6 +3,7 @@ import math
 from OpenGL.GL import *
 from OpenGL.GLU import gluLookAt, gluPerspective
 
+from demos.pixeloveole3.hall_scene import HallScene
 from demos.pixeloveole3.invader_flight import InvaderFlight, WorldFlight, WorldOrbit
 from demos.pixeloveole3.scene import LibraryScene
 from lib import Globals
@@ -124,6 +125,8 @@ class LogoShow:
     its flight) are drawn inside the library scene instead."""
 
     def __init__(self, width, height):
+        self.width = width
+        self.height = height
         self.stage = LogoStage(width, height)
         self.library = LibraryScene(width, height)
         self.elapsed = 0.0
@@ -139,6 +142,13 @@ class LogoShow:
         self.pending_entry = None
         self.entry_flight = None
         self.invader_inside = False
+        self.hall = None
+        self.hall_view = None
+        self.hall_elapsed = 0.0
+        self.hall_visibility = 0.0
+        self.hall_fade_seconds = 1.0
+        self.hall_flight = None
+        self.hall_circle = None
 
     @property
     def logo(self):
@@ -150,6 +160,49 @@ class LogoShow:
 
     def current_library_view(self):
         return self.library_view or self.library.camera.view(self.library_elapsed)
+
+    def current_world_view(self):
+        if self.hall:
+            return self.hall_view or self.hall.default_view(self.hall_elapsed)
+        return self.current_library_view()
+
+    def enter_hall(self, view, fade_seconds):
+        self.hall = HallScene(self.width, self.height)
+        self.hall_view = view
+        self.hall_fade_seconds = fade_seconds
+        self.library_shown = False
+
+    def fly_invader_into_hall(self, start, waypoints, duration, circle, grow_share=0.35):
+        invader = self.logo.invader
+        invader.x, invader.y, invader.z = start
+        invader.scale = 0.0
+        invader.visible = True
+        if invader not in self.world_parts:
+            self.world_parts.append(invader)
+        self.world_orbit = None
+        self.hall_circle = circle
+        destination = self._nearest_on_circle(waypoints[-1], circle)
+        self.hall_flight = WorldFlight(invader, (*waypoints, destination), duration, shrink_share=0.0,
+                                       grow_share=grow_share)
+
+    def _nearest_on_circle(self, point, circle):
+        center, radius, across = circle
+        sideways = sum((point[axis] - center[axis]) * across[axis] for axis in (0, 2))
+        angle = math.atan2(point[1] - center[1], sideways)
+        return (center[0] + across[0] * radius * math.cos(angle), center[1] + radius * math.sin(angle),
+                center[2] + across[2] * radius * math.cos(angle))
+
+    def _update_hall(self, seconds, eye):
+        if not self.hall:
+            return
+        self.hall_elapsed += seconds
+        self.hall_visibility = CameraInterpolationHelper.smooth(self.hall_elapsed / self.hall_fade_seconds)
+        if self.hall_flight:
+            self.hall_flight.update(seconds, eye)
+            if self.hall_flight.done:
+                center, radius, across = self.hall_circle
+                self.world_orbit = WorldOrbit(self.hall_flight.part, center, radius, across=across)
+                self.hall_flight = None
 
     def start_invader_flight(self, waypoints, duration, circle=None):
         """Fly the invader through `waypoints`. With `circle` = (centre, radius)
@@ -186,7 +239,6 @@ class LogoShow:
         """Once the invader has gone round its library circle
         `after_revolutions` times, fly it through `waypoints` and let it
         vanish into the last one; `invader_inside` turns True then."""
-        print(Globals.get_duration())
         self.pending_entry = (waypoints, duration, after_revolutions)
 
     def _update_entry(self, seconds, eye):
@@ -208,16 +260,23 @@ class LogoShow:
         self.elapsed += seconds
         self.stage.update(seconds)
         self._update_flight(seconds)
-        eye, _ = self.current_library_view()
+        eye, _ = self.current_world_view()
         if self.world_orbit:
             self.world_orbit.update(seconds, eye)
         self._update_entry(seconds, eye)
+        self._update_hall(seconds, eye)
         if self.library_shown:
             self.library_elapsed += seconds
             self.library_visibility = CameraInterpolationHelper.smooth(self.library_elapsed / self.library_fade_seconds)
 
     def render(self):
-        if self.library_shown:
+        if self.hall:
+            self.hall.render(self.hall_elapsed, self.hall_view)
+            for part in self.world_parts:
+                part.draw()
+            self._darken(1.0 - self.hall_visibility)
+            glClear(GL_DEPTH_BUFFER_BIT)
+        elif self.library_shown:
             self.library.render(self.library_elapsed, self.library_view)
             for part in self.world_parts:
                 part.draw()

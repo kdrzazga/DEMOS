@@ -127,11 +127,15 @@ class WorldOrbit:
     counter-clockwise as seen from the front, starting where the part is and
     easing its speed in; the part keeps facing the camera."""
 
-    def __init__(self, part, center, radius, period_seconds=10.0, ramp_seconds=2.0):
+    def __init__(self, part, center, radius, period_seconds=10.0, ramp_seconds=2.0, direction=1.0,
+                 across=(1.0, 0.0, 0.0)):
         self.part = part
         self.center = center
         self.radius = radius
-        self.angle = math.atan2(part.y - center[1], part.x - center[0])
+        self.direction = direction
+        self.across = across
+        offset = subtract((part.x, part.y, part.z), center)
+        self.angle = math.atan2(offset[1], dot(offset, across))
         self.angular_speed = 2.0 * math.pi / period_seconds
         self.ramp_seconds = ramp_seconds
         self.elapsed = 0.0
@@ -144,11 +148,12 @@ class WorldOrbit:
     def update(self, seconds, eye):
         self.elapsed += seconds
         step = self.angular_speed * min(1.0, self.elapsed / self.ramp_seconds) * seconds
-        self.angle += step
+        self.angle += step * self.direction
         self.travelled += step
-        self.part.x = self.center[0] + self.radius * math.cos(self.angle)
+        sideways = self.radius * math.cos(self.angle)
+        self.part.x = self.center[0] + self.across[0] * sideways
         self.part.y = self.center[1] + self.radius * math.sin(self.angle)
-        self.part.z = self.center[2]
+        self.part.z = self.center[2] + self.across[2] * sideways
         face_towards(self.part, eye)
 
 
@@ -157,11 +162,12 @@ class WorldFlight:
     `waypoints`, shrinking it away over the last `shrink_share` of the trip
     (so it vanishes into the last waypoint); it keeps facing the camera."""
 
-    def __init__(self, part, waypoints, duration, shrink_share=0.3):
+    def __init__(self, part, waypoints, duration, shrink_share=0.3, grow_share=0.0):
         self.part = part
         self.points = ((part.x, part.y, part.z), *waypoints)
         self.duration = duration
         self.shrink_share = shrink_share
+        self.grow_share = grow_share
         self.elapsed = 0.0
         self.done = False
 
@@ -170,5 +176,10 @@ class WorldFlight:
         progress = CameraInterpolationHelper.smooth(self.elapsed / self.duration)
         self.part.x, self.part.y, self.part.z = spline_point(self.points, progress)
         face_towards(self.part, eye)
-        self.part.scale = min(1.0, (1.0 - progress) / self.shrink_share)
+        scale = 1.0
+        if self.grow_share:
+            scale = min(scale, progress / self.grow_share)
+        if self.shrink_share:
+            scale = min(scale, (1.0 - progress) / self.shrink_share)
+        self.part.scale = scale
         self.done = self.elapsed >= self.duration

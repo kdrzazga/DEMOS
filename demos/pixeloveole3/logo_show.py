@@ -5,6 +5,7 @@ from OpenGL.GLU import gluLookAt, gluPerspective
 
 from demos.pixeloveole3.invader_flight import InvaderFlight, WorldFlight, WorldOrbit
 from demos.pixeloveole3.scene import LibraryScene
+from lib import Globals
 from lib.demo_phases import CameraInterpolationHelper
 from lib.pixelove_ole.logo import PixeloveOleLogo
 
@@ -185,6 +186,7 @@ class LogoShow:
         """Once the invader has gone round its library circle
         `after_revolutions` times, fly it through `waypoints` and let it
         vanish into the last one; `invader_inside` turns True then."""
+        print(Globals.get_duration())
         self.pending_entry = (waypoints, duration, after_revolutions)
 
     def _update_entry(self, seconds, eye):

@@ -1,3 +1,5 @@
+import math
+
 import pygame
 from OpenGL.GL import *
 
@@ -80,9 +82,10 @@ class City:
 
 
 class CityEntranceSign:
-    def __init__(self, city_name: str, sign_size: int, nesw: str, board_color=(247, 196, 0)):
+    def __init__(self, city_name: str, sign_size: int, nesw: str, board_color=(247, 196, 0), height=None):
         self.city_name = city_name
         self.sign_size = sign_size
+        self.height = sign_size if height is None else height
         self.nesw = nesw.upper()
         self.x = 0.0
         self.y = 0.0
@@ -111,6 +114,13 @@ class CityEntranceSign:
         self.board_width = self.board_height * texture_width / self.texture_height
         self.facing = self.facings.get(self.nesw[:1], 0.0)
         self.display_list = self._compile()
+
+    def ground_footprint(self, samples=5):
+        """(x, z) points along the board's line on the ground, turned the way the sign faces."""
+        half_width = self.board_width / 2.0
+        facing = math.radians(self.facing)
+        spots = (-half_width + index * 2.0 * half_width / (samples - 1) for index in range(samples))
+        return tuple((spot * math.cos(facing), -spot * math.sin(facing)) for spot in spots)
 
     def _load_font(self, pixel_height):
         for name in self.font_names:
@@ -182,12 +192,12 @@ class CityEntranceSign:
         spread = self.board_width / 2.0 - self.board_width * self.post_inset_share / 2.0
         for side in (-1.0, 1.0):
             center = side * spread
-            self._draw_box(center - half_post, center + half_post, 0.0, self.sign_size,
+            self._draw_box(center - half_post, center + half_post, 0.0, self.height,
                            board_back - half_post * 2.0, board_back, self.post_color)
 
     def _draw_board(self):
         half_width = self.board_width / 2.0
-        top = self.sign_size
+        top = self.height
         bottom = top - self.board_height
         thickness = self.sign_size * self.board_thickness_share
         self._draw_box(-half_width, half_width, bottom, top, -thickness, 0.0, self.back_color, closed_front=False)

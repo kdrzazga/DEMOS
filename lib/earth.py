@@ -7,12 +7,13 @@ from OpenGL.GLU import *
 
 from lib.particles import Texture2D
 from lib.moon import EarthMoon
+from lib.urban.city import CityEntranceSign
 
 
 class Earth:
     def __init__(self, x, y, z, radius=6.0, tilt=23.4, spin_speed=3.0, texture_path=None,
                  moon_size_boost=1.0, moon_orbit_scale=1.0, moon_time_scale=1.0,
-                 moon_enabled=True):
+                 moon_enabled=True, places=None, sign_scale=0.1):
         self.x = x
         self.y = y
         self.z = z
@@ -32,6 +33,13 @@ class Earth:
         self.moon_orbit_scale = moon_orbit_scale
         self.moon_time_scale = moon_time_scale
         self.moon_data = (("Moon", 1737.4, 384400.0, 27.322, 5.145, (0.62, 0.60, 0.57), 35.0),)
+
+        self.places = dict(places or {})
+        self.sign_size = radius * sign_scale
+        self.city_signs = {}
+        self.nudge_step_degrees = 0.5
+        self.max_nudge_degrees = 8.0
+        self.nudge_directions = 16
 
         self.quadric = gluNewQuadric()
         gluQuadricNormals(self.quadric, GLU_SMOOTH)
@@ -54,11 +62,13 @@ class Earth:
             moons.append(EarthMoon(name, size, orbit, speed, inclination=inclination, color=color, phase=phase))
         return moons
 
-    def _load_surface(self):
+    def _surface_pixels(self):
         image = pygame.image.load(self.texture_path)
         raw = pygame.image.tobytes(image, "RGBA", True)
-        pixels = np.frombuffer(raw, dtype=np.uint8).reshape(image.get_height(), image.get_width(), 4)
-        texture = Texture2D(pixels)
+        return np.frombuffer(raw, dtype=np.uint8).reshape(image.get_height(), image.get_width(), 4)
+
+    def _load_surface(self):
+        texture = Texture2D(self._surface_pixels())
         glBindTexture(GL_TEXTURE_2D, texture.id)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
         return texture
@@ -104,6 +114,71 @@ class Earth:
         glDepthMask(GL_TRUE)
         glEnable(GL_LIGHTING)
 
+    def mark_city(self, name: str, nesw="S", height=None):
+        if name not in self.places:
+            raise KeyError(f"Unknown place {name!r}; known places: {', '.join(sorted(self.places))}")
+        latitude, longitude = self.places[name]
+        self.mark_location(name, latitude, longitude, nesw, height)
+
+    def mark_location(self, name: str, latitude, longitude, nesw="S", height=None):
+        """height is where the board's top sits above the ground; None means a full sign_size tall sign.
+
+        A sign never stands in water: if its footprint is wet it is nudged to the nearest dry ground.
+        """
+        sign = CityEntranceSign(name, self.sign_size, nesw, height=height)
+        latitude, longitude = self._dry_ground(sign, latitude, longitude)
+        self.city_signs[name] = (sign, self._surface_placement(latitude, longitude))
+
+    def unmark_city(self, name: str):
+        self.city_signs.pop(name, None)
+
+    def _is_water(self, latitude, longitude):
+        """The plain texture has no reliable land mask, so every spot counts as ground."""
+        return False
+
+    def _ground_point(self, latitude, longitude, east_units, south_units):
+        north_degrees = -np.degrees(south_units / self.radius)
+        east_degrees = np.degrees(east_units / (self.radius * max(np.cos(np.radians(latitude)), 1e-3)))
+        return latitude + north_degrees, longitude + east_degrees
+
+    def _nudges(self):
+        yield 0.0, 0.0
+        steps = int(self.max_nudge_degrees / self.nudge_step_degrees)
+        for step in range(1, steps + 1):
+            reach = step * self.nudge_step_degrees
+            for direction in range(self.nudge_directions):
+                angle = 2.0 * np.pi * direction / self.nudge_directions
+                yield reach * np.cos(angle), reach * np.sin(angle)
+
+    def _dry_ground(self, sign, latitude, longitude):
+        footprint = sign.ground_footprint()
+        for north, east in self._nudges():
+            spot_latitude, spot_longitude = latitude + north, longitude + east
+            if not any(self._is_water(*self._ground_point(spot_latitude, spot_longitude, east_units, south_units))
+                       for east_units, south_units in footprint):
+                return spot_latitude, spot_longitude
+        return latitude, longitude
+
+    def _surface_placement(self, latitude, longitude):
+        """Column-major matrix standing a sign on the sphere: x east, y up from the ground, z south.
+
+        In gluSphere's own frame (before draw's -90 degree turn) texture u = (longitude + 180) / 360
+        and v runs south to north along z, so the ground point is (cos lat sin lon, -cos lat cos lon, sin lat).
+        """
+        lat, lon = np.radians(latitude), np.radians(longitude)
+        up = np.array((np.cos(lat) * np.sin(lon), -np.cos(lat) * np.cos(lon), np.sin(lat)))
+        east = np.array((np.cos(lon), np.sin(lon), 0.0))
+        south = np.cross(east, up)
+        ground = up * self.radius
+        return np.array((*east, 0.0, *up, 0.0, *south, 0.0, *ground, 1.0), dtype=np.float32)
+
+    def _draw_city_signs(self):
+        for sign, placement in self.city_signs.values():
+            glPushMatrix()
+            glMultMatrixf(placement)
+            sign.draw()
+            glPopMatrix()
+
     def draw(self):
         glPushMatrix()
         glTranslatef(self.x, self.y, self.z)
@@ -118,6 +193,7 @@ class Earth:
         glRotatef(-90.0, 1.0, 0.0, 0.0)
         gluSphere(self.quadric, self.radius, 48, 32)
         glDisable(GL_TEXTURE_2D)
+        self._draw_city_signs()
         glPopMatrix()
         if self.moon_enabled:
             for moon in self.moons:

@@ -184,8 +184,8 @@ class Portico:
         self.left_openings = ((1.8, 0.8, 3.4),)
         self.right_openings = ((depth - 1.8, 0.8, 3.4),)
         balcony = height + 1.0
-        self.flags = (Flag((left - 0.15, balcony, front + 0.3), (-0.6, 0.75, 0.35), phase=0.0),
-                      Flag((right + 0.15, balcony, front + 0.3), (0.6, 0.75, 0.35), phase=1.7))
+        self.flags = (Flag((left - 0.15, balcony, front + 0.3), (0.0, 0.75, 0.6), phase=0.0),
+                      Flag((right + 0.15, balcony, front + 0.3), (0.0, 0.75, 0.6), phase=1.7))
 
     def draw(self, shapes):
         palette = self.palette

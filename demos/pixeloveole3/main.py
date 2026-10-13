@@ -7,7 +7,9 @@ from pygame.locals import DOUBLEBUF, FULLSCREEN, K_ESCAPE, KEYDOWN, MOUSEBUTTOND
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 from lib.base_demo import BaseDemo
-from demos.pixeloveole3.scene import LibraryScene
+from demos.pixeloveole3.logo_phases import build_logo_phases
+from demos.pixeloveole3.logo_show import LogoShow
+from demos.pixeloveole3.stage2 import build_stage2_phases
 
 
 class PixeloveOle3(BaseDemo):
@@ -21,12 +23,31 @@ class PixeloveOle3(BaseDemo):
 		self.fps = fps
 		self.opengl = opengl
 		self.clock = pygame.time.Clock()
-		self.elapsed = 0.0
+		self.longest_frame = 0.1
 
 		pygame.init()
 		pygame.mouse.set_visible(False)
 		self._init_display()
-		self.scene = LibraryScene(self.width, self.height) if self.opengl else None
+		self.show = LogoShow(self.width, self.height) if self.opengl else None
+		self.phases = build_logo_phases(self.show) + build_stage2_phases(self.show) if self.show else []
+		self.phase_index = 0
+		if self.phases:
+			self.current_phase().begin(None)
+
+	def current_phase(self):
+		return self.phases[self.phase_index]
+
+	def advance_phase(self):
+		handover = self.current_phase().handover()
+		self.phase_index += 1
+		self.current_phase().begin(handover)
+
+	def step(self, delta_seconds):
+		phase = self.current_phase()
+		phase.update(min(self.longest_frame, delta_seconds))
+		phase.render()
+		if phase.done and self.phase_index < len(self.phases) - 1:
+			self.advance_phase()
 
 	def _init_display(self):
 		flags = DOUBLEBUF
@@ -50,12 +71,11 @@ class PixeloveOle3(BaseDemo):
 					running = False
 				elif event.type == MOUSEBUTTONDOWN:
 					self.trigger()
-			if self.scene:
+			if self.show:
 				if self.paused:
-					self.scene.render_blank()
+					self.show.render_blank()
 				else:
-					self.elapsed += delta_seconds
-					self.scene.render(self.elapsed)
+					self.step(delta_seconds)
 			pygame.display.flip()
 		pygame.quit()
 

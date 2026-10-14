@@ -187,19 +187,22 @@ class Earth:
             sign.draw()
             glPopMatrix()
 
+    def _draw_surface(self):
+        glEnable(GL_TEXTURE_2D)
+        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE)
+        glBindTexture(GL_TEXTURE_2D, self.surface.id)
+        glColor3f(1.0, 1.0, 1.0)
+        gluSphere(self.quadric, self.radius, 48, 32)
+
     def draw(self):
         glPushMatrix()
         glTranslatef(self.x, self.y, self.z)
         self._draw_halo()
         glPushMatrix()
-        glEnable(GL_TEXTURE_2D)
-        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE)
-        glBindTexture(GL_TEXTURE_2D, self.surface.id)
-        glColor3f(1.0, 1.0, 1.0)
         glRotatef(self.tilt, 0.0, 0.0, 1.0)
         glRotatef(self.spin, 0.0, 1.0, 0.0)
         glRotatef(-90.0, 1.0, 0.0, 0.0)
-        gluSphere(self.quadric, self.radius, 48, 32)
+        self._draw_surface()
         glDisable(GL_TEXTURE_2D)
         self._draw_city_signs()
         glPopMatrix()

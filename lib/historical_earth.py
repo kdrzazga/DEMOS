@@ -2,6 +2,8 @@ import os
 
 import numpy as np
 import pygame
+from OpenGL.GL import *
+from OpenGL.GLU import gluSphere
 
 from lib.earth import Earth
 
@@ -89,7 +91,25 @@ HISTORICAL_MAPS = {
            "ice_below_map": True, "polar_ice_latitude": -72.0},
     1942: {"file": "world1942.png", "pixels": WORLD1942_PIXELS, "texture_width": 2048,
            "ice_below_map": False, "polar_ice_latitude": -68.0},
+    "modern": {"file": "earth_texture.png", "plain": True},
 }
+
+
+class PlainMap:
+    """A map that already is equirectangular (longitude -180 at left, north up); its sea is the blue part."""
+
+    def __init__(self, map_path, sea_blue_margin=25):
+        self.map_path = map_path
+        self.sea_blue_margin = sea_blue_margin
+
+    def equirectangular(self):
+        image = pygame.image.load(self.map_path)
+        raw = pygame.image.tobytes(image, "RGBA", False)
+        return np.frombuffer(raw, dtype=np.uint8).reshape(image.get_height(), image.get_width(), 4)
+
+    def land_mask(self, texture):
+        red, green, blue = (texture[:, :, channel].astype(np.int16) for channel in range(3))
+        return ~((blue > red + self.sea_blue_margin) & (blue >= green))
 
 
 class ThinPlateWarp:
@@ -218,6 +238,9 @@ class HistoricalMap:
             texture[band] = self._sample_band(source, map_x[band], map_y[band], latitudes[band], ocean_color)
         return np.roll(texture, self._seam_shift(), axis=1)
 
+    def land_mask(self, texture):
+        return np.any(texture != self.ocean_color, axis=2)
+
 
 class HistoricalEarth(Earth):
     """Earth wearing a political map of a chosen year; show_year() switches maps instantly.
@@ -236,15 +259,20 @@ class HistoricalEarth(Earth):
                                 for map_year in self.years}
         self.surfaces = {}
         self.land_masks = {}
+        self.fading_from = None
+        self.fade_seconds = 0.0
+        self.fade_progress = 1.0
         places = {name: (latitude, longitude) for name, latitude, longitude in PLACES}
         places.update(earth_options.pop("places", None) or {})
         super().__init__(x, y, z, texture_path=self.historical_maps[year].map_path, places=places, **earth_options)
 
     def _historical_map(self, year, seam_longitude, warp_smoothing):
         setup = self.maps[year]
+        map_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", setup["file"])
+        if setup.get("plain"):
+            return PlainMap(map_path)
         geo = {name: (latitude, longitude) for name, latitude, longitude in PLACES}
         landmarks = tuple((name, *geo[name], *pixel) for name, pixel in setup["pixels"].items())
-        map_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", setup["file"])
         return HistoricalMap(map_path, landmarks, seam_longitude=seam_longitude,
                              texture_width=setup["texture_width"], warp_smoothing=warp_smoothing,
                              polar_ice_latitude=setup["polar_ice_latitude"], ice_below_map=setup["ice_below_map"])
@@ -252,18 +280,47 @@ class HistoricalEarth(Earth):
     def _load_surface(self, pixels=None):
         for map_year, historical_map in self.historical_maps.items():
             texture = historical_map.equirectangular()
-            self.land_masks[map_year] = np.any(texture != historical_map.ocean_color, axis=2)
+            self.land_masks[map_year] = historical_map.land_mask(texture)
             self.surfaces[map_year] = super()._load_surface(np.ascontiguousarray(texture[::-1]))
         self.land = self.land_masks[self.year]
         return self.surfaces[self.year]
 
-    def show_year(self, year):
+    def show_year(self, year, fade_seconds=0.0):
+        """Switch to the year's map; with fade_seconds > 0 the new map dissolves in over the old one."""
         if year not in self.surfaces:
             raise KeyError(f"No map for {year}; available years: {', '.join(map(str, self.years))}")
+        self.fading_from = self.surface if fade_seconds > 0.0 and year != self.year else None
+        self.fade_seconds = fade_seconds
+        self.fade_progress = 0.0 if self.fading_from is not None else 1.0
         self.year = year
         self.surface = self.surfaces[year]
         self.land = self.land_masks[year]
         self._replant_signs()
+
+    def update(self, dt):
+        super().update(dt)
+        if self.fading_from is not None:
+            self.fade_progress = min(1.0, self.fade_progress + dt / self.fade_seconds)
+            if self.fade_progress >= 1.0:
+                self.fading_from = None
+
+    def _draw_surface(self):
+        if self.fading_from is None:
+            super()._draw_surface()
+            return
+        glEnable(GL_TEXTURE_2D)
+        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE)
+        glBindTexture(GL_TEXTURE_2D, self.fading_from.id)
+        glColor4f(1.0, 1.0, 1.0, 1.0)
+        gluSphere(self.quadric, self.radius, 48, 32)
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        glDepthFunc(GL_LEQUAL)
+        glBindTexture(GL_TEXTURE_2D, self.surface.id)
+        glColor4f(1.0, 1.0, 1.0, self.fade_progress)
+        gluSphere(self.quadric, self.radius, 48, 32)
+        glDepthFunc(GL_LESS)
+        glDisable(GL_BLEND)
 
     def _is_water(self, latitude, longitude):
         rows, columns = self.land.shape

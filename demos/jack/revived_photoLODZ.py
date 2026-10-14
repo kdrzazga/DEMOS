@@ -109,7 +109,7 @@ class Blink:
     def closure(self):
         return 0.0 if self.progress is None else math.sin(math.pi * self.progress)
 
-    def draw(self, photo, image_size, eye_positions, brightness):
+    def draw(self, photo, image_size, eye_positions, brightness, opacity=1.0):
         closure = self.closure()
         if closure <= 0.0:
             return
@@ -128,11 +128,11 @@ class Blink:
             for share, alpha in ((-1.0, 0.0), (-0.5, 1.0), (0.5, 1.0), (1.0, 0.0)):
                 source_x = (source_left + source_right) / 2.0 + share * half_width
                 screen_x = eye_x + share * half_width
-                glColor4f(brightness, brightness, brightness, alpha)
+                glColor4f(brightness, brightness, brightness, alpha * opacity)
                 glTexCoord2f(source_x / width, source_top / height)
                 glVertex2f(screen_x, lid_top)
                 shade = brightness * self.lash_shade
-                glColor4f(shade, shade, shade, alpha)
+                glColor4f(shade, shade, shade, alpha * opacity)
                 glTexCoord2f(source_x / width, source_bottom / height)
                 glVertex2f(screen_x, lid_bottom)
             glEnd()
@@ -180,7 +180,7 @@ class CigaretteSmoke:
             particle["x"] += (particle["drift"] + math.sin(time * 0.9 + particle["seed"]) * 9.0) * dt
         self.particles = [particle for particle in self.particles if particle["age"] < particle["life"]]
 
-    def draw(self, sprite):
+    def draw(self, sprite, opacity=1.0):
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glBindTexture(GL_TEXTURE_2D, sprite.id)
@@ -189,7 +189,7 @@ class CigaretteSmoke:
             progress = particle["age"] / particle["life"]
             half = 0.5 * particle["scale"] * (self.start_size + (self.end_size - self.start_size) * progress ** 0.7)
             alpha = self.opacity * min(1.0, particle["age"] / 0.4) * (1.0 - progress) ** 1.5
-            glColor4f(self.shade, self.shade, self.shade, alpha)
+            glColor4f(self.shade, self.shade, self.shade, alpha * opacity)
             x, y = particle["x"], particle["y"]
             glTexCoord2f(0.0, 0.0)
             glVertex2f(x - half, y - half)
@@ -406,12 +406,17 @@ class RevivedPhoto:
         self.eye_positions = tuple(self._displaced_point(origin) for origin, _ in self.blink.eyes)
         self.film.update(dt)
 
-    def _set_camera(self, window_width, window_height):
+    def aspect(self):
         left, top, right, bottom = self.view
-        aspect = (right - left) / (bottom - top)
-        fitted_width = min(window_width, int(window_height * aspect))
-        fitted_height = int(fitted_width / aspect)
-        glViewport((window_width - fitted_width) // 2, (window_height - fitted_height) // 2,
+        return (right - left) / (bottom - top)
+
+    def _set_camera(self, window_width, window_height, area=None):
+        left, top, right, bottom = self.view
+        area_x, area_y, area_width, area_height = area or (0, 0, window_width, window_height)
+        fitted_width = int(min(area_width, area_height * self.aspect()))
+        fitted_height = int(fitted_width / self.aspect())
+        fitted_top = int(area_y + (area_height - fitted_height) / 2)
+        glViewport(int(area_x + (area_width - fitted_width) / 2), window_height - fitted_top - fitted_height,
                    fitted_width, fitted_height)
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
@@ -423,10 +428,13 @@ class RevivedPhoto:
         glScalef(self.overscan, self.overscan, 1.0)
         glTranslatef(-center_x, -center_y, 0.0)
 
-    def _draw_photo(self):
+    def _draw_photo(self, opacity=1.0):
         glBindTexture(GL_TEXTURE_2D, self.photo.id)
         glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE)
-        glColor4f(self.film.brightness, self.film.brightness, self.film.brightness, 1.0)
+        if opacity < 1.0:
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        glColor4f(self.film.brightness, self.film.brightness, self.film.brightness, opacity)
         glEnableClientState(GL_VERTEX_ARRAY)
         glEnableClientState(GL_TEXTURE_COORD_ARRAY)
         glVertexPointer(2, GL_FLOAT, 0, self.positions)
@@ -434,6 +442,7 @@ class RevivedPhoto:
         glDrawElements(GL_TRIANGLES, len(self.indices), GL_UNSIGNED_INT, self.indices)
         glDisableClientState(GL_TEXTURE_COORD_ARRAY)
         glDisableClientState(GL_VERTEX_ARRAY)
+        glDisable(GL_BLEND)
 
     def _draw_rig(self):
         glDisable(GL_TEXTURE_2D)
@@ -459,14 +468,14 @@ class RevivedPhoto:
             glEnd()
         glEnable(GL_TEXTURE_2D)
 
-    def draw(self, window_width, window_height):
+    def draw(self, window_width, window_height, area=None, opacity=1.0):
         glDisable(GL_DEPTH_TEST)
         glDisable(GL_LIGHTING)
         glEnable(GL_TEXTURE_2D)
-        self._set_camera(window_width, window_height)
-        self._draw_photo()
-        self.blink.draw(self.photo, (self.width, self.height), self.eye_positions, self.film.brightness)
-        self.smoke.draw(self.smoke_sprite)
+        self._set_camera(window_width, window_height, area)
+        self._draw_photo(opacity)
+        self.blink.draw(self.photo, (self.width, self.height), self.eye_positions, self.film.brightness, opacity)
+        self.smoke.draw(self.smoke_sprite, opacity)
         self.film.draw_overlay()
         if self.show_rig:
             self._draw_rig()

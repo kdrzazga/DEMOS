@@ -1,8 +1,10 @@
 import os
+import time
 
 import pygame
 from OpenGL.GL import *
 
+from lib import Globals
 from lib.pygame_demo import PygameDemo
 from demos.jack.cards import ExitCard, TitleCard
 from demos.jack.globe import Globe
@@ -120,6 +122,7 @@ class JackDemo(PygameDemo):
         self.exit_card.draw(self.overlay, seconds)
         if self.exit_card.finished(seconds):
             self.running = False
+            print("Demo duration: " + str(Globals.get_duration()))
 
 
 if __name__ == "__main__":

@@ -12,16 +12,16 @@ from lib.earth import Earth
 
 
 class EarthTest:
-    def __init__(self, width=900, height=750):
+    def __init__(self, width=900, height=750, earth_class=Earth, caption="Earth Test"):
         self.width = width
         self.height = height
         self.clock = pygame.time.Clock()
         self.elapsed = 0.0
         pygame.init()
         pygame.display.set_mode((width, height), DOUBLEBUF | OPENGL)
-        pygame.display.set_caption("Earth Test")
+        pygame.display.set_caption(caption)
         self._init_gl()
-        self.earth = Earth(0.0, 0.0, 0.0, radius=6.0, spin_speed=26.0)
+        self.earth = earth_class(0.0, 0.0, 0.0, radius=6.0, spin_speed=26.0)
 
     def _init_gl(self):
         glViewport(0, 0, self.width, self.height)
@@ -45,6 +45,15 @@ class EarthTest:
     def _camera_distance(self):
         return 232.0 + math.sin(self.elapsed * 0.16 - math.pi / 2.0) * 210.0
 
+    def _look_at_earth(self):
+        orbit = self.elapsed * 0.12
+        reach = self._camera_distance()
+        gluLookAt(math.sin(orbit) * reach, reach * 0.17, math.cos(orbit) * reach,
+                  0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
+
+    def _on_key(self, key):
+        pass
+
     def run(self):
         running = True
         while running:
@@ -55,13 +64,12 @@ class EarthTest:
                     running = False
                 elif event.type == KEYDOWN and event.key == K_ESCAPE:
                     running = False
+                elif event.type == KEYDOWN:
+                    self._on_key(event.key)
             self.earth.update(delta_seconds)
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
             glLoadIdentity()
-            orbit = self.elapsed * 0.12
-            reach = self._camera_distance()
-            gluLookAt(math.sin(orbit) * reach, reach * 0.17, math.cos(orbit) * reach,
-                      0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
+            self._look_at_earth()
             glLightfv(GL_LIGHT0, GL_POSITION, (0.6, 0.45, 1.0, 0.0))
             self.earth.draw()
             pygame.display.flip()

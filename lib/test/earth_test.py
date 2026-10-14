@@ -51,6 +51,9 @@ class EarthTest:
         gluLookAt(math.sin(orbit) * reach, reach * 0.17, math.cos(orbit) * reach,
                   0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
 
+    def _on_key(self, key):
+        pass
+
     def run(self):
         running = True
         while running:
@@ -61,6 +64,8 @@ class EarthTest:
                     running = False
                 elif event.type == KEYDOWN and event.key == K_ESCAPE:
                     running = False
+                elif event.type == KEYDOWN:
+                    self._on_key(event.key)
             self.earth.update(delta_seconds)
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
             glLoadIdentity()

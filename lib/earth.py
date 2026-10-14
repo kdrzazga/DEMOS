@@ -37,6 +37,7 @@ class Earth:
         self.places = dict(places or {})
         self.sign_size = radius * sign_scale
         self.city_signs = {}
+        self.sign_sites = {}
         self.nudge_step_degrees = 0.5
         self.max_nudge_degrees = 8.0
         self.nudge_directions = 16
@@ -67,8 +68,8 @@ class Earth:
         raw = pygame.image.tobytes(image, "RGBA", True)
         return np.frombuffer(raw, dtype=np.uint8).reshape(image.get_height(), image.get_width(), 4)
 
-    def _load_surface(self):
-        texture = Texture2D(self._surface_pixels())
+    def _load_surface(self, pixels=None):
+        texture = Texture2D(self._surface_pixels() if pixels is None else pixels)
         glBindTexture(GL_TEXTURE_2D, texture.id)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
         return texture
@@ -126,11 +127,18 @@ class Earth:
         A sign never stands in water: if its footprint is wet it is nudged to the nearest dry ground.
         """
         sign = CityEntranceSign(name, self.sign_size, nesw, height=height)
-        latitude, longitude = self._dry_ground(sign, latitude, longitude)
-        self.city_signs[name] = (sign, self._surface_placement(latitude, longitude))
+        self.sign_sites[name] = (latitude, longitude)
+        self.city_signs[name] = (sign, self._surface_placement(*self._dry_ground(sign, latitude, longitude)))
 
     def unmark_city(self, name: str):
         self.city_signs.pop(name, None)
+        self.sign_sites.pop(name, None)
+
+    def _replant_signs(self):
+        """Stand every sign again at its requested site, so it dodges the water of the current surface."""
+        for name, (sign, _) in self.city_signs.items():
+            latitude, longitude = self.sign_sites[name]
+            self.city_signs[name] = (sign, self._surface_placement(*self._dry_ground(sign, latitude, longitude)))
 
     def _is_water(self, latitude, longitude):
         """The plain texture has no reliable land mask, so every spot counts as ground."""

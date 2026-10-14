@@ -94,7 +94,7 @@ class JackDemo(PygameDemo):
 
     def _advance(self, dt, time):
         if self.current_stage is not None:
-            self.current_stage.update(dt, time)
+            self.current_stage.update(dt, time, self.scene)
         self.globe.update(dt)
         self.year_label.update(dt)
 

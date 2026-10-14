@@ -1,6 +1,7 @@
+from demos.jack.framings import NORTH_AMERICA
 from demos.jack.locations import SUNNYVALE, WASHINGTON
 from demos.jack.photos import StillPhoto
-from demos.jack.stage import MapEra, Stage
+from demos.jack.stage import Chapter, MapEra, Stage
 
 
 class Stage1984(Stage):
@@ -34,3 +35,6 @@ class Stage1995(Stage):
     def __init__(self):
         super().__init__(20, MapEra.MODERN, year_label="1995",
                          photos=(StillPhoto("SamTramiel.JPG"),), locations=(SUNNYVALE,))
+
+
+CHAPTER = Chapter(NORTH_AMERICA, (Stage1984, StageMid80s, Stage1986, StageLate80s, Stage1993, Stage1995))

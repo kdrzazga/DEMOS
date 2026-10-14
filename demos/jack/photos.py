@@ -18,8 +18,9 @@ class StagePhoto:
 
     def strength(self, stage, time):
         elapsed = time - stage.start_time
-        start = stage.duration * self.appear
-        end = stage.duration * self.disappear
+        window_start, window_end = stage.photo_window()
+        start = window_start + (window_end - window_start) * self.appear
+        end = window_start + (window_end - window_start) * self.disappear
         if elapsed <= start or elapsed >= end:
             return 0.0
         return self.opacity * min(1.0, (elapsed - start) / self.fade_seconds, (end - elapsed) / self.fade_seconds)

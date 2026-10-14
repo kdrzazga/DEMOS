@@ -1,6 +1,7 @@
+from demos.jack.framings import JAPAN, NORTH_AMERICA
 from demos.jack.locations import NEW_YORK, TOKYO, TORONTO
 from demos.jack.photos import StillPhoto
-from demos.jack.stage import MapEra, Stage
+from demos.jack.stage import CameraBeat, Chapter, MapEra, Stage
 
 
 class StageUSA(Stage):
@@ -26,4 +27,8 @@ class Stage1962(Stage):
 
 class StageJapan(Stage):
     def __init__(self):
-        super().__init__(9, MapEra.MODERN, locations=(TOKYO,))
+        super().__init__(9, MapEra.MODERN, locations=(TOKYO,), framing=JAPAN,
+                         beats=(CameraBeat(0.7, NORTH_AMERICA),))
+
+
+CHAPTER = Chapter(NORTH_AMERICA, (StageUSA, Stage1953, Stage1956, Stage1962, StageJapan))

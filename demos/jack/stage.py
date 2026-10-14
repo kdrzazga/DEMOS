@@ -14,27 +14,44 @@ class Location:
         self.longitude = longitude
 
 
+class CameraBeat:
+    def __init__(self, at, framing, locations=()):
+        self.at = at
+        self.framing = framing
+        self.locations = tuple(locations)
+
+
 class Stage:
-    def __init__(self, clip_number, era, year_label=None, photos=(), locations=(), photo_span=(0.08, 0.95)):
+    def __init__(self, clip_number, era, year_label=None, photos=(), locations=(), framing=None, beats=(),
+                 sign_dwell_seconds=0.8, photo_end_share=0.95, shortest_photo_window=1.5):
         self.clip_number = clip_number
         self.era = era
         self.year_label = year_label
         self.photos = tuple(photos)
         self.locations = tuple(locations)
-        self.photo_span = photo_span
+        self.framing = framing
+        self.beats = tuple(sorted(beats, key=lambda beat: beat.at))
+        self.sign_dwell_seconds = sign_dwell_seconds
+        self.photo_end_share = photo_end_share
+        self.shortest_photo_window = shortest_photo_window
         self.clip = None
         self.start_time = None
         self.end_time = None
+        self.photo_start = 0.0
+        self.beats_due = []
         self._share_photo_time()
 
     def _share_photo_time(self):
-        first, last = self.photo_span
         unplanned = [photo for photo in self.photos if not photo.is_planned()]
-        share = (last - first) / max(1, len(unplanned))
+        share = 1.0 / max(1, len(unplanned))
         for index, photo in enumerate(unplanned):
-            photo.plan(first + index * share, first + (index + 1) * share)
+            photo.plan(index * share, (index + 1) * share)
         for photo in self.photos:
-            photo.plan(first, last)
+            photo.plan(0.0, 1.0)
+
+    def adopt_framing(self, framing):
+        if self.framing is None:
+            self.framing = framing
 
     def schedule(self, clip, start_time):
         self.clip = clip
@@ -45,16 +62,23 @@ class Stage:
     def duration(self):
         return self.end_time - self.start_time
 
-    def progress(self, time):
-        return min(1.0, max(0.0, (time - self.start_time) / self.duration))
+    def photo_window(self):
+        end = self.duration * self.photo_end_share
+        return min(self.photo_start, end - self.shortest_photo_window), end
 
     def enter(self, scene):
         scene.narrator.play(self.clip)
         scene.globe.show_era(self.era)
-        scene.globe.show_locations(self.locations)
         scene.year_label.show(self.year_label)
+        arrival = scene.globe.frame(self.framing, self.locations)
+        self.photo_start = arrival + (self.sign_dwell_seconds if self.locations else 0.0)
+        self.beats_due = list(self.beats)
 
-    def update(self, dt, time):
+    def update(self, dt, time, scene):
+        elapsed = time - self.start_time
+        while self.beats_due and elapsed >= self.beats_due[0].at * self.duration:
+            beat = self.beats_due.pop(0)
+            scene.globe.frame(beat.framing, beat.locations)
         for photo in self.photos:
             if photo.strength(self, time) > 0.0:
                 photo.update(dt)
@@ -67,3 +91,15 @@ class Stage:
 
     def leave(self, scene):
         pass
+
+
+class Chapter:
+    def __init__(self, framing, stage_classes):
+        self.framing = framing
+        self.stage_classes = tuple(stage_classes)
+
+    def build(self):
+        stages = [stage_class() for stage_class in self.stage_classes]
+        for stage in stages:
+            stage.adopt_framing(self.framing)
+        return stages

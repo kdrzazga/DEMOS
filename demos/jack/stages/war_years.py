@@ -1,6 +1,7 @@
+from demos.jack.framings import EUROPE
 from demos.jack.locations import AHLEM, AUSCHWITZ, LITZMANNSTADT, LODZ
 from demos.jack.photos import LivingPhoto, StillPhoto
-from demos.jack.stage import MapEra, Stage
+from demos.jack.stage import Chapter, MapEra, Stage
 
 
 class StageLodz(Stage):
@@ -24,3 +25,6 @@ class StageAuschwitz(Stage):
 class Stage1945(Stage):
     def __init__(self):
         super().__init__(4, MapEra.WAR, year_label="1945", locations=(AHLEM,))
+
+
+CHAPTER = Chapter(EUROPE, (StageLodz, StageWW2, StageAuschwitz, Stage1945))

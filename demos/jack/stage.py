@@ -39,9 +39,11 @@ class Stage:
         self.end_time = None
         self.photo_start = 0.0
         self.beats_due = []
-        self._share_photo_time()
 
-    def _share_photo_time(self):
+    def add_photos(self, photos):
+        self.photos += tuple(photos)
+
+    def share_photo_time(self):
         unplanned = [photo for photo in self.photos if not photo.is_planned()]
         share = 1.0 / max(1, len(unplanned))
         for index, photo in enumerate(unplanned):
@@ -98,8 +100,10 @@ class Chapter:
         self.framing = framing
         self.stage_classes = tuple(stage_classes)
 
-    def build(self):
+    def build(self, album):
         stages = [stage_class() for stage_class in self.stage_classes]
         for stage in stages:
             stage.adopt_framing(self.framing)
+            stage.add_photos(album.photos_for(stage.clip_number))
+            stage.share_photo_time()
         return stages

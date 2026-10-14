@@ -1,6 +1,6 @@
 from demos.jack.stage import Location
 
-LODZ = Location("Lodz", 51.76, 19.46)
+LODZ = Location("Łódź", 51.76, 19.46)
 LITZMANNSTADT = Location("Litzmannstadt", 51.76, 19.46)
 AUSCHWITZ = Location("Auschwitz", 50.03, 19.20)
 AHLEM = Location("Ahlem", 52.37, 9.68)

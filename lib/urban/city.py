@@ -126,7 +126,9 @@ class CityEntranceSign:
         for name in self.font_names:
             path = pygame.font.match_font(name)
             if path:
-                return pygame.font.Font(path, pixel_height)
+                font = pygame.font.Font(path, pixel_height)
+                if None not in font.metrics(self.city_name):
+                    return font
         return pygame.font.Font(None, pixel_height)
 
     def _build_texture(self):

@@ -1,3 +1,6 @@
+import os
+import re
+
 from demos.jack.overlay import Picture
 from demos.jack.revived_photoLODZ import RevivedPhoto
 
@@ -39,6 +42,19 @@ class StillPhoto(StagePhoto):
 
     def draw(self, overlay, strength):
         overlay.draw_texture(self.picture.texture.id, overlay.fit(self.picture.aspect, overlay.photo_box()), strength)
+
+
+class PhotoAlbum:
+    def __init__(self, folder, name_pattern=r"^(\d+)\.\s*.+\.(jpe?g|png)$"):
+        self.folder = folder
+        self.file_names = {}
+        for file_name in sorted(os.listdir(folder)):
+            match = re.match(name_pattern, file_name, re.IGNORECASE)
+            if match:
+                self.file_names.setdefault(int(match.group(1)), []).append(file_name)
+
+    def photos_for(self, clip_number):
+        return tuple(StillPhoto(file_name) for file_name in self.file_names.get(clip_number, ()))
 
 
 class LivingPhoto(StagePhoto):

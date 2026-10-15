@@ -1,5 +1,7 @@
 from enum import Enum
 
+from demos.jack.photos import PhotoLayout
+
 
 class MapEra(Enum):
     PRE_WAR = 1936
@@ -86,10 +88,15 @@ class Stage:
                 photo.update(dt)
 
     def draw_overlay(self, overlay, time):
+        shown = [(photo, photo.strength(self, time)) for photo in self.photos]
+        layout = PhotoLayout(overlay.photo_box())
         for photo in self.photos:
-            strength = photo.strength(self, time)
+            room = photo.room_needed(self, time)
+            if room > 0.0 and photo.layer > 0:
+                layout.keep_clear_of(photo.area(overlay, layout.box), room)
+        for photo, strength in sorted(shown, key=lambda pair: pair[0].layer):
             if strength > 0.0:
-                photo.draw(overlay, strength)
+                photo.draw(overlay, strength, layout.box)
 
     def leave(self, scene):
         pass

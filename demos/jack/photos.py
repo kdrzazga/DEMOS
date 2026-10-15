@@ -7,7 +7,8 @@ from demos.jack.revived_photoLODZ import RevivedPhoto
 
 class StagePhoto:
     def __init__(self, appear=None, disappear=None, opacity=0.85, pop_seconds=0.2, translucent_seconds=0.5,
-                 clearing_seconds=1.0, exit_seconds=0.5):
+                 clearing_seconds=1.0, exit_seconds=0.5, room_seconds=0.6):
+        self.room_seconds = room_seconds
         self.appear = appear
         self.disappear = disappear
         self.opacity = opacity
@@ -23,11 +24,21 @@ class StagePhoto:
         self.appear = appear if self.appear is None else self.appear
         self.disappear = disappear if self.disappear is None else self.disappear
 
+    def _shown_span(self, stage):
+        window_start, window_end = stage.photo_window()
+        return (window_start + (window_end - window_start) * self.appear,
+                window_start + (window_end - window_start) * self.disappear)
+
+    def room_needed(self, stage, time):
+        elapsed = time - stage.start_time
+        start, end = self._shown_span(stage)
+        if elapsed <= start - self.room_seconds or elapsed >= end:
+            return 0.0
+        return min(1.0, (elapsed - start + self.room_seconds) / self.room_seconds)
+
     def strength(self, stage, time):
         elapsed = time - stage.start_time
-        window_start, window_end = stage.photo_window()
-        start = window_start + (window_end - window_start) * self.appear
-        end = window_start + (window_end - window_start) * self.disappear
+        start, end = self._shown_span(stage)
         if elapsed <= start or elapsed >= end:
             return 0.0
         shown = elapsed - start
@@ -37,20 +48,68 @@ class StagePhoto:
         leaving = min(1.0, (end - elapsed) / self.exit_seconds)
         return solidity * appearing * leaving
 
+    @property
+    def layer(self):
+        return 0
+
     def update(self, dt):
         pass
 
-    def draw(self, overlay, strength):
+    def area(self, overlay, box):
+        raise NotImplementedError
+
+    def draw(self, overlay, strength, box):
         raise NotImplementedError
 
 
+class PhotoLayout:
+    def __init__(self, box, gap=20.0):
+        self.box = box
+        self.gap = gap
+
+    def keep_clear_of(self, obstacle, share):
+        x, y, width, height = self.box
+        limit = obstacle[0] - self.gap
+        if limit < x + width:
+            width -= (x + width - limit) * share
+        self.box = x, y, width, height
+
+
+class CenteredPlacement:
+    def __init__(self, layer=0):
+        self.layer = layer
+
+    def rectangle(self, overlay, aspect, box):
+        return overlay.fit(aspect, box)
+
+
+class BottomRightPlacement:
+    def __init__(self, margin=30, height_share=0.45, layer=1):
+        self.layer = layer
+        self.margin = margin
+        self.height_share = height_share
+
+    def rectangle(self, overlay, aspect, box):
+        height = overlay.height * self.height_share
+        width = height * aspect
+        return overlay.width - self.margin - width, overlay.height - self.margin - height, width, height
+
+
 class StillPhoto(StagePhoto):
-    def __init__(self, file_name, appear=None, disappear=None):
+    def __init__(self, file_name, appear=None, disappear=None, placement=None):
         super().__init__(appear, disappear)
         self.picture = Picture(file_name)
+        self.placement = placement or CenteredPlacement()
 
-    def draw(self, overlay, strength):
-        overlay.draw_texture(self.picture.texture.id, overlay.fit(self.picture.aspect, overlay.photo_box()), strength)
+    @property
+    def layer(self):
+        return self.placement.layer
+
+    def area(self, overlay, box):
+        return self.placement.rectangle(overlay, self.picture.aspect, box)
+
+    def draw(self, overlay, strength, box):
+        overlay.draw_texture(self.picture.texture.id, self.area(overlay, box), strength)
 
 
 class PhotoAlbum:
@@ -74,7 +133,9 @@ class LivingPhoto(StagePhoto):
     def update(self, dt):
         self.revived.update(dt)
 
-    def draw(self, overlay, strength):
-        area = overlay.fit(self.revived.aspect(), overlay.photo_box())
-        self.revived.draw(overlay.width, overlay.height, area=area, opacity=strength)
+    def area(self, overlay, box):
+        return overlay.fit(self.revived.aspect(), box)
+
+    def draw(self, overlay, strength, box):
+        self.revived.draw(overlay.width, overlay.height, area=self.area(overlay, box), opacity=strength)
         overlay.apply()

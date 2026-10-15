@@ -4,17 +4,21 @@ from OpenGL.GL import *
 from OpenGL.GLU import gluLookAt, gluPerspective
 
 from lib.historical_earth import HistoricalEarth
-from demos.jack.camera import GlobeCamera
+from demos.jack.camera import Framing, GlobeCamera
 from demos.jack.framings import WORLD
 from demos.jack.stage import MapEra
 
 
 class Globe:
     def __init__(self, screen_width, screen_height, framing=WORLD, era=MapEra.PRE_WAR, radius=6.0,
-                 field_of_view=45.0, era_fade_seconds=2.0, light_direction=(0.5, 0.6, 1.0, 0.0)):
+                 field_of_view=45.0, era_fade_seconds=2.0, light_direction=(0.5, 0.6, 1.0, 0.0),
+                 close_up_factor=2.0, city_sway=2.0, city_sway_period=9.0):
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.radius = radius
+        self.close_up_factor = close_up_factor
+        self.city_sway = city_sway
+        self.city_sway_period = city_sway_period
         self.field_of_view = field_of_view
         self.era_fade_seconds = era_fade_seconds
         self.light_direction = light_direction
@@ -29,7 +33,32 @@ class Globe:
             self.era = era
             self.earth.show_year(era.value, self.era_fade_seconds)
 
+    def _surface_distance(self, distance):
+        angle = math.radians(self.camera.view_offset)
+        return math.sqrt(distance * distance + self.radius * self.radius
+                         - 2.0 * distance * self.radius * math.cos(angle))
+
+    def _distance_for_surface(self, surface_distance):
+        angle = math.radians(self.camera.view_offset)
+        nearest = self.radius * math.sin(angle) + 0.1
+        reach = max(surface_distance, nearest)
+        return self.radius * math.cos(angle) + math.sqrt(reach * reach - (self.radius * math.sin(angle)) ** 2)
+
+    def _close_up(self, region, location):
+        surface_distance = self._surface_distance(region.distance) / self.close_up_factor
+        return Framing(region.name, location.latitude, location.longitude,
+                       self._distance_for_surface(surface_distance), region.focus, region.sign_scale,
+                       sway=self.city_sway, sway_period=self.city_sway_period)
+
+    def _target_for(self, framing, locations):
+        if locations:
+            return self._close_up(framing, locations[0])
+        if self.camera.target.name == framing.name:
+            return self.camera.target
+        return framing
+
     def frame(self, framing, locations):
+        framing = self._target_for(framing, locations)
         if framing is self.camera.target and not self.camera.arrived:
             self.awaited_locations = tuple(locations)
             return self.camera.remaining_seconds()
@@ -61,7 +90,7 @@ class Globe:
         if self.awaited_locations is not None and self.camera.arrived:
             self._put_up_signs(self.awaited_locations)
             self.awaited_locations = None
-        self.earth.spin = -self.camera.longitude
+        self.earth.spin = -self.camera.view_longitude()
         self.earth.update(dt)
 
     def _look_target(self):

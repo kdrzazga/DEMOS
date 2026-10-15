@@ -1,6 +1,6 @@
 from demos.jack.framings import NORTH_AMERICA
 from demos.jack.locations import CHICAGO, VALLEY_FORGE
-from demos.jack.photos import StillPhoto
+from demos.jack.photos import BottomRightPlacement, StillPhoto
 from demos.jack.stage import Chapter, MapEra, Stage
 
 
@@ -16,20 +16,18 @@ class Stage1977PET(Stage):
 
 class StageEarly80s(Stage):
     def __init__(self):
-        super().__init__(12, MapEra.MODERN, year_label="Early 1980s")
+        super().__init__(12, MapEra.MODERN, year_label="Early 1980s",
+                         photos=(StillPhoto("AdamOsborne.png", appear=0.68, placement=BottomRightPlacement()),))
 
 
 class Stage1983(Stage):
     def __init__(self):
-        super().__init__(13, MapEra.MODERN, year_label="1983")
+        super().__init__(13, MapEra.MODERN, year_label="1983-84")
 
 
 class StageJan1984(Stage):
     def __init__(self):
-        super().__init__(14, MapEra.MODERN, year_label="January 1984",
-                         photos=(StillPhoto("CommodoreInternational  1984Windter CES.jpg"),
-                                 StillPhoto("magazine.jpg")),
-                         locations=(CHICAGO,))
+        super().__init__(14, MapEra.MODERN, year_label="January 1984", locations=(CHICAGO,))
 
 
 CHAPTER = Chapter(NORTH_AMERICA, (Stage1971, Stage1977PET, StageEarly80s, Stage1983, StageJan1984))

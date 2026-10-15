@@ -1,13 +1,16 @@
 import os
+import time
 
 import pygame
 from OpenGL.GL import *
 
+from lib import Globals
 from lib.pygame_demo import PygameDemo
 from demos.jack.cards import ExitCard, TitleCard
 from demos.jack.globe import Globe
 from demos.jack.narration import AmbientLoop, Narrator
 from demos.jack.overlay import RESOURCES, ScreenOverlay, YearLabel
+from demos.jack.photos import PhotoAlbum
 from demos.jack.stages import build_stages
 from demos.jack.timetable import ClipLibrary, Timetable
 
@@ -40,7 +43,8 @@ class JackDemo(PygameDemo):
         self.ambient = AmbientLoop(self.ambient_path)
         self.scene = Scene(self.globe, self.narrator, self.year_label)
         self.opening_seconds = self.title_card.duration + self.globe_reveal_seconds
-        self.timetable = Timetable(build_stages(), ClipLibrary(self.audio_folder), self.opening_seconds)
+        stages = build_stages(PhotoAlbum(RESOURCES))
+        self.timetable = Timetable(stages, ClipLibrary(self.audio_folder), self.opening_seconds)
         self.current_stage = None
         self.ending_started = False
         self.start_ticks = None
@@ -118,6 +122,7 @@ class JackDemo(PygameDemo):
         self.exit_card.draw(self.overlay, seconds)
         if self.exit_card.finished(seconds):
             self.running = False
+            print("Demo duration: " + str(Globals.get_duration()))
 
 
 if __name__ == "__main__":

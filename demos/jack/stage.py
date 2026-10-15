@@ -1,5 +1,7 @@
 from enum import Enum
 
+from demos.jack.photos import PhotoLayout
+
 
 class MapEra(Enum):
     PRE_WAR = 1936
@@ -39,9 +41,11 @@ class Stage:
         self.end_time = None
         self.photo_start = 0.0
         self.beats_due = []
-        self._share_photo_time()
 
-    def _share_photo_time(self):
+    def add_photos(self, photos):
+        self.photos += tuple(photos)
+
+    def share_photo_time(self):
         unplanned = [photo for photo in self.photos if not photo.is_planned()]
         share = 1.0 / max(1, len(unplanned))
         for index, photo in enumerate(unplanned):
@@ -84,10 +88,15 @@ class Stage:
                 photo.update(dt)
 
     def draw_overlay(self, overlay, time):
+        shown = [(photo, photo.strength(self, time)) for photo in self.photos]
+        layout = PhotoLayout(overlay.photo_box())
         for photo in self.photos:
-            strength = photo.strength(self, time)
+            room = photo.room_needed(self, time)
+            if room > 0.0 and photo.layer > 0:
+                layout.keep_clear_of(photo.area(overlay, layout.box), room)
+        for photo, strength in sorted(shown, key=lambda pair: pair[0].layer):
             if strength > 0.0:
-                photo.draw(overlay, strength)
+                photo.draw(overlay, strength, layout.box)
 
     def leave(self, scene):
         pass
@@ -98,8 +107,10 @@ class Chapter:
         self.framing = framing
         self.stage_classes = tuple(stage_classes)
 
-    def build(self):
+    def build(self, album):
         stages = [stage_class() for stage_class in self.stage_classes]
         for stage in stages:
             stage.adopt_framing(self.framing)
+            stage.add_photos(album.photos_for(stage.clip_number))
+            stage.share_photo_time()
         return stages

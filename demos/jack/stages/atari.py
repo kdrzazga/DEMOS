@@ -22,8 +22,7 @@ class Stage1986(Stage):
 
 class StageLate80s(Stage):
     def __init__(self):
-        super().__init__(18, MapEra.MODERN, year_label="Late 1980s",
-                         photos=(StillPhoto("Jack+Sam_Tramiel.jpg"),), locations=(SUNNYVALE,))
+        super().__init__(18, MapEra.MODERN, year_label="Late 1980s", locations=(SUNNYVALE,))
 
 
 class Stage1993(Stage):
@@ -33,8 +32,7 @@ class Stage1993(Stage):
 
 class Stage1995(Stage):
     def __init__(self):
-        super().__init__(20, MapEra.MODERN, year_label="1995",
-                         photos=(StillPhoto("SamTramiel.JPG"),), locations=(SUNNYVALE,))
+        super().__init__(20, MapEra.MODERN, year_label="1995", locations=(SUNNYVALE,))
 
 
 CHAPTER = Chapter(NORTH_AMERICA, (Stage1984, StageMid80s, Stage1986, StageLate80s, Stage1993, Stage1995))

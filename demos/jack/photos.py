@@ -6,11 +6,15 @@ from demos.jack.revived_photoLODZ import RevivedPhoto
 
 
 class StagePhoto:
-    def __init__(self, appear=None, disappear=None, opacity=0.85, fade_seconds=0.8):
+    def __init__(self, appear=None, disappear=None, opacity=0.85, pop_seconds=0.2, translucent_seconds=0.5,
+                 clearing_seconds=1.0, exit_seconds=0.5):
         self.appear = appear
         self.disappear = disappear
         self.opacity = opacity
-        self.fade_seconds = fade_seconds
+        self.pop_seconds = pop_seconds
+        self.translucent_seconds = translucent_seconds
+        self.clearing_seconds = clearing_seconds
+        self.exit_seconds = exit_seconds
 
     def is_planned(self):
         return self.appear is not None or self.disappear is not None
@@ -26,7 +30,12 @@ class StagePhoto:
         end = window_start + (window_end - window_start) * self.disappear
         if elapsed <= start or elapsed >= end:
             return 0.0
-        return self.opacity * min(1.0, (elapsed - start) / self.fade_seconds, (end - elapsed) / self.fade_seconds)
+        shown = elapsed - start
+        clearing = min(1.0, max(0.0, (shown - self.translucent_seconds) / self.clearing_seconds))
+        solidity = self.opacity + (1.0 - self.opacity) * clearing
+        appearing = min(1.0, shown / self.pop_seconds)
+        leaving = min(1.0, (end - elapsed) / self.exit_seconds)
+        return solidity * appearing * leaving
 
     def update(self, dt):
         pass

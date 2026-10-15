@@ -3,11 +3,12 @@ from datetime import datetime
 build_start = datetime.now()
 
 root = "D:/code/DEMOS/"
-icon_path = root + "icons/" + "WinterDemo26.png"   # .png or .ico both work
-exe_name =  "P3DSCII - PETSCII 3D DEMO"   # -> dist/<exe_name>.exe
-excluded_dirs = (root + "demos/demo1", root + "demos/demo3", root + "demos/pc45", root + "demos/petscii"
-                 , root + "demos/c64", root + "demos/amiga")
-splash_image = root + "screens/splash_winter.png"
+icon_path = root + "icons/" + "Jack100.png"   # .png or .ico both work
+exe_name =  "Jack 100"   # -> dist/<exe_name>.exe
+excluded_dirs = (root + "demos/amiga", root + "demos/c64", root + "demos/demo1", root + "demos/pc45", root + "demos/petscii"
+                 , root + "demos/pixeloveole3"
+                 , root + "demos/retrosfera10", root + "demos/WinterDemo26")
+splash_image = root + "screens/splash_jack.png"
 
 # Text baked onto the boot splash that shows IMMEDIATELY while the one-file exe
 # unpacks itself to a temp dir (the multi-second "nothing happens" gap on start).

@@ -85,31 +85,32 @@ WORLD1942_PIXELS = {
     "New York": (272, 180), "Toronto": (259, 169), "Monte Sereno": (87, 199),
 }
 
+# Where each place sits on modern.png (1300x628). Like the 1942 map, it draws no Antarctica.
+MODERN_PIXELS = {
+    "Cape Agulhas": (639, 535), "Cape Horn": (318, 627), "South East Cape": (1111, 578),
+    "Kanyakumari": (877, 329), "Dondra Head": (891, 343), "Ponta do Seixas": (407, 403),
+    "Cap-Vert": (480, 300), "Ras Hafun": (767, 314), "Cabo da Roca": (518, 185),
+    "Cape Byron": (1178, 490), "Steep Point": (1015, 494), "North Cape": (635, 43),
+    "Cape Morris Jesup": (463, 1), "Cape Prince of Wales": (0, 107), "Cape Dezhnev": (1163, 69),
+    "Florida Keys": (224, 251), "Cabo San Lucas": (102, 258), "Punta Parinas": (212, 376),
+    "Cape Spear": (362, 136), "Point Barrow": (45, 61), "Cape Lopatka": (1123, 128),
+    "Ca Mau": (992, 330), "Cape Sainte Marie": (742, 492), "Cap d'Ambre": (758, 428),
+    "Stewart Island": (1186, 592), "North Cape NZ": (1240, 535), "Cape Mendocino": (74, 184),
+    "Cape Farewell": (412, 88), "Dunmore Head": (521, 123), "Cape Chidley": (342, 88),
+    "Cape Palmas": (519, 350),
+    "Lodz": (630, 126), "Auschwitz": (629, 133), "Bergen-Belsen": (594, 122),
+    "New York": (270, 177), "Toronto": (255, 164), "Monte Sereno": (78, 197),
+}
+
 # year: map file in lib/resources, its pinned pixels, texture width on the globe, and how to treat the far south.
 HISTORICAL_MAPS = {
     1936: {"file": "world1936.png", "pixels": WORLD1936_PIXELS, "texture_width": 4096,
            "ice_below_map": True, "polar_ice_latitude": -72.0},
     1942: {"file": "world1942.png", "pixels": WORLD1942_PIXELS, "texture_width": 2048,
            "ice_below_map": False, "polar_ice_latitude": -68.0},
-    "modern": {"file": "earth_texture.png", "plain": True},
+    "modern": {"file": "modern.png", "pixels": MODERN_PIXELS, "texture_width": 2048,
+               "ice_below_map": False, "polar_ice_latitude": -68.0},
 }
-
-
-class PlainMap:
-    """A map that already is equirectangular (longitude -180 at left, north up); its sea is the blue part."""
-
-    def __init__(self, map_path, sea_blue_margin=25):
-        self.map_path = map_path
-        self.sea_blue_margin = sea_blue_margin
-
-    def equirectangular(self):
-        image = pygame.image.load(self.map_path)
-        raw = pygame.image.tobytes(image, "RGBA", False)
-        return np.frombuffer(raw, dtype=np.uint8).reshape(image.get_height(), image.get_width(), 4)
-
-    def land_mask(self, texture):
-        red, green, blue = (texture[:, :, channel].astype(np.int16) for channel in range(3))
-        return ~((blue > red + self.sea_blue_margin) & (blue >= green))
 
 
 class ThinPlateWarp:
@@ -269,9 +270,7 @@ class HistoricalEarth(Earth):
     def _historical_map(self, year, seam_longitude, warp_smoothing):
         setup = self.maps[year]
         map_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", setup["file"])
-        if setup.get("plain"):
-            return PlainMap(map_path)
-        geo = {name: (latitude, longitude) for name, latitude, longitude in PLACES}
+        geo ={name: (latitude, longitude) for name, latitude, longitude in PLACES}
         landmarks = tuple((name, *geo[name], *pixel) for name, pixel in setup["pixels"].items())
         return HistoricalMap(map_path, landmarks, seam_longitude=seam_longitude,
                              texture_width=setup["texture_width"], warp_smoothing=warp_smoothing,

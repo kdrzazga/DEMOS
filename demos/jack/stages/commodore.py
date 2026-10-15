@@ -20,7 +20,7 @@ class StageEarly80s(Stage):
 
 class Stage1983(Stage):
     def __init__(self):
-        super().__init__(13, MapEra.MODERN, year_label="1983")
+        super().__init__(13, MapEra.MODERN, year_label="1983-84")
 
 
 class StageJan1984(Stage):

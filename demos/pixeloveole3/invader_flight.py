@@ -145,6 +145,12 @@ class WorldOrbit:
     def revolutions(self):
         return self.travelled / (2.0 * math.pi)
 
+    def seconds_until(self, revolutions):
+        remaining = revolutions * 2.0 * math.pi - self.travelled
+        ramp_left = max(0.0, self.ramp_seconds - self.elapsed)
+        ramp_angle = self.angular_speed * ramp_left * (1.0 + self.elapsed / self.ramp_seconds) / 2.0
+        return ramp_left + max(0.0, remaining - ramp_angle) / self.angular_speed
+
     def update(self, seconds, eye):
         self.elapsed += seconds
         step = self.angular_speed * min(1.0, self.elapsed / self.ramp_seconds) * seconds

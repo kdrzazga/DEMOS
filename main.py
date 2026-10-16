@@ -97,7 +97,7 @@ DEMOS = {
     "jack": jack_demo,
 }
 
-DEFAULT_DEMO = "jack"
+DEFAULT_DEMO = "pixeloveole3"
 
 
 def close_boot_splash():

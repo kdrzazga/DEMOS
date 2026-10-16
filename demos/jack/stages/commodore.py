@@ -1,6 +1,7 @@
 from demos.jack.framings import NORTH_AMERICA
 from demos.jack.locations import CHICAGO, VALLEY_FORGE
-from demos.jack.photos import BottomRightPlacement, StillPhoto
+from lib.photos import BottomRightPlacement, StillPhoto
+from demos.jack.overlay import resource
 from demos.jack.stage import Chapter, MapEra, Stage
 
 
@@ -17,7 +18,7 @@ class Stage1977PET(Stage):
 class StageEarly80s(Stage):
     def __init__(self):
         super().__init__(12, MapEra.MODERN, year_label="Early 1980s",
-                         photos=(StillPhoto("AdamOsborne.png", appear=0.68, placement=BottomRightPlacement()),))
+                         photos=(StillPhoto(resource("AdamOsborne.png"), appear=0.68, placement=BottomRightPlacement()),))
 
 
 class Stage1983(Stage):

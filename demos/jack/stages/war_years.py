@@ -1,13 +1,14 @@
 from demos.jack.framings import EUROPE
 from demos.jack.locations import AHLEM, AUSCHWITZ, LITZMANNSTADT, LODZ
-from demos.jack.photos import LivingPhoto, StillPhoto
+from demos.jack.photos import LivingPhoto, StillPhoto, SwayingPhoto
 from demos.jack.stage import Chapter, MapEra, Stage
 
 
 class StageLodz(Stage):
     def __init__(self):
         super().__init__(1, MapEra.PRE_WAR, year_label="1928-39",
-                         photos=(LivingPhoto(appear=0.25, disappear=0.8),), locations=(LODZ,))
+                         photos=(LivingPhoto(until_second=10.0), SwayingPhoto("family-tree.png", from_second=10.0)),
+                         locations=(LODZ,))
 
 
 class StageWW2(Stage):

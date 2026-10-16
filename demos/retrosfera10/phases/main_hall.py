@@ -37,9 +37,10 @@ class MainHallDemoPhase(DemoPhase):
 		self.hall = MainHall()
 		far_wall = -self.hall.half_length
 		self.start_eye = Vector3(0.0, 2.6, self.hall.half_length - 0.5)
-		self.end_eye = Vector3(0.0, 1.9, self.hall.stage_front() + 9.0)
+		stage_center_x = (self.hall.stage.left_x + self.hall.stage.right_x) / 2
+		self.end_eye = Vector3(stage_center_x, 1.9, self.hall.stage_front() + 9.0)
 		self.start_target = Vector3(0.0, 2.6, far_wall)
-		self.end_target = Vector3(0.0, 1.6, far_wall)
+		self.end_target = Vector3(stage_center_x, 1.6, far_wall)
 		self.events = (
 			TimedEvent(self.timeline.screen_delay, self.hall.start_dolls_jumping),
 			TimedEvent(self.timeline.logo_time(), self.hall.show_screen_logo),

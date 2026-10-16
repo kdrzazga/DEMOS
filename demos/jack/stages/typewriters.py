@@ -1,13 +1,14 @@
 from demos.jack.framings import JAPAN, NORTH_AMERICA
 from demos.jack.locations import NEW_YORK, TOKYO, TORONTO
-from demos.jack.photos import StillPhoto
+from lib.photos import StillPhoto
+from demos.jack.overlay import resource
 from demos.jack.stage import CameraBeat, Chapter, MapEra, Stage
 
 
 class StageUSA(Stage):
     def __init__(self):
         super().__init__(5, MapEra.MODERN, year_label="1947",
-                         photos=(StillPhoto("JackAndHelenTramiel.jpg"),), locations=(NEW_YORK,))
+                         photos=(StillPhoto(resource("JackAndHelenTramiel.jpg")),), locations=(NEW_YORK,))
 
 
 class Stage1953(Stage):

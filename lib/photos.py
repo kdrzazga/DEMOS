@@ -2,11 +2,22 @@ import math
 import os
 import re
 
+import numpy as np
+import pygame
 from OpenGL.GL import *
 from OpenGL.GLU import gluPerspective
 
-from demos.jack.overlay import Picture
-from demos.jack.revived_photoLODZ import RevivedPhoto
+from lib.particles import Texture2D
+
+
+class Picture:
+    def __init__(self, path):
+        self.path = path
+        image = pygame.image.load(path)
+        self.width, self.height = image.get_size()
+        raw = pygame.image.tobytes(image, "RGBA", False)
+        self.texture = Texture2D(np.frombuffer(raw, dtype=np.uint8).reshape(self.height, self.width, 4))
+        self.aspect = self.width / self.height
 
 
 class StagePhoto:
@@ -104,9 +115,9 @@ class BottomRightPlacement:
 
 
 class StillPhoto(StagePhoto):
-    def __init__(self, file_name, appear=None, disappear=None, placement=None, from_second=None, until_second=None):
+    def __init__(self, path, appear=None, disappear=None, placement=None, from_second=None, until_second=None):
         super().__init__(appear, disappear, from_second=from_second, until_second=until_second)
-        self.picture = Picture(file_name)
+        self.picture = Picture(path)
         self.placement = placement or CenteredPlacement()
 
     @property
@@ -121,9 +132,9 @@ class StillPhoto(StagePhoto):
 
 
 class SwayingPhoto(StillPhoto):
-    def __init__(self, file_name, appear=None, disappear=None, placement=None, from_second=None, until_second=None,
+    def __init__(self, path, appear=None, disappear=None, placement=None, from_second=None, until_second=None,
                  sway_degrees=10.0, sway_period=6.0, field_of_view=30.0):
-        super().__init__(file_name, appear, disappear, placement, from_second, until_second)
+        super().__init__(path, appear, disappear, placement, from_second, until_second)
         self.sway_degrees = sway_degrees
         self.sway_period = sway_period
         self.field_of_view = field_of_view
@@ -168,20 +179,21 @@ class PhotoAlbum:
                 self.file_names.setdefault(int(match.group(1)), []).append(file_name)
 
     def photos_for(self, clip_number):
-        return tuple(StillPhoto(file_name) for file_name in self.file_names.get(clip_number, ()))
+        return tuple(StillPhoto(os.path.join(self.folder, file_name))
+                     for file_name in self.file_names.get(clip_number, ()))
 
 
 class LivingPhoto(StagePhoto):
-    def __init__(self, appear=None, disappear=None, from_second=None, until_second=None):
+    def __init__(self, animation, appear=None, disappear=None, from_second=None, until_second=None):
         super().__init__(appear, disappear, from_second=from_second, until_second=until_second)
-        self.revived = RevivedPhoto()
+        self.animation = animation
 
     def update(self, dt):
-        self.revived.update(dt)
+        self.animation.update(dt)
 
     def area(self, overlay, box):
-        return overlay.fit(self.revived.aspect(), box)
+        return overlay.fit(self.animation.aspect(), box)
 
     def draw(self, overlay, strength, box):
-        self.revived.draw(overlay.width, overlay.height, area=self.area(overlay, box), opacity=strength)
+        self.animation.draw(overlay.width, overlay.height, area=self.area(overlay, box), opacity=strength)
         overlay.apply()

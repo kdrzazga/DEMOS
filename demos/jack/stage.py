@@ -1,6 +1,6 @@
 from enum import Enum
 
-from demos.jack.photos import PhotoLayout
+from lib.photos import PhotoLayout
 
 
 class MapEra(Enum):

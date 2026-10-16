@@ -10,7 +10,7 @@ from demos.jack.cards import ExitCard, TitleCard
 from demos.jack.globe import Globe
 from demos.jack.narration import AmbientLoop, Narrator
 from demos.jack.overlay import RESOURCES, ScreenOverlay, YearLabel
-from demos.jack.photos import PhotoAlbum
+from lib.photos import PhotoAlbum
 from demos.jack.stages import build_stages
 from demos.jack.timetable import ClipLibrary, Timetable
 

@@ -1,4 +1,5 @@
 import math
+import os
 
 from OpenGL.GL import *
 from OpenGL.GLU import gluLookAt, gluPerspective
@@ -9,6 +10,7 @@ from demos.pixeloveole3.scene import LibraryScene
 from lib import Globals
 from lib.demo_phases import CameraInterpolationHelper
 from lib.pixelove_ole.logo import PixeloveOleLogo
+from lib.speech_bubble import SpeechBubble
 
 
 class PartOrbit:
@@ -55,6 +57,7 @@ class LogoStage:
         self.screen_offset = (0.0, 0.0)
         self.detached = []
         self.orbits = []
+        self.speech = None
 
     @property
     def screen_center(self):
@@ -109,6 +112,8 @@ class LogoStage:
             glMatrixMode(GL_MODELVIEW)
             for part in self.detached:
                 part.draw()
+                if self.speech and part is self.logo.invader:
+                    self.speech.draw(part.x, part.y, part.z)
         glPopMatrix()
         glMatrixMode(GL_PROJECTION)
         glPopMatrix()
@@ -137,6 +142,11 @@ class LogoShow:
         self.library_view = None
         self.world_parts = []
         self.flight = None
+        resources = os.path.join(os.path.dirname(os.path.abspath(__file__)), "res")
+        self.invite_speech = SpeechBubble(os.path.join(resources, "invite.mp3"), os.path.join(resources, "invite.txt"))
+        self.location_speech = SpeechBubble(os.path.join(resources, "location.mp3"), os.path.join(resources, "library.txt"))
+        self.location_speech_lead = 1.0
+        self.entry_revolutions = 1.0
         self.invader_circle = None
         self.world_orbit = None
         self.pending_entry = None
@@ -204,6 +214,10 @@ class LogoShow:
                 self.world_orbit = WorldOrbit(self.hall_flight.part, center, radius, across=across)
                 self.hall_flight = None
 
+    def say_invite(self):
+        self.invite_speech.start()
+        self.stage.speech = self.invite_speech
+
     def start_invader_flight(self, waypoints, duration, circle=None):
         """Fly the invader through `waypoints`. With `circle` = (centre, radius)
         it then joins that circle in the library at the point nearest the
@@ -240,8 +254,17 @@ class LogoShow:
         `after_revolutions` times, fly it through `waypoints` and let it
         vanish into the last one; `invader_inside` turns True then."""
         self.pending_entry = (waypoints, duration, after_revolutions)
+        self.entry_revolutions = after_revolutions
+
+    def _update_location_speech(self):
+        if self.location_speech.started or not self.world_orbit or self.hall:
+            return
+        speech_window = self.location_speech.duration + self.location_speech_lead
+        if self.world_orbit.seconds_until(self.entry_revolutions) <= speech_window:
+            self.location_speech.start()
 
     def _update_entry(self, seconds, eye):
+        self._update_location_speech()
         if self.pending_entry and self.world_orbit:
             waypoints, duration, after_revolutions = self.pending_entry
             if self.world_orbit.revolutions >= after_revolutions:
@@ -260,6 +283,8 @@ class LogoShow:
         self.elapsed += seconds
         self.stage.update(seconds)
         self._update_flight(seconds)
+        self.invite_speech.update(seconds)
+        self.location_speech.update(seconds)
         eye, _ = self.current_world_view()
         if self.world_orbit:
             self.world_orbit.update(seconds, eye)
@@ -272,20 +297,26 @@ class LogoShow:
     def render(self):
         if self.hall:
             self.hall.render(self.hall_elapsed, self.hall_view)
-            for part in self.world_parts:
-                part.draw()
+            self._draw_world_parts()
             self._darken(1.0 - self.hall_visibility)
             glClear(GL_DEPTH_BUFFER_BIT)
         elif self.library_shown:
             self.library.render(self.library_elapsed, self.library_view)
-            for part in self.world_parts:
-                part.draw()
+            self._draw_world_parts()
             self._darken(1.0 - self.library_visibility)
             glClear(GL_DEPTH_BUFFER_BIT)
         else:
             glClearColor(0.0, 0.0, 0.0, 1.0)
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         self.stage.render(self.elapsed, elsewhere=self.world_parts)
+
+    def _draw_world_parts(self):
+        for part in self.world_parts:
+            part.draw()
+        invader = self.logo.invader
+        if invader in self.world_parts and invader.visible:
+            self.invite_speech.draw_beside(invader)
+            self.location_speech.draw_beside(invader)
 
     def render_blank(self):
         self.library.render_blank()

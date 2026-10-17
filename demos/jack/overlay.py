@@ -10,6 +10,10 @@ from lib.typer import FONT_PATH
 RESOURCES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "res")
 
 
+def resource(file_name):
+    return os.path.join(RESOURCES, file_name)
+
+
 class ScreenOverlay:
     def __init__(self, width, height, photo_box_shares=(0.14, 0.07, 0.72, 0.72)):
         self.width = width
@@ -84,16 +88,6 @@ class ScreenOverlay:
     def darken(self, opacity):
         if opacity > 0.0:
             self.draw_rectangle(self.whole_screen(), (0.0, 0.0, 0.0), min(1.0, opacity))
-
-
-class Picture:
-    def __init__(self, file_name):
-        self.path = os.path.join(RESOURCES, file_name)
-        image = pygame.image.load(self.path)
-        self.width, self.height = image.get_size()
-        raw = pygame.image.tobytes(image, "RGBA", False)
-        self.texture = Texture2D(np.frombuffer(raw, dtype=np.uint8).reshape(self.height, self.width, 4))
-        self.aspect = self.width / self.height
 
 
 class SurfaceSprite:

@@ -2,7 +2,7 @@ import random
 
 from lib.urban.residential import Footprint
 from lib.urban.roofs import HipRoof
-from demos.pixeloveole3.vegetation import Grove
+from lib.vegetation import Grove
 
 
 class Block:

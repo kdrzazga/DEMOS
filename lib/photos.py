@@ -1,14 +1,31 @@
+import math
 import os
 import re
 
-from demos.jack.overlay import Picture
-from demos.jack.revived_photoLODZ import RevivedPhoto
+import numpy as np
+import pygame
+from OpenGL.GL import *
+from OpenGL.GLU import gluPerspective
+
+from lib.particles import Texture2D
+
+
+class Picture:
+    def __init__(self, path):
+        self.path = path
+        image = pygame.image.load(path)
+        self.width, self.height = image.get_size()
+        raw = pygame.image.tobytes(image, "RGBA", False)
+        self.texture = Texture2D(np.frombuffer(raw, dtype=np.uint8).reshape(self.height, self.width, 4))
+        self.aspect = self.width / self.height
 
 
 class StagePhoto:
     def __init__(self, appear=None, disappear=None, opacity=0.85, pop_seconds=0.2, translucent_seconds=0.5,
-                 clearing_seconds=1.0, exit_seconds=0.5, room_seconds=0.6):
+                 clearing_seconds=1.0, exit_seconds=0.5, room_seconds=0.6, from_second=None, until_second=None):
         self.room_seconds = room_seconds
+        self.from_second = from_second
+        self.until_second = until_second
         self.appear = appear
         self.disappear = disappear
         self.opacity = opacity
@@ -18,7 +35,7 @@ class StagePhoto:
         self.exit_seconds = exit_seconds
 
     def is_planned(self):
-        return self.appear is not None or self.disappear is not None
+        return any(value is not None for value in (self.appear, self.disappear, self.from_second, self.until_second))
 
     def plan(self, appear, disappear):
         self.appear = appear if self.appear is None else self.appear
@@ -26,8 +43,10 @@ class StagePhoto:
 
     def _shown_span(self, stage):
         window_start, window_end = stage.photo_window()
-        return (window_start + (window_end - window_start) * self.appear,
-                window_start + (window_end - window_start) * self.disappear)
+        start = window_start + (window_end - window_start) * self.appear
+        end = window_start + (window_end - window_start) * self.disappear
+        return (start if self.from_second is None else self.from_second,
+                end if self.until_second is None else self.until_second)
 
     def room_needed(self, stage, time):
         elapsed = time - stage.start_time
@@ -96,9 +115,9 @@ class BottomRightPlacement:
 
 
 class StillPhoto(StagePhoto):
-    def __init__(self, file_name, appear=None, disappear=None, placement=None):
-        super().__init__(appear, disappear)
-        self.picture = Picture(file_name)
+    def __init__(self, path, appear=None, disappear=None, placement=None, from_second=None, until_second=None):
+        super().__init__(appear, disappear, from_second=from_second, until_second=until_second)
+        self.picture = Picture(path)
         self.placement = placement or CenteredPlacement()
 
     @property
@@ -112,6 +131,44 @@ class StillPhoto(StagePhoto):
         overlay.draw_texture(self.picture.texture.id, self.area(overlay, box), strength)
 
 
+class SwayingPhoto(StillPhoto):
+    def __init__(self, path, appear=None, disappear=None, placement=None, from_second=None, until_second=None,
+                 sway_degrees=10.0, sway_period=6.0, field_of_view=30.0):
+        super().__init__(path, appear, disappear, placement, from_second, until_second)
+        self.sway_degrees = sway_degrees
+        self.sway_period = sway_period
+        self.field_of_view = field_of_view
+        self.sway_time = 0.0
+
+    def update(self, dt):
+        self.sway_time += dt
+
+    def draw(self, overlay, strength, box):
+        x, y, width, height = self.area(overlay, box)
+        distance = overlay.height / 2.0 / math.tan(math.radians(self.field_of_view) / 2.0)
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        gluPerspective(self.field_of_view, overlay.width / overlay.height, distance * 0.2, distance * 3.0)
+        glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()
+        glTranslatef(x + width / 2.0 - overlay.width / 2.0, overlay.height / 2.0 - y - height / 2.0, -distance)
+        glRotatef(self.sway_degrees * math.sin(2.0 * math.pi * self.sway_time / self.sway_period), 0.0, 1.0, 0.0)
+        glBindTexture(GL_TEXTURE_2D, self.picture.texture.id)
+        glColor4f(1.0, 1.0, 1.0, strength)
+        half_width, half_height = width / 2.0, height / 2.0
+        glBegin(GL_QUADS)
+        glTexCoord2f(0.0, 0.0)
+        glVertex3f(-half_width, half_height, 0.0)
+        glTexCoord2f(1.0, 0.0)
+        glVertex3f(half_width, half_height, 0.0)
+        glTexCoord2f(1.0, 1.0)
+        glVertex3f(half_width, -half_height, 0.0)
+        glTexCoord2f(0.0, 1.0)
+        glVertex3f(-half_width, -half_height, 0.0)
+        glEnd()
+        overlay.apply()
+
+
 class PhotoAlbum:
     def __init__(self, folder, name_pattern=r"^(\d+)\.\s*.+\.(jpe?g|png)$"):
         self.folder = folder
@@ -122,20 +179,21 @@ class PhotoAlbum:
                 self.file_names.setdefault(int(match.group(1)), []).append(file_name)
 
     def photos_for(self, clip_number):
-        return tuple(StillPhoto(file_name) for file_name in self.file_names.get(clip_number, ()))
+        return tuple(StillPhoto(os.path.join(self.folder, file_name))
+                     for file_name in self.file_names.get(clip_number, ()))
 
 
 class LivingPhoto(StagePhoto):
-    def __init__(self, appear=None, disappear=None):
-        super().__init__(appear, disappear)
-        self.revived = RevivedPhoto()
+    def __init__(self, animation, appear=None, disappear=None, from_second=None, until_second=None):
+        super().__init__(appear, disappear, from_second=from_second, until_second=until_second)
+        self.animation = animation
 
     def update(self, dt):
-        self.revived.update(dt)
+        self.animation.update(dt)
 
     def area(self, overlay, box):
-        return overlay.fit(self.revived.aspect(), box)
+        return overlay.fit(self.animation.aspect(), box)
 
     def draw(self, overlay, strength, box):
-        self.revived.draw(overlay.width, overlay.height, area=self.area(overlay, box), opacity=strength)
+        self.animation.draw(overlay.width, overlay.height, area=self.area(overlay, box), opacity=strength)
         overlay.apply()

@@ -10,7 +10,7 @@ from lib.urban.shapes import Shapes
 from demos.pixeloveole3.sky import Sky
 from demos.pixeloveole3.streets import StreetScape, YJunction
 from lib.urban.textures import TextureFactory
-from demos.pixeloveole3.vegetation import Grove
+from lib.vegetation import Grove
 
 
 class OrbitCamera:

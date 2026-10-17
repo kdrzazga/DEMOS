@@ -1,13 +1,14 @@
 from demos.jack.framings import NORTH_AMERICA
 from demos.jack.locations import SUNNYVALE, WASHINGTON
-from demos.jack.photos import StillPhoto
+from lib.photos import StillPhoto
+from demos.jack.overlay import resource
 from demos.jack.stage import Chapter, MapEra, Stage
 
 
 class Stage1984(Stage):
     def __init__(self):
         super().__init__(15, MapEra.MODERN, year_label="1984",
-                         photos=(StillPhoto("Leo.jpg"),), locations=(SUNNYVALE,))
+                         photos=(StillPhoto(resource("Leo.jpg")),), locations=(SUNNYVALE,))
 
 
 class StageMid80s(Stage):

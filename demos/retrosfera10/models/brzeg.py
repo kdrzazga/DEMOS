@@ -3,12 +3,14 @@ import random
 
 from OpenGL.GL import (
 	GL_AMBIENT_AND_DIFFUSE, GL_COLOR_MATERIAL, GL_ENABLE_BIT, GL_FRONT_AND_BACK, GL_LIGHTING, GL_LIGHTING_BIT,
-	GL_LIGHT_MODEL_TWO_SIDE, GL_NORMALIZE, GL_TRUE, glColorMaterial, glEnable, glLightModeli, glPopAttrib,
-	glPopMatrix, glPushAttrib, glPushMatrix, glTranslatef,
+	GL_COMPILE, GL_LIGHT_MODEL_TWO_SIDE, GL_NORMALIZE, GL_TRUE, glCallList, glColorMaterial, glDeleteLists, glEnable,
+	glEndList, glGenLists, glLightModeli, glNewList, glPopAttrib, glPopMatrix, glPushAttrib, glPushMatrix, glTranslatef,
 )
 
 from lib.urban.house_factory import HouseFactories
 from lib.urban.city import CityEntranceSign
+from lib.urban.shapes import Shapes
+from lib.vegetation import Grove
 from demos.retrosfera10.models.townhall import TownHall, Vector3
 
 
@@ -79,7 +81,7 @@ class HouseRow:
 class Brzeg:
 	def __init__(self, square_half_width=26.0, square_half_depth=28.0, street_width=6.0, seed=1248,
 			ring_spacing=14.0, missing_chances=(0.04, 0.12, 0.2), flip_chances=(0.15, 0.35, 0.35), sign_size=14.0,
-			house_style="simple"):
+			house_style="simple", tree_rings=((50, 75.0, 260.0), (150, 260.0, 900.0)), approach_half_width=22.0):
 		self.town_hall = TownHall()
 		self.center = Vector3(0.0, 0.0, 0.0)
 		self.height = self.town_hall.height
@@ -98,6 +100,10 @@ class Brzeg:
 		)
 		self.houses = self.create_houses()
 		self.city_sign = self.create_city_sign()
+		self.tree_rings = tree_rings
+		self.approach_half_width = approach_half_width
+		self.grove = Grove(self.tree_positions(), seed=seed)
+		self.grove_list = 0
 
 	def create_rows(self, ring_index):
 		half_width = self.square_half_width + ring_index * self.ring_spacing
@@ -131,6 +137,28 @@ class Brzeg:
 		sign.z = outer_half_depth + 10.0
 		return sign
 
+	def tree_positions(self):
+		positions = []
+		for count, near, far in self.tree_rings:
+			ring = []
+			while len(ring) < count:
+				angle = self.random.uniform(0.0, math.tau)
+				distance = math.sqrt(self.random.uniform(near * near, far * far))
+				x, z = distance * math.cos(angle), distance * math.sin(angle)
+				if z > 0.0 and abs(x - self.city_sign.x) < self.approach_half_width:
+					continue
+				ring.append((x, z))
+			positions.extend(ring)
+		return positions
+
+	def draw_grove(self):
+		if not self.grove_list:
+			self.grove_list = glGenLists(1)
+			glNewList(self.grove_list, GL_COMPILE)
+			self.grove.draw(Shapes())
+			glEndList()
+		glCallList(self.grove_list)
+
 	def draw(self):
 		hall_center = self.town_hall.center
 		glPushMatrix()
@@ -146,9 +174,13 @@ class Brzeg:
 		for house in self.houses:
 			house.draw()
 		self.city_sign.draw()
+		self.draw_grove()
 		glPopAttrib()
 
 	def release(self):
+		if self.grove_list:
+			glDeleteLists(self.grove_list, 1)
+			self.grove_list = 0
 		for house in self.houses:
 			house.release()
 		self.town_hall.release()

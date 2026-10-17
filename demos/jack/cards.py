@@ -1,7 +1,8 @@
 import pygame
 
+from lib.photos import Picture
 from lib.typer import Typer
-from demos.jack.overlay import Picture, SurfaceSprite
+from demos.jack.overlay import SurfaceSprite, resource
 
 
 class TitleCard:
@@ -10,7 +11,7 @@ class TitleCard:
                  caption_top_share=0.84, band_opacity=0.45):
         self.fps = fps
         self.caption = caption
-        self.picture = Picture(photo)
+        self.picture = Picture(resource(photo))
         self.fade_in = fade_in
         self.fade_out = fade_out
         self.caption_top = int(overlay.height * caption_top_share)
@@ -50,7 +51,7 @@ class TitleCard:
 
 class ExitCard:
     def __init__(self, photo="exit_screen.jpg", fade_in=2.5, hold=10.0, fade_out=2.5):
-        self.picture = Picture(photo)
+        self.picture = Picture(resource(photo))
         self.fade_in = fade_in
         self.fade_out = fade_out
         self.duration = fade_in + hold + fade_out

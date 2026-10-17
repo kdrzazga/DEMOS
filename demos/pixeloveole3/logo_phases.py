@@ -86,6 +86,7 @@ class DriftToCornerPhase(LogoShowPhase):
     def begin(self, handover):
         super().begin(handover)
         self.show.stage.detach_and_orbit(self.show.logo.invader)
+        self.show.say_invite()
 
     def update(self, seconds):
         super().update(seconds)

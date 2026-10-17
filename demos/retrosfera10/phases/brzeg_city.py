@@ -92,7 +92,8 @@ class BrzegDemoPhase(DemoPhase):
 	def __init__(self, camera, timeline=None, house_style="simple"):
 		super().__init__(camera)
 		self.timeline = timeline or BrzegTimeline()
-		self.site = GeoPoint(50.86, 17.47)
+		self.earth_texture_longitude_offset = -12.5
+		self.site = GeoPoint(50.86, 17.47 + self.earth_texture_longitude_offset)
 		self.light = Light(Vector3(0.55, 0.85, 0.65), (0.42, 0.42, 0.45, 1.0), (0.72, 0.7, 0.66, 1.0))
 		self.sky_color = (0.55, 0.72, 0.92)
 		self.top_view_height = 150.0

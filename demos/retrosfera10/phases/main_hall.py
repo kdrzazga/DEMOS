@@ -6,8 +6,9 @@ from demos.retrosfera10.models.townhall import Vector3
 
 
 class MainHallTimeline:
-	def __init__(self, walk=18.0, screen_delay=3.0, screen_appear=1.5, caption_hold=5.0):
+	def __init__(self, walk=1.0, screen_delay=0.3, screen_appear=0.7, caption_hold=0.0, dolls_delay=1.0):
 		self.walk = walk
+		self.dolls_delay = dolls_delay
 		self.screen_delay = screen_delay
 		self.screen_appear = screen_appear
 		self.caption_hold = caption_hold
@@ -42,7 +43,7 @@ class MainHallDemoPhase(DemoPhase):
 		self.start_target = Vector3(0.0, 2.6, far_wall)
 		self.end_target = Vector3(stage_center_x, 1.6, far_wall)
 		self.events = (
-			TimedEvent(self.timeline.screen_delay, self.hall.start_dolls_jumping),
+			TimedEvent(self.timeline.dolls_delay, self.hall.start_dolls_jumping),
 			TimedEvent(self.timeline.logo_time(), self.hall.show_screen_logo),
 		)
 

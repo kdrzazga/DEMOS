@@ -27,14 +27,15 @@ class InterPhaseDataHandover:
 
 
 class CosmicTimeline:
-	def __init__(self, fps=60, space=3.0, letter_frames=3, line_pause_frames=12, caption_hold=2.0,
-			caption_fade=1.0, travel=6.0):
+	def __init__(self, fps=60, space=0.0, letter_frames=1, line_pause_frames=6, caption_hold=0.3,
+			caption_fade=0.4, travel_delay=1.0, travel=1.0):
 		self.fps = fps
 		self.space = space
 		self.letter_frames = letter_frames
 		self.line_pause_frames = line_pause_frames
 		self.caption_hold = caption_hold
 		self.caption_fade = caption_fade
+		self.travel_delay = travel_delay
 		self.travel = travel
 
 
@@ -243,7 +244,8 @@ class CosmicDemoPhase(DemoPhase):
 			self.caption_lines, self.font_path, max(18, screen_height // 18), self.timeline.space, self.timeline,
 			margin=max(16, screen_height // 30),
 		)
-		self.travel_start = self.timeline.space + self.caption.duration() + self.timeline.caption_hold
+		self.caption_fade_start = self.timeline.space + self.caption.duration() + self.timeline.caption_hold
+		self.travel_start = self.timeline.travel_delay
 		self.travel_end = self.travel_start + self.timeline.travel
 		self.music_time = self.caption.last_line_end_time()
 		self.flight = SpaceFlight(self.geometry, self.target_site, self.start_eye, self.end_altitude)
@@ -261,7 +263,7 @@ class CosmicDemoPhase(DemoPhase):
 			self.done = True
 
 	def caption_alpha(self):
-		return 1.0 - CameraInterpolationHelper.clamp((self.elapsed - self.travel_start) / self.timeline.caption_fade)
+		return 1.0 - CameraInterpolationHelper.clamp((self.elapsed - self.caption_fade_start) / self.timeline.caption_fade)
 
 	def render(self):
 		glClearColor(0.0, 0.0, 0.0, 1.0)

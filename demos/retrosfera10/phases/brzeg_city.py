@@ -12,8 +12,8 @@ from demos.retrosfera10.models.townhall import Vector3
 
 
 class BrzegTimeline:
-	def __init__(self, magnify=0.5, landing=3.5, glide=7.0, sway=4.0, sway_count=2, hall_zoom=6.0, hall_orbit=14.0,
-			descent=4.0, entry=3.0):
+	def __init__(self, magnify=0.15, landing=0.4, glide=0.45, sway=1.0, sway_count=1, hall_zoom=0.8, hall_orbit=1.2,
+			descent=0.6, entry=0.4):
 		self.magnify = magnify
 		self.landing = landing
 		self.glide = glide

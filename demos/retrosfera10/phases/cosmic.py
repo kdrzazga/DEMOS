@@ -27,13 +27,12 @@ class InterPhaseDataHandover:
 
 
 class CosmicTimeline:
-	def __init__(self, fps=60, space=0.0, letter_frames=1, line_pause_frames=6, caption_hold=0.3,
-			caption_fade=0.4, travel_delay=1.0, travel=1.0):
+	def __init__(self, fps=60, space=0.0, letter_frames=1, line_pause_frames=6, caption_fade=0.4,
+			travel_delay=1.0, travel=1.0):
 		self.fps = fps
 		self.space = space
 		self.letter_frames = letter_frames
 		self.line_pause_frames = line_pause_frames
-		self.caption_hold = caption_hold
 		self.caption_fade = caption_fade
 		self.travel_delay = travel_delay
 		self.travel = travel
@@ -244,9 +243,9 @@ class CosmicDemoPhase(DemoPhase):
 		self.caption = CaptionPanel(
 			self.caption_lines, self.font_path, font_size, self.timeline.space, self.timeline, margin=margin,
 		)
-		self.caption_fade_start = self.timeline.space + self.caption.duration() + self.timeline.caption_hold
 		self.travel_start = self.timeline.travel_delay
 		self.travel_end = self.travel_start + self.timeline.travel
+		self.caption_end = self.travel_end
 		self.music_time = self.caption.last_line_end_time()
 		self.flight = SpaceFlight(self.geometry, self.target_site, self.start_eye, self.end_altitude)
 		facing = self.geometry.facing_spin(self.target_site, self.start_eye.normalized())
@@ -270,8 +269,17 @@ class CosmicDemoPhase(DemoPhase):
 		else:
 			self.done = True
 
-	def caption_alpha(self):
-		return 1.0 - CameraInterpolationHelper.clamp((self.elapsed - self.caption_fade_start) / self.timeline.caption_fade)
+	def show_caption_until(self, end_time):
+		self.caption_end = end_time
+
+	def caption_alpha(self, time):
+		fade_start = self.caption_end - self.timeline.caption_fade
+		return 1.0 - CameraInterpolationHelper.clamp((time - fade_start) / self.timeline.caption_fade)
+
+	def draw_caption(self, time):
+		"""Drawn by the demo over whichever phase is on screen, so the caption can outlast the flight."""
+		if time < self.caption_end:
+			self.caption.draw(time, self.caption_alpha(time), self.camera.screen_width, self.camera.screen_height)
 
 	def render(self):
 		glClearColor(0.0, 0.0, 0.0, 1.0)
@@ -283,7 +291,6 @@ class CosmicDemoPhase(DemoPhase):
 		self.light.apply()
 		self.stars.draw(eye)
 		self.earth.draw()
-		self.caption.draw(self.elapsed, self.caption_alpha(), self.camera.screen_width, self.camera.screen_height)
 
 	def handover(self):
 		return InterPhaseDataHandover(

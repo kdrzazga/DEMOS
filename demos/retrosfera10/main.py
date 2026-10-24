@@ -38,6 +38,7 @@ class Retrosfera10Demo(PygameDemo):
 		self.music_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "DoubleShit_byRamos.mp3")
 		self.music_start_seconds = 7.0
 		self.longest_frame = 0.1
+		self.caption_lead = 0.5
 		super().__init__(
 			int(self.window_height * self.aspect_ratio), self.window_height, "Retrosfera 10", fps=self.fps,
 			windowed=windowed, triggered=triggered,
@@ -50,9 +51,11 @@ class Retrosfera10Demo(PygameDemo):
 		camera = Camera(self.viewport.width, self.viewport.height, self.field_of_view)
 		self.soundtrack = Soundtrack(self.music_path, self.music_start_seconds)
 		brzeg_phase = BrzegDemoPhase(camera, house_style=self.house_style)
-		cosmic_phase = CosmicDemoPhase(camera, self.soundtrack, brzeg_phase.arrival_site)
-		self.phases = [cosmic_phase, brzeg_phase, MainHallDemoPhase(camera)]
+		self.cosmic_phase = CosmicDemoPhase(camera, self.soundtrack, brzeg_phase.arrival_site)
+		self.cosmic_phase.show_caption_until(self.cosmic_phase.travel_end + brzeg_phase.timeline.sign_time() - self.caption_lead)
+		self.phases = [self.cosmic_phase, brzeg_phase, MainHallDemoPhase(camera)]
 		self.phase_index = 0
+		self.elapsed = 0.0
 
 	def init_gl(self):
 		self.viewport.apply()
@@ -80,9 +83,12 @@ class Retrosfera10Demo(PygameDemo):
 
 	def step(self):
 		phase = self.current_phase()
-		phase.update(min(self.longest_frame, self.clock.get_time() / 1000.0))
+		seconds = min(self.longest_frame, self.clock.get_time() / 1000.0)
+		self.elapsed += seconds
+		phase.update(seconds)
 		self.clear_bars()
 		phase.render()
+		self.cosmic_phase.draw_caption(self.elapsed)
 		if phase.done and self.phase_index < len(self.phases) - 1:
 			self.advance_phase()
 

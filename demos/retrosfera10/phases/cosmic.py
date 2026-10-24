@@ -239,10 +239,10 @@ class CosmicDemoPhase(DemoPhase):
 		self.earth = Earth(0.0, 0.0, 0.0, radius=6.0, spin_speed=3.0, moon_orbit_scale=0.07, moon_size_boost=1.6, moon_time_scale=4.0)
 		self.geometry = EarthGeometry(self.earth)
 		self.stars = StarField()
-		screen_height = camera.screen_height
+		margin = max(16, camera.screen_height // 30)
+		font_size = self.caption_font_size(max(18, camera.screen_height // 18), camera.screen_width - 2 * margin)
 		self.caption = CaptionPanel(
-			self.caption_lines, self.font_path, max(18, screen_height // 18), self.timeline.space, self.timeline,
-			margin=max(16, screen_height // 30),
+			self.caption_lines, self.font_path, font_size, self.timeline.space, self.timeline, margin=margin,
 		)
 		self.caption_fade_start = self.timeline.space + self.caption.duration() + self.timeline.caption_hold
 		self.travel_start = self.timeline.travel_delay
@@ -252,6 +252,14 @@ class CosmicDemoPhase(DemoPhase):
 		facing = self.geometry.facing_spin(self.target_site, self.start_eye.normalized())
 		facing_time = self.travel_start + self.timeline.travel * self.flight.aim_share / 2
 		self.earth.spin = facing - self.earth.spin_speed * facing_time
+
+	def caption_font_size(self, largest_size, available_width, smallest_size=10):
+		for size in range(largest_size, smallest_size, -1):
+			font = pygame.font.Font(self.font_path, size)
+			panel_width = max(font.size(line)[0] for line in self.caption_lines) + 2 * (size // 2)
+			if panel_width <= available_width:
+				return size
+		return smallest_size
 
 	def update(self, seconds):
 		super().update(seconds)

@@ -343,7 +343,7 @@ class MainHall:
 			chandelier_positions=(-14.0, -7.0, 0.0, 7.0, 14.0), chandelier_height=4.3, passage_width_share=0.15,
 			passage_side_gap=0.8, passage_height=3.0, passage_depth=1.6,
 			stage_performers=None, performer_edge_margin=1.0, screen_width=6.0, screen_caption="RSX - RetroSfera 2027",
-			screen_logo="logo1.png"):
+			screen_logo="logo1.png", logo_fill_share=0.85):
 		self.half_width = half_width
 		self.half_length = half_length
 		self.height = height
@@ -360,6 +360,7 @@ class MainHall:
 		self.screen_width = screen_width
 		self.screen_caption = screen_caption
 		self.screen_logo = screen_logo
+		self.logo_fill_share = logo_fill_share
 		self.resources_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "resources")
 		self.palette = MainHallPalette()
 		self.stage = Stage(self.palette, self.passage_span()[1] + self.passage_side_gap, half_width, -half_length)
@@ -418,8 +419,24 @@ class MainHall:
 		for doll in self.dolls:
 			doll.jump()
 
+	def logo_path(self):
+		return os.path.join(self.resources_path, self.screen_logo)
+
 	def show_screen_logo(self):
-		self.big_screen.display_image(os.path.join(self.resources_path, self.screen_logo))
+		self.big_screen.display_image(self.logo_path(), fill_share=self.logo_fill_share)
+
+	def logo_area(self):
+		"""World-space centre and width of the logo on the big screen, once it has been shown."""
+		left, top, width, height = self.big_screen.text_line_areas[0]
+		screen = self.big_screen
+		pixel_size = screen.width / screen.text_resolution[0]
+		position = self.screen_position()
+		center = Vector3(
+			position.x - screen.width / 2 + (left + width / 2) * pixel_size,
+			position.y + screen.lift + screen.height - (top + height / 2) * pixel_size,
+			position.z + screen.frame_depth / 2,
+		)
+		return center, width * pixel_size
 
 	def window_centers(self):
 		first = self.stage.depth + 1.4

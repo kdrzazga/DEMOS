@@ -6,7 +6,7 @@ root = "D:/code/DEMOS/"
 icon_path = root + "icons/" + "Jack100.png"   # .png or .ico both work
 exe_name =  "Jack 100"   # -> dist/<exe_name>.exe
 excluded_dirs = (root + "demos/amiga", root + "demos/c64", root + "demos/demo1", root + "demos/pc45", root + "demos/petscii"
-                 , root + "demos/pixeloveole3"
+                 , root + "demos/pixeloveole3", root + "demos/kna"
                  , root + "demos/retrosfera10", root + "demos/WinterDemo26")
 splash_image = root + "screens/splash_jack.png"
 

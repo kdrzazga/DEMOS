@@ -77,7 +77,8 @@ def winter_demo(windowed, triggered, house_style):
 
 
 def retrosfera10_demo(windowed, triggered, house_style):
-    Retrosfera10Demo(windowed=windowed, triggered=triggered, house_style=house_style).run()
+    shorts = any(arg.lower() in ("s", "shorts", "shorts-view") for arg in sys.argv[1:])
+    Retrosfera10Demo(windowed=windowed, triggered=triggered, house_style=house_style, shorts=shorts).run()
 
 
 def jack_demo(windowed, triggered, house_style):

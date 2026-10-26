@@ -24,6 +24,9 @@ class BrzegTimeline:
 		self.descent = descent
 		self.entry = entry
 
+	def sign_time(self):
+		return self.magnify + self.landing + self.glide
+
 
 class CityProgress:
 	def __init__(self, timeline, time):

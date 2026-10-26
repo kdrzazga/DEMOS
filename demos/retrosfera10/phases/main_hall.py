@@ -16,8 +16,9 @@ from demos.retrosfera10.models.townhall import Vector3
 
 
 class MainHallTimeline:
-	def __init__(self, walk=1.0, screen_delay=0.3, screen_appear=0.7, caption_hold=0.0, dolls_delay=1.0,
-			logo_zoom_delay=3.0, logo_zoom=0.5, logo_only=1.5):
+	def __init__(self, walk=18.0, screen_delay=3.0, screen_appear=1.5, caption_hold=5.0, dolls_delay=3.0,
+			logo_zoom_delay=math.inf, logo_zoom=0.5, logo_only=1.5):
+		"""logo_zoom_delay inf keeps the camera in the hall for good; a finite one ends on the logo alone."""
 		self.walk = walk
 		self.dolls_delay = dolls_delay
 		self.screen_delay = screen_delay
@@ -101,12 +102,12 @@ class LogoCard:
 
 
 class MainHallDemoPhase(DemoPhase):
-	def __init__(self, camera, timeline=None):
+	def __init__(self, camera, timeline=None, hall=None):
 		super().__init__(camera)
 		self.timeline = timeline or MainHallTimeline()
 		self.background_color = (0.0, 0.0, 0.0)
 		self.light = Light(Vector3(0.3, 1.0, 0.45), (0.56, 0.54, 0.5, 1.0), (0.5, 0.48, 0.44, 1.0))
-		self.hall = MainHall(performer_edge_margin=3.0)
+		self.hall = hall or MainHall()
 		self.logo_card = LogoCard(self.hall.logo_path())
 		far_wall = -self.hall.half_length
 		self.start_eye = Vector3(0.0, 2.6, self.hall.half_length - 0.5)

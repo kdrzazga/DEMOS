@@ -343,7 +343,7 @@ class MainHall:
 			chandelier_positions=(-14.0, -7.0, 0.0, 7.0, 14.0), chandelier_height=4.3, passage_width_share=0.15,
 			passage_side_gap=0.8, passage_height=3.0, passage_depth=1.6,
 			stage_performers=None, performer_edge_margin=1.0, screen_width=6.0, screen_caption="RSX - RetroSfera 2027",
-			screen_logo="logo1.png", logo_fill_share=0.85):
+			screen_logo="logo1.png", logo_fill_share=0.95):
 		self.half_width = half_width
 		self.half_length = half_length
 		self.height = height

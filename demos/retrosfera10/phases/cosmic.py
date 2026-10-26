@@ -27,12 +27,14 @@ class InterPhaseDataHandover:
 
 
 class CosmicTimeline:
-	def __init__(self, fps=60, space=0.0, letter_frames=1, line_pause_frames=6, caption_fade=0.4,
-			travel_delay=1.0, travel=1.0):
+	def __init__(self, fps=60, space=3.0, letter_frames=3, line_pause_frames=12, caption_hold=2.0,
+			caption_fade=1.0, travel_delay=None, travel=6.0):
+		"""travel_delay None starts the flight once the caption has been typed and held for caption_hold."""
 		self.fps = fps
 		self.space = space
 		self.letter_frames = letter_frames
 		self.line_pause_frames = line_pause_frames
+		self.caption_hold = caption_hold
 		self.caption_fade = caption_fade
 		self.travel_delay = travel_delay
 		self.travel = travel
@@ -243,14 +245,19 @@ class CosmicDemoPhase(DemoPhase):
 		self.caption = CaptionPanel(
 			self.caption_lines, self.font_path, font_size, self.timeline.space, self.timeline, margin=margin,
 		)
-		self.travel_start = self.timeline.travel_delay
+		self.travel_start = self.flight_start()
 		self.travel_end = self.travel_start + self.timeline.travel
-		self.caption_end = self.travel_end
+		self.caption_end = self.travel_start + self.timeline.caption_fade
 		self.music_time = self.caption.last_line_end_time()
 		self.flight = SpaceFlight(self.geometry, self.target_site, self.start_eye, self.end_altitude)
 		facing = self.geometry.facing_spin(self.target_site, self.start_eye.normalized())
 		facing_time = self.travel_start + self.timeline.travel * self.flight.aim_share / 2
 		self.earth.spin = facing - self.earth.spin_speed * facing_time
+
+	def flight_start(self):
+		if self.timeline.travel_delay is not None:
+			return self.timeline.travel_delay
+		return self.timeline.space + self.caption.duration() + self.timeline.caption_hold
 
 	def caption_font_size(self, largest_size, available_width, smallest_size=10):
 		for size in range(largest_size, smallest_size, -1):

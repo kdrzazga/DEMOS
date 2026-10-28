@@ -185,12 +185,14 @@ def smooth_step(progress):
 
 class PictureTexture:
 
-	def __init__(self, image_path):
-		self.image_path = image_path
-		surface = pygame.image.load(image_path).convert_alpha()
+	def __init__(self, surface):
 		self.pixel_width, self.pixel_height = surface.get_size()
 		self.aspect_ratio = self.pixel_width / self.pixel_height
 		self.texture_id = self._upload_surface_as_texture(surface)
+
+	@classmethod
+	def load(cls, image_path):
+		return cls(pygame.image.load(image_path).convert_alpha())
 
 	@staticmethod
 	def _upload_surface_as_texture(surface):

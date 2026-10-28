@@ -5,8 +5,13 @@ from OpenGL.GL import *
 
 from lib.laser_line import LaserLine, LaserSweepPath, PictureTexture, PictureTransition, smooth_step
 from lib.caption_sequence import CaptionSequence
+from lib.flying_logo import FlyingLogo
 from lib.picture_crossfade import PictureCrossfade
 from lib.pointed_name_label import PointedNameLabel, ScreenSpaceProjector
+
+LOGO_FILE_NAME = "logo.png"
+LOGO_FLIGHT_SECONDS = 6.5
+LOGO_CAPTION_LINES = ("In 1975 MOS Technology started working", "on the 65xx processor family")
 
 
 class TeamMemberAnnotation:
@@ -56,8 +61,8 @@ class MosTeam:
 	             annotation_fade_seconds=0.25, annotation_design_screen_height=800.0,
 	             closing_captions=("Photo transformation is not AI", "It is just GIMP :)"), seconds_per_closing_caption=1.25,
 	             pause_seconds_between_closing_captions=0.15, closing_caption_color=(230, 40, 40),
-	             zoom_target_pixel_rectangle=((445, 222), (500, 280)), zoom_seconds=2.5,
-	             zoom_target_screen_fill_fraction=0.85, vanish_seconds=1.0):
+	             zoom_target_pixel_rectangle=((445, 222), (500, 280)), zoom_seconds=1.25,
+	             zoom_target_screen_fill_fraction=0.85):
 
 		self.aspect_ratio = aspect_ratio
 		self.field_of_view_degrees = field_of_view_degrees
@@ -86,9 +91,8 @@ class MosTeam:
 		self.zoom_target_pixel_rectangle = zoom_target_pixel_rectangle
 		self.zoom_seconds = zoom_seconds
 		self.zoom_target_screen_fill_fraction = zoom_target_screen_fill_fraction
-		self.vanish_seconds = vanish_seconds
 
-		self.pictures = [PictureTexture(os.path.join(self.picture_directory, file_name))
+		self.pictures = [PictureTexture.load(os.path.join(self.picture_directory, file_name))
 		                 for file_name in picture_file_names]
 		self.picture_width = picture_height * self.pictures[0].aspect_ratio
 		self.camera_distance = self._camera_distance_that_fits_picture_on_screen()
@@ -100,6 +104,9 @@ class MosTeam:
 		                                                pause_seconds_between_captions=pause_seconds_between_closing_captions,
 		                                                text_color=closing_caption_color,
 		                                                screen_scale=self._screen_scale())
+		self.flying_logo = FlyingLogo(os.path.join(self.picture_directory, LOGO_FILE_NAME), aspect_ratio,
+		                              field_of_view_degrees, self.camera_distance, flight_seconds=LOGO_FLIGHT_SECONDS,
+		                              settled_caption_lines=LOGO_CAPTION_LINES)
 		self.restart()
 
 	def _screen_scale(self):
@@ -136,6 +143,7 @@ class MosTeam:
 		return visible_half_width + self.picture_width / 2 + offscreen_margin
 
 	def restart(self):
+		self.flying_logo.restart()
 		self.total_elapsed_seconds = 0.0
 		self.drive_in_elapsed_seconds = 0.0
 		self.shown_picture_index = 0
@@ -145,7 +153,6 @@ class MosTeam:
 		self.started_transition_count = 0
 		self.annotation_timeline_seconds = None
 		self.zoom_elapsed_seconds = None
-		self.vanish_elapsed_seconds = None
 		self.laser_line.reset()
 		self.closing_caption_sequence.reset()
 
@@ -168,23 +175,13 @@ class MosTeam:
 
 	@property
 	def is_zooming_to_target(self):
-		return self.zoom_elapsed_seconds is not None and self.vanish_elapsed_seconds is None
-
-	@property
-	def is_vanishing(self):
-		return self.vanish_elapsed_seconds is not None and not self.finished
+		return self.zoom_elapsed_seconds is not None and not self.finished
 
 	@property
 	def eased_zoom_progress(self):
 		if self.zoom_elapsed_seconds is None:
 			return 0.0
 		return smooth_step(min(1.0, self.zoom_elapsed_seconds / self.zoom_seconds))
-
-	@property
-	def picture_opacity(self):
-		if self.vanish_elapsed_seconds is None:
-			return 1.0
-		return 1.0 - smooth_step(min(1.0, self.vanish_elapsed_seconds / self.vanish_seconds))
 
 	@property
 	def is_driving_in(self):
@@ -196,6 +193,9 @@ class MosTeam:
 		return 1.0 - (1.0 - progress) ** 3
 
 	def update(self, seconds):
+		if not self.flying_logo.finished:
+			self.flying_logo.update(seconds)
+			return
 		self.total_elapsed_seconds += seconds
 		if self.annotation_timeline_seconds is not None:
 			self.annotation_timeline_seconds += seconds
@@ -205,8 +205,6 @@ class MosTeam:
 			self._advance_active_transition(seconds)
 		elif self.is_zooming_to_target:
 			self._advance_zoom(seconds)
-		elif self.is_vanishing:
-			self._advance_vanish(seconds)
 		elif not self.finished:
 			self._advance_hold(seconds)
 		self.laser_line.update(seconds)
@@ -244,11 +242,6 @@ class MosTeam:
 	def _advance_zoom(self, seconds):
 		self.zoom_elapsed_seconds += seconds
 		if self.zoom_elapsed_seconds >= self.zoom_seconds:
-			self.vanish_elapsed_seconds = 0.0
-
-	def _advance_vanish(self, seconds):
-		self.vanish_elapsed_seconds += seconds
-		if self.vanish_elapsed_seconds >= self.vanish_seconds:
 			self.finished = True
 
 	def _start_transition_to_next_picture(self):
@@ -274,6 +267,11 @@ class MosTeam:
 		self.laser_line.move_to(laser_x, self.active_transition.laser_movement_direction)
 
 	def draw(self):
+		if self.finished:
+			return
+		if not self.flying_logo.finished:
+			self.flying_logo.draw()
+			return
 		glPushAttrib(GL_ENABLE_BIT | GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT)
 		glDisable(GL_LIGHTING)
 		glDisable(GL_DEPTH_TEST)
@@ -346,7 +344,7 @@ class MosTeam:
 		glEnable(GL_TEXTURE_2D)
 		glEnable(GL_BLEND)
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-		glColor4f(1.0, 1.0, 1.0, self.picture_opacity)
+		glColor4f(1.0, 1.0, 1.0, 1.0)
 		if self.active_transition is not None:
 			self.active_transition.draw_pictures(self.picture_width, self.picture_height)
 		else:
@@ -362,3 +360,4 @@ class MosTeam:
 			annotation.destroy()
 		self.team_member_annotations = []
 		self.closing_caption_sequence.destroy()
+		self.flying_logo.destroy()

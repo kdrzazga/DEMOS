@@ -18,12 +18,15 @@ class MosTeamTest(PygameDemo):
 		self.background_color = (0.0, 0.0, 0.0)
 		self.replay_delay_seconds = 1.5
 		self.seconds_since_animation_finished = 0.0
+		self.music_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "resources",
+		                               "history", "mos", "65xx.mp3")
 		super().__init__(1280, 800, "MOS Team", fps=60, windowed=windowed, triggered=triggered)
 
 	def setup(self):
 		aspect_ratio = self.width / self.height
 		setup_scene(aspect_ratio, self.field_of_view_degrees, self.background_color)
 		self.mos_team = MosTeam(aspect_ratio, self.field_of_view_degrees)
+		self._play_music()
 
 	def handle_event(self, event):
 		if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
@@ -32,6 +35,13 @@ class MosTeamTest(PygameDemo):
 	def _replay_animation(self):
 		self.seconds_since_animation_finished = 0.0
 		self.mos_team.restart()
+		self._play_music()
+
+	def _play_music(self):
+		if not pygame.mixer.get_init():
+			pygame.mixer.init()
+		pygame.mixer.music.load(self.music_path)
+		pygame.mixer.music.play()
 
 	def step(self):
 		frame_seconds = 1.0 / self.fps

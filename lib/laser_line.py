@@ -296,6 +296,7 @@ class LaserSweepPath:
 class PictureTransition:
 
 	def __init__(self, outgoing_picture, incoming_picture, laser_sweep_path):
+		self.uses_laser_line = True
 		self.outgoing_picture = outgoing_picture
 		self.incoming_picture = incoming_picture
 		self.laser_sweep_path = laser_sweep_path
@@ -316,7 +317,7 @@ class PictureTransition:
 	def finished(self):
 		return self.laser_sweep_path.is_finished_at(self.elapsed_seconds)
 
-	def draw_pictures_split_at_laser(self, picture_width, picture_height):
+	def draw_pictures(self, picture_width, picture_height):
 		laser_position_fraction = self.laser_position_fraction
 		self.incoming_picture.draw_vertical_strip(0.0, laser_position_fraction, picture_width, picture_height)
 		self.outgoing_picture.draw_vertical_strip(laser_position_fraction, 1.0, picture_width, picture_height)

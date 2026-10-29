@@ -1,9 +1,9 @@
 """Commodore 64 breadbox motherboard (ASSY 326298 rev A) as a 3D model.
 
-Run inside Blender (Scripting tab -> Open build_board.py -> Run Script) or headless:
-    blender --background --python build_board.py
+Run inside Blender (Scripting tab -> Open bld_brd.py -> Run Script) or headless:
+    blender --background --python bld_brd.py
 
-The board photo ../resources/history/board.png is the texture of the PCB and of every
+The board photo board.png (next to this script) is the texture of the PCB and of every
 part's top face, so small parts and chip markings come straight from the photo.
 Writes board.blend and board.glb next to this script.
 """
@@ -14,7 +14,7 @@ from pathlib import Path
 import bmesh
 import bpy
 
-PHOTO_RELATIVE_PATH = Path("..", "resources", "history", "board.png")
+PHOTO_RELATIVE_PATH = Path("board.png")
 COLLECTION_NAME = "C64_Breadbox_Board"
 
 PIN_PITCH_MM = 2.54
@@ -379,7 +379,7 @@ def script_directory():
     text = bpy.data.texts.get(script_path.name)
     if text is not None and text.filepath:
         return Path(bpy.path.abspath(text.filepath)).parent
-    raise RuntimeError("Open build_board.py from disk in Blender's Text Editor before running it")
+    raise RuntimeError(f"Open {script_path.name} from disk in Blender's Text Editor before running it")
 
 
 def main():

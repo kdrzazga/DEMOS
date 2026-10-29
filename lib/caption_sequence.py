@@ -5,14 +5,15 @@ class CaptionSequence:
 
 	def __init__(self, captions, seconds_per_caption=0.75, pause_seconds_between_captions=0.25,
 	             text_color=(230, 40, 40), envelope_color=(0, 0, 0), screen_scale=1.0, font_pixel_size=40,
-	             margin_from_top_left_pixels=(24.0, 20.0)):
+	             margin_from_top_left_pixels=(24.0, 20.0), font_path=None):
 		self.captions = captions
 		self.seconds_per_caption = seconds_per_caption
 		self.pause_seconds_between_captions = pause_seconds_between_captions
 		self.margin_from_top_left_pixels = (margin_from_top_left_pixels[0] * screen_scale,
 		                                    margin_from_top_left_pixels[1] * screen_scale)
 		self.caption_textures = [OutlinedTextTexture(caption, max(10, round(font_pixel_size * screen_scale)),
-		                                             text_color=text_color, envelope_color=envelope_color)
+		                                             text_color=text_color, envelope_color=envelope_color,
+		                                             font_path=font_path)
 		                         for caption in captions]
 		self.reset()
 

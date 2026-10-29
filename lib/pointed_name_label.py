@@ -6,10 +6,13 @@ from OpenGL.GLU import gluProject
 class OutlinedTextTexture:
 
 	def __init__(self, text, font_pixel_size, text_color=(255, 255, 255), envelope_color=(0, 0, 0),
-	             envelope_pixel_width=2, font_name="arial"):
+	             envelope_pixel_width=2, font_name="arial", font_path=None):
 		self.text = text
 		pygame.font.init()
-		font = pygame.font.SysFont(font_name, font_pixel_size, bold=True)
+		if font_path is None:
+			font = pygame.font.SysFont(font_name, font_pixel_size, bold=True)
+		else:
+			font = pygame.font.Font(font_path, font_pixel_size)
 		surface = self._render_text_inside_envelope(font, text, text_color, envelope_color, envelope_pixel_width)
 		self.pixel_width, self.pixel_height = surface.get_size()
 		self.texture_id = self._upload_surface_as_texture(surface)

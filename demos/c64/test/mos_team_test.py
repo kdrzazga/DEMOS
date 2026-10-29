@@ -7,7 +7,7 @@ from OpenGL.GL import *
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 
 from lib.pygame_demo import PygameDemo
-from demos.c64.mos_team import MosTeam
+from demos.c64.mos_team75 import MosTeamFactory
 from demos.c64.scene import setup_scene
 
 
@@ -25,7 +25,7 @@ class MosTeamTest(PygameDemo):
 	def setup(self):
 		aspect_ratio = self.width / self.height
 		setup_scene(aspect_ratio, self.field_of_view_degrees, self.background_color)
-		self.mos_team = MosTeam(aspect_ratio, self.field_of_view_degrees)
+		self.mos_team = MosTeamFactory.create_default_mos_team(aspect_ratio, self.field_of_view_degrees)
 		self._play_music()
 
 	def handle_event(self, event):

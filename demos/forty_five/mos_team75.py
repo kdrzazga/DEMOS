@@ -153,6 +153,18 @@ class MosTeam:
 		return self.finished
 
 	@property
+	def incoming_picture_index(self):
+		if self.active_transition is None:
+			return None
+		return self.shown_picture_index + 1
+
+	@property
+	def active_transition_progress(self):
+		if self.active_transition is None:
+			return 0.0
+		return self.active_transition.progress
+
+	@property
 	def is_showing_last_picture(self):
 		return self.shown_picture_index >= len(self.pictures) - 1
 

@@ -319,6 +319,10 @@ class PictureTransition:
 	def finished(self):
 		return self.laser_sweep_path.is_finished_at(self.elapsed_seconds)
 
+	@property
+	def progress(self):
+		return min(1.0, self.elapsed_seconds / self.laser_sweep_path.total_seconds)
+
 	def draw_pictures(self, picture_width, picture_height):
 		laser_position_fraction = self.laser_position_fraction
 		self.incoming_picture.draw_vertical_strip(0.0, laser_position_fraction, picture_width, picture_height)

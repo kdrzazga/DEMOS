@@ -37,8 +37,10 @@ from demos.forty_five.basic77 import BasicLicense
 from demos.forty_five.c64c.commodore64 import Commodore64
 from demos.forty_five.c64c.crash_animation import CrashAnimationText
 from demos.forty_five.chuck_peddle import ChuckPeddleSurface
-from demos.forty_five.intro import IntroVideo
+from demos.forty_five.intro import IntroCaptionVideo
 from demos.forty_five.mos_team75 import MosTeamFactory
+from demos.forty_five.animation6502 import Processor6502Animation
+from demos.forty_five.animation901226 import BasicRom901226Animation
 from demos.forty_five.scene import setup_scene
 from demos.forty_five.typed_label import TypedLabel
 
@@ -63,6 +65,12 @@ class C64Demo(PygameDemo):
 		self.mos_acquisition_sound_path = os.path.join(self.resources, "history", "mos", "76acquisition.mp3")
 		self.chuck_peddle_drift_seconds = 6.0
 		self.chuck_peddle_alone_hold_seconds = 2.0
+		self.processor_arrives_with_picture_index = 3
+		self.processor_hides_with_picture_index = 4
+		self.processor_hides_at_transition_progress = 0.5
+		self.processor_slide_in_seconds = 2.5
+		self.processor_hide_seconds = 1.2
+		self.basic_rom_appear_seconds = 0.4
 		super().__init__(1280, 800, "Commodore 64", fps=60, windowed=windowed, triggered=triggered)
 
 	def setup(self):
@@ -78,6 +86,11 @@ class C64Demo(PygameDemo):
 
 		self.mos_team = MosTeamFactory.create_default_mos_team(aspect, self.fov)
 		self.mos_team_sound = self._load_sound(self.mos_team_sound_path)
+		self.processor_6502 = Processor6502Animation(aspect, self.fov, self.mos_team.camera_distance,
+		                                             self.mos_team.picture_width, self.mos_team.params.picture_height)
+		self.basic_rom_901226 = BasicRom901226Animation(aspect, self.fov, self.mos_team.camera_distance,
+		                                                self.mos_team.picture_width,
+		                                                self.mos_team.params.picture_height)
 
 		self.screen_plane = ScreenPlane(aspect, self.fov)
 		self.chuck_peddle = ChuckPeddleSurface(self.screen_plane)
@@ -86,7 +99,7 @@ class C64Demo(PygameDemo):
 		self.mos_acquisition_sound_seconds = None
 		self.basic_license = BasicLicense(self.screen_plane)
 
-		self.intro =IntroVideo(os.path.join(self.resources, self.intro_video),
+		self.intro = IntroCaptionVideo(os.path.join(self.resources, self.intro_video),
 		                        os.path.join(self.resources, self.intro_audio), aspect)
 		self.phase = "intro"
 		self.phase_seconds = 0.0
@@ -137,6 +150,8 @@ class C64Demo(PygameDemo):
 			if progress >= 1.0:
 				self._enter("mos_team")
 				self.mos_team.restart()
+				self.processor_6502.restart()
+				self.basic_rom_901226.restart()
 				self.mos_team_sound.play()
 
 		self.animation.draw()
@@ -147,16 +162,39 @@ class C64Demo(PygameDemo):
 
 	def _mos_team_step(self, seconds):
 		self.mos_team.update(seconds)
-		self.mos_team.draw()
+		self._move_processor_with_mos_team_photos()
+		self.processor_6502.update(seconds)
+		if self.processor_6502.is_behind_photo:
+			self.processor_6502.draw()
+			self.mos_team.draw()
+		else:
+			self.mos_team.draw()
+			self.processor_6502.draw()
 		if self.mos_team.done:
 			self._enter("mos_acquisition")
 			self.chuck_peddle.place_at_bottom_middle()
 			self.chuck_peddle.drift_to_top_right_corner(self.chuck_peddle_drift_seconds)
+			self.processor_6502.zoom_out_to_top_left_corner(self.chuck_peddle_drift_seconds)
 			self.mos_acquisition.restart()
 			self.mos_acquisition_sound_seconds = None
 
-	def _mos_acquisition_step(self, seconds):
+	def _move_processor_with_mos_team_photos(self):
+		incoming_picture_index = self.mos_team.incoming_picture_index
+		if incoming_picture_index == self.processor_arrives_with_picture_index and not self.processor_6502.visible:
+			self.processor_6502.slide_in_from_left(self.processor_slide_in_seconds)
+		hiding_time_has_come = (incoming_picture_index == self.processor_hides_with_picture_index
+		                        and self.mos_team.active_transition_progress >= self.processor_hides_at_transition_progress)
+		if hiding_time_has_come and not self.processor_6502.is_behind_photo:
+			self.processor_6502.move_behind_photo(self.processor_hide_seconds)
+
+	def _update_and_draw_travellers(self, seconds):
+		self.processor_6502.update(seconds)
+		self.basic_rom_901226.update(seconds)
 		self.chuck_peddle.update(seconds)
+		self.processor_6502.draw()
+		self.chuck_peddle.draw()
+
+	def _mos_acquisition_step(self, seconds):
 		self.mos_acquisition.update(seconds)
 		if self.mos_acquisition.morph_finished and self.mos_acquisition_sound_seconds is None:
 			self.mos_acquisition_sound_seconds = 0.0
@@ -166,7 +204,7 @@ class C64Demo(PygameDemo):
 			sound_has_stopped = self.mos_acquisition_sound_seconds >= self.mos_acquisition_sound.get_length()
 			if sound_has_stopped and not self.mos_acquisition.big_jack_revealed:
 				self.mos_acquisition.reveal_big_jack()
-		self.chuck_peddle.draw()
+		self._update_and_draw_travellers(seconds)
 		self.mos_acquisition.draw()
 		if self.mos_acquisition.done and not self.chuck_peddle.is_gliding:
 			self._enter("basic_license")
@@ -174,15 +212,23 @@ class C64Demo(PygameDemo):
 			                         fading_logo=self.mos_acquisition.mos_logo)
 
 	def _basic_license_step(self, seconds):
-		self.chuck_peddle.update(seconds)
 		self.mos_acquisition.update(seconds)
 		self.basic_license.update(seconds)
-		self.chuck_peddle.draw()
+		self._move_basic_rom_with_basic_license()
+		self._update_and_draw_travellers(seconds)
 		self.mos_acquisition.draw()
 		self.basic_license.draw()
+		self.basic_rom_901226.draw()
 		if self.basic_license.done:
 			self._destroy_everything_but_chuck_peddle()
 			self._enter("chuck_peddle_alone")
+
+	def _move_basic_rom_with_basic_license(self):
+		if self.basic_license.talk_finished and not self.basic_rom_901226.visible:
+			self.basic_rom_901226.appear_between_jack_and_bill(self.basic_rom_appear_seconds)
+		rom_is_still_between_jack_and_bill = self.basic_rom_901226.resting_pose.depth_behind_photo == 0.0
+		if self.basic_license.exit_has_started and rom_is_still_between_jack_and_bill:
+			self.basic_rom_901226.rise_next_to(self.processor_6502, self.basic_license.exit_seconds)
 
 	def _destroy_everything_but_chuck_peddle(self):
 		for finished_stage in (self.mos_team, self.mos_acquisition, self.basic_license):
@@ -192,8 +238,8 @@ class C64Demo(PygameDemo):
 		self.basic_license = None
 
 	def _chuck_peddle_alone_step(self, seconds):
-		self.chuck_peddle.update(seconds)
-		self.chuck_peddle.draw()
+		self._update_and_draw_travellers(seconds)
+		self.basic_rom_901226.draw()
 		if self.phase_seconds >= self.chuck_peddle_alone_hold_seconds:
 			self._finish()
 

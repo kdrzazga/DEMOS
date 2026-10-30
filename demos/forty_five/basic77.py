@@ -105,6 +105,10 @@ class BasicLicense:
 		return self.jack_shift_seconds + self.bill_slide_seconds
 
 	@property
+	def talk_finished(self):
+		return self.elapsed_seconds >= self.basic_license_sound.get_length()
+
+	@property
 	def exit_start_second(self):
 		return self.basic_license_sound.get_length() + self.seconds_after_sound_before_exit
 

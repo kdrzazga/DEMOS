@@ -21,6 +21,14 @@ import numpy as np
 import pygame
 from OpenGL.GL import *
 
+from lib.pointed_name_label import OutlinedTextTexture, ScreenSpaceProjector
+from lib.typer import FONT_PATH
+
+FIRST_TEXT_FRAME = 116
+SECOND_TEXT_FRAME = 233
+TEXT_DURATION_FRAMES = 45
+TEXT_FADE_FRAMES = 5
+
 
 def find_tool(name, env_var, fallback_dirs=(r"D:\ffmpeg\bin", r"C:\ffmpeg\bin")):
 	"""Locate an ffmpeg-family executable: env var, then PATH, then fallback_dirs.
@@ -310,3 +318,76 @@ class IntroVideo:
 			self.capture.release()
 			self.capture = None
 		glDeleteTextures([self.texture])
+
+
+class VideoFrameCaption:
+
+	def __init__(self, text, first_frame, duration_frames, fade_frames, font_pixel_size):
+		self.first_frame = first_frame
+		self.end_frame = first_frame + duration_frames
+		self.fade_frames = fade_frames
+		self.text_texture = OutlinedTextTexture(text, font_pixel_size, text_color=(255, 255, 255),
+		                                        envelope_color=(0, 0, 0), envelope_pixel_width=4,
+		                                        font_path=FONT_PATH)
+
+	def opacity_at(self, frame_index):
+		if not self.first_frame <= frame_index < self.end_frame:
+			return 0.0
+		frames_since_appearing = frame_index - self.first_frame + 1
+		frames_until_disappearing = self.end_frame - frame_index
+		return min(1.0, frames_since_appearing / self.fade_frames, frames_until_disappearing / self.fade_frames)
+
+	@property
+	def pixel_height(self):
+		return self.text_texture.pixel_height
+
+	def draw_with_top_right_at(self, right_x, top_y, opacity):
+		self.text_texture.draw_with_top_left_at(right_x - self.text_texture.pixel_width, top_y, opacity)
+
+	def destroy(self):
+		self.text_texture.destroy()
+
+
+class IntroCaptionVideo(IntroVideo):
+
+	def __init__(self, video_path, audio_path, window_aspect, fade_ms=500,
+	             caption_texts_and_first_frames=(("45 years?", FIRST_TEXT_FRAME), ("KURWA !", SECOND_TEXT_FRAME)),
+	             caption_duration_frames=TEXT_DURATION_FRAMES, caption_fade_frames=TEXT_FADE_FRAMES,
+	             caption_font_pixel_size=100, caption_margin_from_top_right_pixels=(40.0, 30.0),
+	             caption_drop_in_caption_heights=0.5, design_screen_height=800.0):
+		super().__init__(video_path, audio_path, window_aspect, fade_ms)
+		self.caption_drop_in_caption_heights = caption_drop_in_caption_heights
+		screen_scale = glGetIntegerv(GL_VIEWPORT)[3] / design_screen_height
+		self.caption_margin_from_top_right_pixels = (caption_margin_from_top_right_pixels[0] * screen_scale,
+		                                             caption_margin_from_top_right_pixels[1] * screen_scale)
+		self.captions = [VideoFrameCaption(text, first_frame, caption_duration_frames, caption_fade_frames,
+		                                   max(10, round(caption_font_pixel_size * screen_scale)))
+		                 for text, first_frame in caption_texts_and_first_frames]
+
+	@property
+	def shown_frame_index(self):
+		return self._next_index - 1
+
+	def render(self):
+		super().render()
+		self._draw_captions_of_shown_frame()
+
+	def _draw_captions_of_shown_frame(self):
+		frame_index = self.shown_frame_index
+		shown_captions = [(caption, caption.opacity_at(frame_index)) for caption in self.captions
+		                  if caption.opacity_at(frame_index) > 0.0]
+		if not shown_captions:
+			return
+		projector = ScreenSpaceProjector()
+		margin_from_right, margin_from_top = self.caption_margin_from_top_right_pixels
+		projector.begin_pixel_overlay()
+		for caption, opacity in shown_captions:
+			caption_top_y = margin_from_top + caption.pixel_height * self.caption_drop_in_caption_heights
+			caption.draw_with_top_right_at(projector.viewport_width - margin_from_right, caption_top_y, opacity)
+		projector.end_pixel_overlay()
+
+	def destroy(self):
+		for caption in self.captions:
+			caption.destroy()
+		self.captions = []
+		super().destroy()

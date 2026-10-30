@@ -11,7 +11,7 @@ import math
 from OpenGL.GL import *
 
 
-def rounded_rect_outline(half_width, half_depth, radius, corner_segments=8, centre=(0.0, 0.0)):
+def rounded_rect_outline(half_width, half_depth, radius, corner_segments=8, centre=(0.0, 0.0)) -> list:
 	"""Rounded rectangle as (x, z) points, corner by corner."""
 	centre_x, centre_z = centre
 	radius = max(0.0, min(radius, half_width, half_depth))

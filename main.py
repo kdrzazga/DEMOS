@@ -98,7 +98,7 @@ DEMOS = {
     "jack": jack_demo,
 }
 
-DEFAULT_DEMO = "retrosfera10"
+DEFAULT_DEMO = "c64"
 
 
 def close_boot_splash():

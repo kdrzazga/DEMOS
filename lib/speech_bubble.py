@@ -6,11 +6,15 @@ from OpenGL.GL import *
 
 class SpeechBubble:
 
-	def __init__(self, mp3_file, text_file, size=10):
+	def __init__(self, mp3_file, text_file=None, size=10, lines=None, silent_seconds=3.0, font_path=None,
+	             mirrored=False):
 		self.bubble_pic = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "speech-bubble.png")
+		self.font_path = font_path
+		self.mirrored = mirrored
 		self.mp3_file = mp3_file
+		self.silent_seconds = silent_seconds
 		self.font_size = size
-		self.lines = self._read_lines(text_file)
+		self.lines = list(lines) if lines else self._read_lines(text_file)
 		self.font_scale = 2.0
 		self.text_width_share = 0.7
 		self.text_height_share = 0.55
@@ -39,7 +43,7 @@ class SpeechBubble:
 
 	def _font(self, scale):
 		pygame.font.init()
-		return pygame.font.Font(None, int(self.font_size * self.font_scale * scale))
+		return pygame.font.Font(self.font_path, int(self.font_size * self.font_scale * scale))
 
 	def _bubble_size(self):
 		font = self._font(1)
@@ -54,10 +58,17 @@ class SpeechBubble:
 		return height / width
 
 	@property
+	def world_width(self):
+		return self.width * self.units_per_pixel
+
+	@property
 	def speaking(self):
 		return self.started and self.elapsed < self.length
 
 	def _load(self):
+		if self.mp3_file is None:
+			self.length = self.silent_seconds
+			return
 		if self.sound is None:
 			if not pygame.mixer.get_init():
 				pygame.mixer.init()
@@ -71,7 +82,7 @@ class SpeechBubble:
 
 	def start(self):
 		self._load()
-		self.channel = self.sound.play()
+		self.channel = self.sound.play() if self.sound else None
 		self.elapsed = 0.0
 		self.started = True
 		self.visible = True
@@ -93,12 +104,15 @@ class SpeechBubble:
 		width, height = int(self.width * scale), int(self.height * scale)
 		if self.picture is None:
 			self.picture = pygame.transform.smoothscale(pygame.image.load(self.bubble_pic).convert_alpha(), (width, height))
+			if self.mirrored:
+				self.picture = pygame.transform.flip(self.picture, True, False)
 			self.font = self._font(scale)
 		surface = self.picture.copy()
 		line_height = self.font.get_linesize() * self.line_spacing
 		top = height * self.text_center[1] - line_height * len(self.lines) / 2.0
+		text_center_x = 1.0 - self.text_center[0] if self.mirrored else self.text_center[0]
 		for index, line in enumerate(self.lines):
-			left = width * self.text_center[0] - self.font.size(line)[0] / 2.0
+			left = width * text_center_x - self.font.size(line)[0] / 2.0
 			surface.blit(self.font.render(line, True, self.text_color), (left, top + index * line_height))
 		return surface
 
@@ -141,7 +155,8 @@ class SpeechBubble:
 		glRotatef(yaw, 0.0, 1.0, 0.0)
 		glRotatef(pitch, 1.0, 0.0, 0.0)
 		offset_x, offset_y, offset_z = self.offset
-		glTranslatef(offset_x + half_width, offset_y + half_height, offset_z)
+		growth_direction = -1.0 if self.mirrored else 1.0
+		glTranslatef(growth_direction * (offset_x + half_width), offset_y + half_height, offset_z)
 		glColor4f(1.0, 1.0, 1.0, 1.0)
 		glBegin(GL_QUADS)
 		glTexCoord2f(0.0, 0.0)

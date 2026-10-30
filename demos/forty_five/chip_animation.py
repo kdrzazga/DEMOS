@@ -109,6 +109,12 @@ class ChipAnimation:
 		resting_pose.fraction_from_left = -width_fraction
 		return resting_pose
 
+	def pose_just_beyond_right_edge(self, height_in_photo_heights=1.0):
+		resting_pose = ChipPose(1.0, 0.5, 0.0, height_in_photo_heights)
+		width_fraction, _ = self.screen_size_fractions(resting_pose)
+		resting_pose.fraction_from_left = 1.0 + width_fraction
+		return resting_pose
+
 	def pose_in_top_left_corner(self, height_in_photo_heights, depth_behind_photo):
 		corner_pose = ChipPose(0.0, 0.0, depth_behind_photo, height_in_photo_heights)
 		width_fraction, height_fraction = self.screen_size_fractions(corner_pose)
@@ -130,6 +136,11 @@ class ChipAnimation:
 	def glide_to(self, target_pose, glide_seconds, easing=smooth_step):
 		self.visible = True
 		self.active_glide = ChipPoseGlide(self.pose, target_pose, glide_seconds, easing)
+
+	def rise_next_to(self, neighbour_chip_animation, rise_seconds, gap_fraction=0.02):
+		self.glide_to(self.pose_right_of_with_tops_aligned(neighbour_chip_animation,
+		                                                   neighbour_chip_animation.resting_pose, gap_fraction),
+		              rise_seconds)
 
 	def grow_into_view_at(self, target_pose, grow_seconds, easing=smooth_step):
 		self.pose = target_pose.with_height(0.0)

@@ -5,7 +5,7 @@ from OpenGL.GL import *
 
 from lib.laser_line import LaserLine, LaserSweepPath, PictureTexture, PictureTransition, smooth_step
 from lib.caption_sequence import CaptionSequence
-from lib.flying_logo import FlyingLogo
+from lib.flying_logo import FlyingLogo, ease_in_cubic
 from lib.picture_crossfade import PictureCrossfade
 from lib.pointed_name_label import PointedNameLabel, ScreenSpaceProjector
 
@@ -42,6 +42,9 @@ class MosTeamParams:
 		self.field_of_view_degrees = field_of_view_degrees
 		self.picture_directory = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "history", "mos")
 		self.picture_file_names = ("MOS.png", "MOS2.png", "MOS3.png", "MOS4.png", "MOS5.png")
+		self.logo_file_name = LOGO_FILE_NAME
+		self.logo_flight_seconds = LOGO_FLIGHT_SECONDS
+		self.logo_caption_lines = LOGO_CAPTION_LINES
 		self.transition_styles = ("laser_sweep", "laser_sweep", "laser_sweep", "color_fade")
 		self.color_fade_seconds = 2.0
 		self.hold_seconds_before_color_fade = 0.2
@@ -89,17 +92,25 @@ class MosTeam:
 		self.picture_width = params.picture_height * self.pictures[0].aspect_ratio
 		self.camera_distance = self._camera_distance_that_fits_picture_on_screen()
 		self.drive_in_start_x = self._drive_in_start_x_just_beyond_right_screen_edge()
-		self.zoom_target_center, self.zoom_target_scale = self._zoom_target_center_and_scale()
+		self.zoom_target_center, self.zoom_target_scale = (
+			self._zoom_target_center_and_scale() if params.zoom_target_pixel_rectangle is not None else (None, None))
 		self.laser_line = LaserLine(surface_top_y=params.picture_height / 2, surface_bottom_y=-params.picture_height / 2)
 		self.team_member_annotations = self._build_team_member_annotations(params.team_member_annotation_settings)
 		self.closing_caption_sequence = CaptionSequence(
 			params.closing_captions, seconds_per_caption=params.seconds_per_closing_caption,
 			pause_seconds_between_captions=params.pause_seconds_between_closing_captions,
 			text_color=params.closing_caption_color, screen_scale=self._screen_scale())
-		self.flying_logo = FlyingLogo(os.path.join(params.picture_directory, LOGO_FILE_NAME), params.aspect_ratio,
-		                              params.field_of_view_degrees, self.camera_distance,
-		                              flight_seconds=LOGO_FLIGHT_SECONDS, settled_caption_lines=LOGO_CAPTION_LINES)
+		self.flying_logo = None
+		if params.logo_file_name is not None:
+			self.flying_logo = FlyingLogo(os.path.join(params.picture_directory, params.logo_file_name),
+			                              params.aspect_ratio, params.field_of_view_degrees, self.camera_distance,
+			                              flight_seconds=params.logo_flight_seconds,
+			                              settled_caption_lines=params.logo_caption_lines)
 		self.restart()
+
+	@property
+	def logo_is_flying(self):
+		return self.flying_logo is not None and not self.flying_logo.finished
 
 	def _screen_scale(self):
 		return glGetIntegerv(GL_VIEWPORT)[3] / self.params.annotation_design_screen_height
@@ -135,7 +146,8 @@ class MosTeam:
 		return visible_half_width + self.picture_width / 2 + offscreen_margin
 
 	def restart(self):
-		self.flying_logo.restart()
+		if self.flying_logo is not None:
+			self.flying_logo.restart()
 		self.total_elapsed_seconds = 0.0
 		self.drive_in_elapsed_seconds = 0.0
 		self.shown_picture_index = 0
@@ -145,6 +157,8 @@ class MosTeam:
 		self.started_transition_count = 0
 		self.annotation_timeline_seconds = None
 		self.zoom_elapsed_seconds = None
+		self.exit_seconds = None
+		self.exit_elapsed_seconds = None
 		self.laser_line.reset()
 		self.closing_caption_sequence.reset()
 
@@ -163,6 +177,35 @@ class MosTeam:
 		if self.active_transition is None:
 			return 0.0
 		return self.active_transition.progress
+
+	@property
+	def last_transition_has_started(self):
+		return self.incoming_picture_index == len(self.pictures) - 1
+
+	@property
+	def picture_screen_width_fraction(self):
+		visible_height = 2 * self.camera_distance * math.tan(math.radians(self.params.field_of_view_degrees) / 2)
+		return self.picture_width / (visible_height * self.params.aspect_ratio)
+
+	def leave_through_bottom(self, exit_seconds):
+		self.exit_seconds = exit_seconds
+		self.exit_elapsed_seconds = 0.0
+
+	@property
+	def is_leaving(self):
+		return self.exit_elapsed_seconds is not None
+
+	@property
+	def has_left(self):
+		return self.is_leaving and self.exit_elapsed_seconds >= self.exit_seconds
+
+	def _exit_drop(self):
+		if not self.is_leaving:
+			return 0.0
+		visible_half_height = self.camera_distance * math.tan(math.radians(self.params.field_of_view_degrees) / 2)
+		swaying_picture_half_height = self.params.picture_height / 2 * 1.2
+		return (visible_half_height + swaying_picture_half_height) * ease_in_cubic(
+			min(1.0, self.exit_elapsed_seconds / self.exit_seconds))
 
 	@property
 	def is_showing_last_picture(self):
@@ -197,10 +240,12 @@ class MosTeam:
 		return 1.0 - (1.0 - progress) ** 3
 
 	def update(self, seconds):
-		if not self.flying_logo.finished:
+		if self.logo_is_flying:
 			self.flying_logo.update(seconds)
 			return
 		self.total_elapsed_seconds += seconds
+		if self.is_leaving:
+			self.exit_elapsed_seconds += seconds
 		if self.annotation_timeline_seconds is not None:
 			self.annotation_timeline_seconds += seconds
 		if self.is_driving_in:
@@ -239,7 +284,10 @@ class MosTeam:
 			return
 		if self.is_showing_last_picture:
 			if self.all_annotations_have_disappeared and self.closing_caption_sequence.finished:
-				self.zoom_elapsed_seconds = 0.0
+				if self.zoom_target_center is None:
+					self.finished = True
+				else:
+					self.zoom_elapsed_seconds = 0.0
 		else:
 			self._start_transition_to_next_picture()
 
@@ -271,9 +319,9 @@ class MosTeam:
 		self.laser_line.move_to(laser_x, self.active_transition.laser_movement_direction)
 
 	def draw(self):
-		if self.finished:
+		if (self.finished and not self.is_leaving) or self.has_left:
 			return
-		if not self.flying_logo.finished:
+		if self.logo_is_flying:
 			self.flying_logo.draw()
 			return
 		glPushAttrib(GL_ENABLE_BIT | GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT)
@@ -282,7 +330,7 @@ class MosTeam:
 		glMatrixMode(GL_MODELVIEW)
 		glPushMatrix()
 		glLoadIdentity()
-		glTranslatef(0.0, 0.0, -self.camera_distance)
+		glTranslatef(0.0, -self._exit_drop(), -self.camera_distance)
 		self._apply_drive_in_offset_and_turn()
 		self._apply_sway()
 		self._apply_zoom_to_target()
@@ -364,7 +412,8 @@ class MosTeam:
 			annotation.destroy()
 		self.team_member_annotations = []
 		self.closing_caption_sequence.destroy()
-		self.flying_logo.destroy()
+		if self.flying_logo is not None:
+			self.flying_logo.destroy()
 
 
 class MosTeamFactory:
@@ -372,3 +421,21 @@ class MosTeamFactory:
 	@staticmethod
 	def create_default_mos_team(aspect_ratio, field_of_view_degrees):
 		return MosTeam(MosTeamParams(aspect_ratio, field_of_view_degrees))
+
+	@staticmethod
+	def create_al_charpentier_show(aspect_ratio, field_of_view_degrees):
+		return MosTeam(AlCharpentierParams(aspect_ratio, field_of_view_degrees))
+
+
+class AlCharpentierParams(MosTeamParams):
+
+	def __init__(self, aspect_ratio, field_of_view_degrees):
+		super().__init__(aspect_ratio, field_of_view_degrees)
+		self.picture_directory = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "history", "c=")
+		self.picture_file_names = ("al-charpentier1.png", "al-charpentier2.png", "al-charpentier3.png")
+		self.transition_styles = ("laser_sweep", "laser_sweep")
+		self.logo_file_name = None
+		self.team_member_annotation_settings = ()
+		self.closing_captions = ()
+		self.closing_hold_seconds = 1.0
+		self.zoom_target_pixel_rectangle = None

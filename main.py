@@ -3,7 +3,7 @@ import io
 import os
 import sys
 
-from demos.c64.demo import c64_demo
+from demos.forty_five.demo import c64_demo
 from demos.retrosfera10.main import Retrosfera10Demo
 
 
@@ -90,7 +90,7 @@ DEMOS = {
     "kna": kna_demo,
     "pc45": pc45_demo,
     "p3dscii": petscii_demo,
-    "c64": c64,
+    "45": c64,
     "po": pixelove_ole, #cannot be built to exe, due to execution loop
     "pixeloveole3": pixelove_ole3,
     "winter": winter_demo,
@@ -98,7 +98,7 @@ DEMOS = {
     "jack": jack_demo,
 }
 
-DEFAULT_DEMO = "c64"
+DEFAULT_DEMO = "45"
 
 
 def close_boot_splash():

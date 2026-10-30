@@ -2,6 +2,7 @@ import math
 
 from OpenGL.GL import *
 
+from lib.flying_logo import ease_in_cubic, ease_out_cubic
 from lib.laser_line import smooth_step
 
 
@@ -114,6 +115,35 @@ class ChipAnimation:
 		width_fraction, _ = self.screen_size_fractions(resting_pose)
 		resting_pose.fraction_from_left = 1.0 + width_fraction
 		return resting_pose
+
+	def pose_in_left_margin_beside_photo(self, height_in_photo_heights=1.0):
+		photo_width_fraction = self.photo_width / self.visible_width_on_photo_plane
+		return ChipPose((1.0 - photo_width_fraction) / 4, 0.5, 0.0, height_in_photo_heights)
+
+	def pose_in_right_margin_beside_photo(self, height_in_photo_heights=1.0):
+		left_margin_pose = self.pose_in_left_margin_beside_photo(height_in_photo_heights)
+		left_margin_pose.fraction_from_left = 1.0 - left_margin_pose.fraction_from_left
+		return left_margin_pose
+
+	def slide_into_left_margin(self, slide_seconds):
+		self.pose = self.pose_just_beyond_left_edge()
+		self.glide_to(self.pose_in_left_margin_beside_photo(), slide_seconds, easing=ease_out_cubic)
+
+	def slide_into_right_margin(self, slide_seconds):
+		self.pose = self.pose_just_beyond_right_edge()
+		self.glide_to(self.pose_in_right_margin_beside_photo(), slide_seconds, easing=ease_out_cubic)
+
+	def pose_just_beyond_top_edge(self):
+		_, height_fraction = self.screen_size_fractions(self.pose)
+		return ChipPose(self.pose.fraction_from_left, -height_fraction, self.pose.depth_behind_photo,
+		                self.pose.height_in_photo_heights)
+
+	def leave_through_top_edge(self, leave_seconds):
+		self.glide_to(self.pose_just_beyond_top_edge(), leave_seconds, easing=ease_in_cubic)
+
+	@property
+	def has_left_through_top_edge(self):
+		return self.active_glide is not None and self.active_glide.finished and self.pose.fraction_from_top < 0.0
 
 	def pose_in_top_left_corner(self, height_in_photo_heights, depth_behind_photo):
 		corner_pose = ChipPose(0.0, 0.0, depth_behind_photo, height_in_photo_heights)

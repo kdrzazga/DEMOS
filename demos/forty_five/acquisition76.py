@@ -24,62 +24,64 @@ ACQUISITION_YEAR_FLASHES = ("1976", "1976", "1976")
 
 class MosAcquisition:
 
-	def __init__(self, screen_plane, jabba_height_in_screen_heights=0.2, jabba_arrival_delay_seconds=1.0,
-	             jabba_arrival_seconds=4.0, jabba_stop_fraction_from_left=0.4, jabba_fraction_from_top=0.55,
-	             jabba_swing_amplitude_degrees=25.0, jabba_swing_period_seconds=1.6,
-	             pause_seconds_before_morph=0.5, picture_crossfade_seconds=2.0, shrink_seconds=1.0,
-	             caption_height_in_screen_heights=0.035, caption_gap_in_screen_heights=0.02,
-	             logo_width_in_jack_widths=2.0, logo_stop_fraction_from_left=0.6,
-	             speech_bubble_font_size=15, speech_seconds=2.5, year_flash_seconds=0.5,
-	             pause_seconds_between_year_flashes=0.25, year_flash_color=(230, 40, 40),
-	             year_flash_font_pixel_size=110, year_flash_margin_from_top_left_pixels=(170.0, 110.0),
-	             design_screen_height=800.0, hold_seconds_after_speech=1.0, big_jack_fade_seconds=0.4,
-	             hold_seconds_after_big_jack=2.0):
+	def __init__(self, screen_plane):
 		self.screen_plane = screen_plane
-		self.jabba_arrival_delay_seconds = jabba_arrival_delay_seconds
-		self.jabba_arrival_seconds = jabba_arrival_seconds
-		self.jabba_stop_fraction_from_left = jabba_stop_fraction_from_left
-		self.jabba_fraction_from_top = jabba_fraction_from_top
-		self.pause_seconds_before_morph = pause_seconds_before_morph
-		self.picture_crossfade_seconds = picture_crossfade_seconds
-		self.shrink_seconds = shrink_seconds
-		self.caption_gap = caption_gap_in_screen_heights * screen_plane.visible_height
-		self.logo_stop_fraction_from_left = logo_stop_fraction_from_left
-		self.speech_seconds = speech_seconds
-		self.hold_seconds_after_speech = hold_seconds_after_speech
-		self.big_jack_fade_seconds = big_jack_fade_seconds
-		self.hold_seconds_after_big_jack = hold_seconds_after_big_jack
+		self.jabba_height_in_screen_heights = 0.2
+		self.jabba_arrival_delay_seconds = 1.0
+		self.jabba_arrival_seconds = 4.0
+		self.jabba_stop_fraction_from_left = 0.4
+		self.jabba_fraction_from_top = 0.55
+		self.jabba_swing_amplitude_degrees = 25.0
+		self.jabba_swing_period_seconds = 1.6
+		self.pause_seconds_before_morph = 0.5
+		self.picture_crossfade_seconds = 2.0
+		self.shrink_seconds = 1.0
+		self.caption_height_in_screen_heights = 0.035
+		self.caption_gap = 0.02 * screen_plane.visible_height
+		self.logo_width_in_jack_widths = 2.0
+		self.logo_stop_fraction_from_left = 0.6
+		self.speech_bubble_font_size = 15
+		self.speech_seconds = 2.5
+		self.year_flash_seconds = 0.5
+		self.pause_seconds_between_year_flashes = 0.25
+		self.year_flash_color = (230, 40, 40)
+		self.year_flash_font_pixel_size = 110
+		self.year_flash_margin_from_top_left_pixels = (170.0, 110.0)
+		self.design_screen_height = 800.0
+		self.hold_seconds_after_speech = 1.0
+		self.big_jack_fade_seconds = 0.4
+		self.hold_seconds_after_big_jack = 2.0
 		self.jabba_picture = PictureTexture.load(JABBA_IMAGE_PATH)
 		jack_surface = pygame.image.load(JACK_TRAMIEL_IMAGE_PATH).convert_alpha()
 		self.jack_pixel_size = jack_surface.get_size()
 		self.jack_shrunk_width_scale = jack_surface.get_width() / self.jabba_picture.pixel_width
 		self.jack_stretched_to_jabba_width_picture = PictureTexture(pygame.transform.smoothscale(
 			jack_surface, (self.jabba_picture.pixel_width, jack_surface.get_height())))
-		self.portrait = PictureSurface(self.jabba_picture, screen_plane, jabba_height_in_screen_heights,
-		                               swing_amplitude_degrees=jabba_swing_amplitude_degrees,
-		                               swing_period_seconds=jabba_swing_period_seconds)
+		self.portrait = PictureSurface(self.jabba_picture, screen_plane, self.jabba_height_in_screen_heights,
+		                               swing_amplitude_degrees=self.jabba_swing_amplitude_degrees,
+		                               swing_period_seconds=self.jabba_swing_period_seconds)
 		self.caption = MorphingCaption(JABBA_TO_JACK_CAPTION_SEGMENTS,
-		                               caption_height_in_screen_heights * screen_plane.visible_height)
-		self.mos_logo = self._build_mos_logo(logo_width_in_jack_widths)
+		                               self.caption_height_in_screen_heights * screen_plane.visible_height)
+		self.mos_logo = self._build_mos_logo()
 		self.world_units_per_jack_pixel = self.portrait.picture_height / self.jack_pixel_size[1]
 		self.big_jack_picture = PictureTexture.load(JACK_TRAMIEL_BIG_IMAGE_PATH)
 		self.big_jack = PictureSurface(self.big_jack_picture, screen_plane, self.big_jack_picture.pixel_height
 		                               * self.world_units_per_jack_pixel / screen_plane.visible_height)
-		self.jack_speech_bubble = SpeechBubble(None, size=speech_bubble_font_size, lines=JACK_TRAMIEL_SPEECH_LINES,
-		                                       silent_seconds=speech_seconds, font_path=FONT_PATH)
-		self.year_flashes = CaptionSequence(ACQUISITION_YEAR_FLASHES, seconds_per_caption=year_flash_seconds,
-		                                    pause_seconds_between_captions=pause_seconds_between_year_flashes,
-		                                    text_color=year_flash_color,
-		                                    screen_scale=glGetIntegerv(GL_VIEWPORT)[3] / design_screen_height,
-		                                    font_pixel_size=year_flash_font_pixel_size,
-		                                    margin_from_top_left_pixels=year_flash_margin_from_top_left_pixels,
+		self.jack_speech_bubble = SpeechBubble(None, size=self.speech_bubble_font_size, lines=JACK_TRAMIEL_SPEECH_LINES,
+		                                       silent_seconds=self.speech_seconds, font_path=FONT_PATH)
+		self.year_flashes = CaptionSequence(ACQUISITION_YEAR_FLASHES, seconds_per_caption=self.year_flash_seconds,
+		                                    pause_seconds_between_captions=self.pause_seconds_between_year_flashes,
+		                                    text_color=self.year_flash_color,
+		                                    screen_scale=glGetIntegerv(GL_VIEWPORT)[3] / self.design_screen_height,
+		                                    font_pixel_size=self.year_flash_font_pixel_size,
+		                                    margin_from_top_left_pixels=self.year_flash_margin_from_top_left_pixels,
 		                                    font_path=FONT_PATH)
 		self.restart()
 
-	def _build_mos_logo(self, logo_width_in_jack_widths):
+	def _build_mos_logo(self):
 		logo_picture = PictureTexture.load(MOS_LOGO_IMAGE_PATH)
 		jack_width = self.portrait.picture_width * self.jack_shrunk_width_scale
-		logo_height = jack_width * logo_width_in_jack_widths / logo_picture.aspect_ratio
+		logo_height = jack_width * self.logo_width_in_jack_widths / logo_picture.aspect_ratio
 		return PictureSurface(logo_picture, self.screen_plane, logo_height / self.screen_plane.visible_height)
 
 	def restart(self):

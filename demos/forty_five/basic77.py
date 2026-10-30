@@ -39,27 +39,26 @@ class SurfaceFadeOut:
 
 class BasicLicense:
 
-	def __init__(self, screen_plane, logo_fade_seconds=1.0, jack_shift_in_jack_widths=0.5, jack_shift_seconds=1.0,
-	             bill_height_in_screen_heights=0.45, bill_slide_seconds=2.5, bill_stop_fraction_from_left=0.78,
-	             jack_question_seconds=5.5, speech_bubble_font_size=13, speech_bubble_screen_margin=0.3,
-	             speech_bubble_shift_right_in_bubble_widths=0.35, seconds_after_sound_before_exit=0.5,
-	             exit_seconds=1.5):
+	def __init__(self, screen_plane):
 		self.screen_plane = screen_plane
-		self.logo_fade_seconds = logo_fade_seconds
-		self.jack_shift_in_jack_widths = jack_shift_in_jack_widths
-		self.jack_shift_seconds = jack_shift_seconds
-		self.speech_bubble_screen_margin = speech_bubble_screen_margin
-		self.speech_bubble_shift_right_in_bubble_widths = speech_bubble_shift_right_in_bubble_widths
-		self.bill_slide_seconds = bill_slide_seconds
-		self.bill_stop_fraction_from_left = bill_stop_fraction_from_left
-		self.jack_question_seconds = jack_question_seconds
-		self.seconds_after_sound_before_exit = seconds_after_sound_before_exit
-		self.exit_seconds = exit_seconds
+		self.logo_fade_seconds = 1.0
+		self.jack_shift_in_jack_widths = 0.5
+		self.jack_shift_seconds = 1.0
+		self.bill_height_in_screen_heights = 0.45
+		self.bill_slide_seconds = 2.5
+		self.bill_stop_fraction_from_left = 0.78
+		self.jack_question_seconds = 5.5
+		self.speech_bubble_font_size = 13
+		self.speech_bubble_screen_margin = 0.3
+		self.speech_bubble_shift_right_in_bubble_widths = 0.35
+		self.seconds_after_sound_before_exit = 0.5
+		self.exit_seconds = 1.5
 		self.bill_picture = PictureTexture.load(BILL_GATES_IMAGE_PATH)
-		self.bill = PictureSurface(self.bill_picture, screen_plane, bill_height_in_screen_heights)
+		self.bill = PictureSurface(self.bill_picture, screen_plane, self.bill_height_in_screen_heights)
 		self.bill_resting_fraction_from_top = self.bill.center_fractions_with_bottom_edge_on_screen_bottom(0.0)[1]
-		self.jack_question_bubble = SpeechBubble(None, size=speech_bubble_font_size, lines=JACK_TRAMIEL_QUESTION_LINES,
-		                                         silent_seconds=jack_question_seconds, font_path=FONT_PATH)
+		self.jack_question_bubble = SpeechBubble(None, size=self.speech_bubble_font_size,
+		                                         lines=JACK_TRAMIEL_QUESTION_LINES,
+		                                         silent_seconds=self.jack_question_seconds, font_path=FONT_PATH)
 		self.basic_license_sound = self._load_sound(BASIC_LICENSE_SOUND_PATH)
 		self.talking_jack = None
 		self.fading_logo = None

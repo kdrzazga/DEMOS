@@ -46,10 +46,12 @@ from demos.forty_five.chuck_peddle import ChuckPeddleSurface
 from demos.forty_five.intro import IntroCaptionVideo
 from demos.forty_five.mos_team75 import MosTeamFactory
 from demos.forty_five.animation6502 import Processor6502Animation
+from demos.forty_five.animation652x import PeripheralChip652xAnimation
 from demos.forty_five.animation901226 import BasicRom901226Animation
 from demos.forty_five.animation901225 import CharacterRom901225Animation
 from demos.forty_five.animation6560 import VicChip6560Animation
 from demos.forty_five.pet77 import PetIntroduction
+from demos.forty_five.vic20_80 import Vic20Arrival
 from demos.forty_five.scene import setup_scene
 from demos.forty_five.typed_label import TypedLabel
 
@@ -76,11 +78,17 @@ class C64Demo(PygameDemo):
 		self.chuck_peddle_drift_seconds = 6.0
 		self.music_volume = 1.0
 		self.music_volume_while_speaking = 0.5
-		self.processor_arrives_with_picture_index = 3
-		self.processor_hides_with_picture_index = 4
+		self.pia_via_sound_path = os.path.join(self.resources, "history", "mos", "PIA-VIA.mp3")
+		self.processor_arrives_with_picture_index = 1
+		self.processor_arrives_at_transition_progress = 0.5
+		self.processor_hides_with_picture_index = 2
 		self.processor_hides_at_transition_progress = 0.5
 		self.processor_slide_in_seconds = 2.5
 		self.processor_hide_seconds = 1.2
+		self.pia_via_slide_in_seconds = 2.5
+		self.pia_via_join_seconds = 1.2
+		self.pia_leave_seconds = 1.5
+		self.chip_row_gap_close_seconds = 1.2
 		self.basic_rom_appear_seconds = 0.4
 		self.vic_chip_slide_in_seconds = 2.5
 		self.al_charpentier_exit_seconds = 1.5
@@ -109,6 +117,13 @@ class C64Demo(PygameDemo):
 		self.mos_team_sound = self._load_sound(self.mos_team_sound_path)
 		self.processor_6502 = Processor6502Animation(aspect, self.fov, self.mos_team.camera_distance,
 		                                             self.mos_team.picture_width, self.mos_team.params.picture_height)
+		self.pia_6520 = PeripheralChip652xAnimation("6520", aspect, self.fov, self.mos_team.camera_distance,
+		                                            self.mos_team.picture_width, self.mos_team.params.picture_height)
+		self.via_6522 = PeripheralChip652xAnimation("6522", aspect, self.fov, self.mos_team.camera_distance,
+		                                            self.mos_team.picture_width, self.mos_team.params.picture_height)
+		self.pia_via_sound = self._load_sound(self.pia_via_sound_path)
+		self.pia_via_sound_seconds = None
+		self.pia_and_via_have_joined_processor = False
 		self.basic_rom_901226 = BasicRom901226Animation(aspect, self.fov, self.mos_team.camera_distance,
 		                                                self.mos_team.picture_width,
 		                                                self.mos_team.params.picture_height)
@@ -127,6 +142,7 @@ class C64Demo(PygameDemo):
 		self.pet_introduction = PetIntroduction(self.screen_plane)
 		self.al_charpentier_show = MosTeamFactory.create_al_charpentier_show(aspect, self.fov)
 		self.vic_sound = self._load_sound(self.vic_sound_path)
+		self.vic20_arrival = Vic20Arrival(self.screen_plane)
 
 		self.intro = IntroCaptionVideo(os.path.join(self.resources, self.intro_video),
 		                        os.path.join(self.resources, self.intro_audio), aspect)
@@ -161,13 +177,15 @@ class C64Demo(PygameDemo):
 			self._al_charpentier_step(seconds)
 		elif self.phase == "year_1980":
 			self._year_1980_step(seconds)
+		elif self.phase == "vic20_arrival":
+			self._vic20_arrival_step(seconds)
 		else:
 			self._caption_step()
 		self._lower_music_while_speaking()
 
 	def _spoken_sounds(self):
-		spoken_sounds = [self.mos_team_sound, self.mos_acquisition_sound, self.pet_introduction.pet_sound,
-		                 self.vic_sound]
+		spoken_sounds = [self.mos_team_sound, self.pia_via_sound, self.mos_acquisition_sound,
+		                 self.pet_introduction.pet_sound, self.vic_sound, self.vic20_arrival.vic20_sound]
 		if self.basic_license is not None:
 			spoken_sounds.append(self.basic_license.basic_license_sound)
 		return spoken_sounds
@@ -198,6 +216,10 @@ class C64Demo(PygameDemo):
 				self._enter("mos_team")
 				self.mos_team.restart()
 				self.processor_6502.restart()
+				self.pia_6520.restart()
+				self.via_6522.restart()
+				self.pia_via_sound_seconds = None
+				self.pia_and_via_have_joined_processor = False
 				self.basic_rom_901226.restart()
 				self.character_rom_901225.restart()
 				self.vic_chip_6560.restart()
@@ -212,32 +234,61 @@ class C64Demo(PygameDemo):
 	def _mos_team_step(self, seconds):
 		self.mos_team.update(seconds)
 		self._move_processor_with_mos_team_photos()
-		self.processor_6502.update(seconds)
-		if self.processor_6502.is_behind_photo:
-			self.processor_6502.draw()
-			self.mos_team.draw()
-		else:
-			self.mos_team.draw()
-			self.processor_6502.draw()
+		self._update_processor_with_pia_and_via(seconds)
+		chips_in_front_of_photo = []
+		for chip_animation in self._processor_with_pia_and_via():
+			if chip_animation.is_behind_photo:
+				chip_animation.draw()
+			else:
+				chips_in_front_of_photo.append(chip_animation)
+		self.mos_team.draw()
+		for chip_animation in chips_in_front_of_photo:
+			chip_animation.draw()
 		if self.mos_team.done:
 			self._enter("mos_acquisition")
 			self.chuck_peddle.place_at_bottom_middle()
 			self.chuck_peddle.drift_to_top_right_corner(self.chuck_peddle_drift_seconds)
 			self.processor_6502.zoom_out_to_top_left_corner(self.chuck_peddle_drift_seconds)
+			if self.pia_and_via_have_joined_processor:
+				self._line_up_pia_and_via_next_to_processor(self.chuck_peddle_drift_seconds)
 			self.mos_acquisition.restart()
 			self.mos_acquisition_sound_seconds = None
 
+	def _processor_with_pia_and_via(self):
+		return self.processor_6502, self.pia_6520, self.via_6522
+
 	def _move_processor_with_mos_team_photos(self):
 		incoming_picture_index = self.mos_team.incoming_picture_index
-		if incoming_picture_index == self.processor_arrives_with_picture_index and not self.processor_6502.visible:
-			self.processor_6502.slide_in_from_left(self.processor_slide_in_seconds)
+		transition_progress = self.mos_team.active_transition_progress
+		arrival_time_has_come = (incoming_picture_index == self.processor_arrives_with_picture_index
+		                         and transition_progress >= self.processor_arrives_at_transition_progress)
+		if arrival_time_has_come and not self.processor_6502.visible:
+			self.processor_6502.slide_into_left_margin(self.processor_slide_in_seconds)
 		hiding_time_has_come = (incoming_picture_index == self.processor_hides_with_picture_index
-		                        and self.mos_team.active_transition_progress >= self.processor_hides_at_transition_progress)
-		if hiding_time_has_come and not self.processor_6502.is_behind_photo:
+		                        and transition_progress >= self.processor_hides_at_transition_progress)
+		if hiding_time_has_come and not self.pia_6520.visible:
 			self.processor_6502.move_behind_photo(self.processor_hide_seconds)
+			self.pia_6520.slide_into_left_margin(self.pia_via_slide_in_seconds)
+			self.via_6522.slide_into_right_margin(self.pia_via_slide_in_seconds)
+			self.pia_via_sound.play()
+			self.pia_via_sound_seconds = 0.0
+
+	def _update_processor_with_pia_and_via(self, seconds):
+		for chip_animation in self._processor_with_pia_and_via():
+			chip_animation.update(seconds)
+		if self.pia_via_sound_seconds is None or self.pia_and_via_have_joined_processor:
+			return
+		self.pia_via_sound_seconds += seconds
+		if self.pia_via_sound_seconds >= self.pia_via_sound.get_length():
+			self._line_up_pia_and_via_next_to_processor(self.pia_via_join_seconds)
+			self.pia_and_via_have_joined_processor = True
+
+	def _line_up_pia_and_via_next_to_processor(self, travel_seconds):
+		self.pia_6520.rise_next_to(self.processor_6502, travel_seconds)
+		self.via_6522.rise_next_to(self.pia_6520, travel_seconds)
 
 	def _update_travellers(self, seconds):
-		self.processor_6502.update(seconds)
+		self._update_processor_with_pia_and_via(seconds)
 		self.basic_rom_901226.update(seconds)
 		self.character_rom_901225.update(seconds)
 		self.vic_chip_6560.update(seconds)
@@ -246,7 +297,8 @@ class C64Demo(PygameDemo):
 
 	def _update_and_draw_travellers(self, seconds):
 		self._update_travellers(seconds)
-		self.processor_6502.draw()
+		for chip_animation in self._processor_with_pia_and_via():
+			chip_animation.draw()
 		self.chuck_peddle.draw()
 
 	def _mos_acquisition_step(self, seconds):
@@ -277,7 +329,8 @@ class C64Demo(PygameDemo):
 		if self.basic_license.done:
 			self._destroy_everything_but_chuck_peddle()
 			self._enter("pet_introduction")
-			self.pet_introduction.begin(self.chuck_peddle, self.processor_6502, self.basic_rom_901226,
+			self.pet_introduction.begin(self.chuck_peddle, self.processor_6502, self.pia_6520, self.via_6522,
+			                            self.basic_rom_901226,
 			                            self.character_rom_901225)
 
 	def _move_basic_rom_with_basic_license(self):
@@ -285,7 +338,7 @@ class C64Demo(PygameDemo):
 			self.basic_rom_901226.appear_between_jack_and_bill(self.basic_rom_appear_seconds)
 		rom_is_still_between_jack_and_bill = self.basic_rom_901226.resting_pose.depth_behind_photo == 0.0
 		if self.basic_license.exit_has_started and rom_is_still_between_jack_and_bill:
-			self.basic_rom_901226.rise_next_to(self.processor_6502, self.basic_license.exit_seconds)
+			self.basic_rom_901226.rise_next_to(self.via_6522, self.basic_license.exit_seconds)
 
 	def _destroy_everything_but_chuck_peddle(self):
 		for finished_stage in (self.mos_team, self.mos_acquisition, self.basic_license):
@@ -311,9 +364,12 @@ class C64Demo(PygameDemo):
 			self.vic_sound.play()
 
 	def _draw_chips(self):
-		for chip_animation in (self.processor_6502, self.basic_rom_901226, self.character_rom_901225,
-		                       self.vic_chip_6560):
+		for chip_animation in self._chip_row():
 			chip_animation.draw()
+
+	def _chip_row(self):
+		return self._processor_with_pia_and_via() + (self.basic_rom_901226, self.character_rom_901225,
+		                                             self.vic_chip_6560)
 
 	def _al_charpentier_step(self, seconds):
 		self._update_travellers(seconds)
@@ -329,8 +385,7 @@ class C64Demo(PygameDemo):
 
 	def _chip_row_bottom_fraction(self):
 		return max(chip_animation.bottom_center_screen_fractions()[1]
-		           for chip_animation in (self.processor_6502, self.basic_rom_901226, self.character_rom_901225,
-		                                  self.vic_chip_6560))
+		           for chip_animation in self._chip_row())
 
 	def _start_year_1980_flashes(self):
 		top_margin_pixels = (self._chip_row_bottom_fraction() * self.year_flash_design_screen_height
@@ -351,7 +406,37 @@ class C64Demo(PygameDemo):
 		self.year_1980_flashes.draw()
 		if self.year_1980_flashes.finished:
 			self.year_1980_flashes.destroy()
+			self._enter("vic20_arrival")
+			self.vic20_arrival.begin()
+			self.chip_row_gap_is_closing = False
+
+	def _vic20_arrival_step(self, seconds):
+		self._update_travellers(seconds)
+		self.vic20_arrival.update(seconds)
+		pia_is_still_on_stage = self.pia_6520.pose.fraction_from_top >= 0.0 and not self.pia_6520.is_gliding
+		if self.vic20_arrival.playback_finished and pia_is_still_on_stage:
+			self.pia_6520.leave_through_top_edge(self.pia_leave_seconds)
+		self.vic20_arrival.draw()
+		self._draw_chips()
+		self.vic20_arrival.draw_overlay()
+		if self.pia_6520.has_left_through_top_edge and not self.chip_row_gap_is_closing:
+			self._close_gap_left_by_pia()
+		gap_is_closed = self.chip_row_gap_is_closing and not any(
+			chip_animation.is_gliding for chip_animation in self._chip_row())
+		if gap_is_closed and self.vic20_arrival.phase == "arrived":
+			self.vic20_arrival.list_chips((self.processor_6502, self.via_6522, self.basic_rom_901226,
+			                               self.character_rom_901225, self.vic_chip_6560))
+		if self.vic20_arrival.done:
+			self.vic20_arrival.destroy()
 			self._finish()
+
+	def _close_gap_left_by_pia(self):
+		self.chip_row_gap_is_closing = True
+		chips_right_of_pia = (self.via_6522, self.basic_rom_901226, self.character_rom_901225, self.vic_chip_6560)
+		left_neighbour = self.processor_6502
+		for chip_animation in chips_right_of_pia:
+			chip_animation.rise_next_to(left_neighbour, self.chip_row_gap_close_seconds)
+			left_neighbour = chip_animation
 
 	def _move_vic_chip_with_al_charpentier(self):
 		show = self.al_charpentier_show

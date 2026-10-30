@@ -98,6 +98,9 @@ class PictureSurface:
 		return (1.0 - self.width_in_screen_widths / 2 - horizontal_margin,
 		        self.height_in_screen_heights / 2 + margin_in_screen_heights)
 
+	def center_fractions_with_left_edge_on_screen_left(self, fraction_from_top):
+		return self.width_in_screen_widths / 2, fraction_from_top
+
 	def center_fractions_just_beyond_left_edge(self, fraction_from_top):
 		return -self.width_in_screen_widths / 2, fraction_from_top
 

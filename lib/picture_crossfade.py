@@ -20,6 +20,10 @@ class PictureCrossfade:
 		return smooth_step(min(1.0, self.elapsed_seconds / self.fade_seconds))
 
 	@property
+	def progress(self):
+		return min(1.0, self.elapsed_seconds / self.fade_seconds)
+
+	@property
 	def finished(self):
 		return self.elapsed_seconds >= self.fade_seconds
 

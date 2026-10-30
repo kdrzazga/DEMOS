@@ -1,0 +1,19 @@
+1. **1975:** MOS Technology creates the 6502. and MOS 6533 VIA
+2. **1976:** Commodore acquires MOS Technology.
+3. **1977:** Commodore licenses Microsoft BASIC (one-time fee), which becomes the basis of all later Commodore BASICs, including the C64's BASIC V2.
+4. **1977:** The PET is shown at CES (January) and ships later that year, led mainly by Chuck Peddle. It introduces the PETSCII character set (later in the C64 character ROM) and the KERNAL concept.
+5. **1977:** Al Charpentier designed the VIC video chip, but in 1977 there was no market for MOS 65 60 yet.
+6. **1980–81:** The VIC-20 is released (1980 in Japan, 1981 in the US and Europe), with the 6502 and the VIC chip.
+7. **January 1981:** Design of the VIC-II begins.
+8. **Second half of 1981:** Bob Yannes designs the SID in about five months.
+9. **1981–82:** The 6510 is created as a modified 6502 for the C64.
+10. **1981–82:** The CIA 6526 is created as the successor to the 6522 VIA.
+11. **Late 1981:** The C64 ROMs are prepared:
+    - BASIC ROM (901226-01): BASIC V2, taken from the VIC-20
+    - KERNAL ROM (901227-01): ported from the VIC-20 by Bob Russell
+    - Character ROM (901225-01): the PETSCII font from 1977
+12. **November 1981:** The VIC-II and SID are complete, and the decision is made to build the C64.
+13. **January 1982:** The C64 prototype is shown at CES in Las Vegas.
+14. **August 1982:** The Commodore 64 is released at $595.
+15. **1983–84:** KERNAL revisions -02 and -03 fix bugs and change the default screen colours.
+16. **About 1986:** The C64C appears. BASIC and KERNAL are merged into one 16 KB ROM (251913-01), the character ROM stays separate, and the SID is revised as the 8580.

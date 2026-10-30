@@ -8,10 +8,15 @@ from lib.particles import Texture2D
 from lib.typer import FONT_PATH
 
 RESOURCES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "res")
+COMMODORE_PICTURES = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "common", "commodore")
 
 
 def resource(file_name):
     return os.path.join(RESOURCES, file_name)
+
+
+def commodore_picture(file_name):
+    return os.path.join(COMMODORE_PICTURES, file_name)
 
 
 class ScreenOverlay:

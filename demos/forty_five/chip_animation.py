@@ -96,6 +96,10 @@ class ChipAnimation:
 		world_width = world_height * self.chip_width_with_legs / self.chip_length
 		return world_width / self.visible_width_on_photo_plane, world_height / self.visible_height_on_photo_plane
 
+	def bottom_center_screen_fractions(self):
+		_, height_fraction = self.screen_size_fractions(self.pose)
+		return self.pose.fraction_from_left, self.pose.fraction_from_top + height_fraction / 2
+
 	def height_matching_scale_of(self, other_chip_animation, pose_of_other_chip):
 		return pose_of_other_chip.height_in_photo_heights * self.chip_length / other_chip_animation.chip_length
 

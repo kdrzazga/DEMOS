@@ -12,7 +12,10 @@ of the machine falls away. "PROUDLY PRESENTS" is typed under the caption,
 held for a moment, and the camera flies forward through the caption. Behind
 it the MOS Technology team sequence plays (MosTeam). Then Chuck Peddle's photo
 rises from the bottom of the screen and drifts to the top-right corner while
-Jabba swings in from the left (MosAcquisition) - and the demo ends.
+Jabba swings in from the left (MosAcquisition), Jack Tramiel buys BASIC from
+Bill Gates (BasicLicense), and the PET arrives with the Character ROM; the three
+chips used in the PET are listed and linked to it (PetIntroduction) - and the
+demo ends.
 Chuck Peddle belongs to the demo, not to a stage, so he can travel between stages.
 Music: amorEspacial_AmigaManson.mp3 plays once from the end of the typing;
 65xx.mp3 plays on top of it from the moment the MOS logo flies in.
@@ -41,6 +44,8 @@ from demos.forty_five.intro import IntroCaptionVideo
 from demos.forty_five.mos_team75 import MosTeamFactory
 from demos.forty_five.animation6502 import Processor6502Animation
 from demos.forty_five.animation901226 import BasicRom901226Animation
+from demos.forty_five.animation901225 import CharacterRom901225Animation
+from demos.forty_five.pet77 import PetIntroduction
 from demos.forty_five.scene import setup_scene
 from demos.forty_five.typed_label import TypedLabel
 
@@ -64,7 +69,6 @@ class C64Demo(PygameDemo):
 		self.mos_team_sound_path = os.path.join(self.resources, "history", "mos", "65xx.mp3")
 		self.mos_acquisition_sound_path = os.path.join(self.resources, "history", "mos", "76acquisition.mp3")
 		self.chuck_peddle_drift_seconds = 6.0
-		self.chuck_peddle_alone_hold_seconds = 2.0
 		self.processor_arrives_with_picture_index = 3
 		self.processor_hides_with_picture_index = 4
 		self.processor_hides_at_transition_progress = 0.5
@@ -91,6 +95,9 @@ class C64Demo(PygameDemo):
 		self.basic_rom_901226 = BasicRom901226Animation(aspect, self.fov, self.mos_team.camera_distance,
 		                                                self.mos_team.picture_width,
 		                                                self.mos_team.params.picture_height)
+		self.character_rom_901225 = CharacterRom901225Animation(aspect, self.fov, self.mos_team.camera_distance,
+		                                                        self.mos_team.picture_width,
+		                                                        self.mos_team.params.picture_height)
 
 		self.screen_plane = ScreenPlane(aspect, self.fov)
 		self.chuck_peddle = ChuckPeddleSurface(self.screen_plane)
@@ -98,6 +105,7 @@ class C64Demo(PygameDemo):
 		self.mos_acquisition_sound = self._load_sound(self.mos_acquisition_sound_path)
 		self.mos_acquisition_sound_seconds = None
 		self.basic_license = BasicLicense(self.screen_plane)
+		self.pet_introduction = PetIntroduction(self.screen_plane)
 
 		self.intro = IntroCaptionVideo(os.path.join(self.resources, self.intro_video),
 		                        os.path.join(self.resources, self.intro_audio), aspect)
@@ -126,8 +134,8 @@ class C64Demo(PygameDemo):
 			self._mos_acquisition_step(seconds)
 		elif self.phase == "basic_license":
 			self._basic_license_step(seconds)
-		elif self.phase == "chuck_peddle_alone":
-			self._chuck_peddle_alone_step(seconds)
+		elif self.phase == "pet_introduction":
+			self._pet_introduction_step(seconds)
 		else:
 			self._caption_step()
 
@@ -152,6 +160,7 @@ class C64Demo(PygameDemo):
 				self.mos_team.restart()
 				self.processor_6502.restart()
 				self.basic_rom_901226.restart()
+				self.character_rom_901225.restart()
 				self.mos_team_sound.play()
 
 		self.animation.draw()
@@ -187,10 +196,15 @@ class C64Demo(PygameDemo):
 		if hiding_time_has_come and not self.processor_6502.is_behind_photo:
 			self.processor_6502.move_behind_photo(self.processor_hide_seconds)
 
-	def _update_and_draw_travellers(self, seconds):
+	def _update_travellers(self, seconds):
 		self.processor_6502.update(seconds)
 		self.basic_rom_901226.update(seconds)
-		self.chuck_peddle.update(seconds)
+		self.character_rom_901225.update(seconds)
+		if self.chuck_peddle is not None:
+			self.chuck_peddle.update(seconds)
+
+	def _update_and_draw_travellers(self, seconds):
+		self._update_travellers(seconds)
 		self.processor_6502.draw()
 		self.chuck_peddle.draw()
 
@@ -221,7 +235,9 @@ class C64Demo(PygameDemo):
 		self.basic_rom_901226.draw()
 		if self.basic_license.done:
 			self._destroy_everything_but_chuck_peddle()
-			self._enter("chuck_peddle_alone")
+			self._enter("pet_introduction")
+			self.pet_introduction.begin(self.chuck_peddle, self.processor_6502, self.basic_rom_901226,
+			                            self.character_rom_901225)
 
 	def _move_basic_rom_with_basic_license(self):
 		if self.basic_license.talk_finished and not self.basic_rom_901226.visible:
@@ -237,10 +253,19 @@ class C64Demo(PygameDemo):
 		self.mos_acquisition = None
 		self.basic_license = None
 
-	def _chuck_peddle_alone_step(self, seconds):
-		self._update_and_draw_travellers(seconds)
-		self.basic_rom_901226.draw()
-		if self.phase_seconds >= self.chuck_peddle_alone_hold_seconds:
+	def _pet_introduction_step(self, seconds):
+		self._update_travellers(seconds)
+		self.pet_introduction.update(seconds)
+		if self.pet_introduction.peddle_destroyed:
+			self.chuck_peddle = None
+		self.pet_introduction.draw_pet()
+		if self.chuck_peddle is not None:
+			self.chuck_peddle.draw()
+		for chip_animation in (self.processor_6502, self.basic_rom_901226, self.character_rom_901225):
+			chip_animation.draw()
+		self.pet_introduction.draw_overlay()
+		if self.pet_introduction.done:
+			self.pet_introduction.destroy()
 			self._finish()
 
 	@staticmethod

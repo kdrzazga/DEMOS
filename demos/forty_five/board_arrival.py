@@ -7,6 +7,8 @@ from lib.flying_logo import ease_out_cubic
 from lib.laser_line import smooth_step
 from demos.forty_five.c64breadbox.c64_board import C64Board
 from demos.forty_five.c64breadbox.layout import BoardLayoutFactory
+from demos.forty_five.chips.mos906114 import MOS906114
+from demos.forty_five.chips.ttl74xx import TTL74xx
 from demos.forty_five.rotation import rotation_x, rotation_y
 
 
@@ -28,8 +30,18 @@ class BoardArrival:
 		self.light_direction = (-0.35, 1.0, 0.7, 0.0)
 		self.board = C64Board(BoardLayoutFactory.create_assy_250425())
 		self.board.build()
+		self.preinstalled_chips = self._preinstall_chips((("PLA", MOS906114()), ("U31", TTL74xx("74LS629", 16))))
 		self.elapsed_seconds = None
 		self.showcase_elapsed_seconds = None
+
+	def _preinstall_chips(self, socket_names_and_chips):
+		for socket_name, chip in socket_names_and_chips:
+			seat = self.board.seat(socket_name)
+			if not chip.fits(seat):
+				raise ValueError(f"{chip.label} does not fit socket {socket_name}")
+			chip.build()
+			chip.place_in(seat)
+		return tuple(chip for _, chip in socket_names_and_chips)
 
 	@property
 	def started(self):
@@ -122,8 +134,12 @@ class BoardArrival:
 		glRotatef(self._sway_pitch_degrees(), 1.0, 0.0, 0.0)
 		glRotatef(self._spin_yaw_degrees(), 0.0, 1.0, 0.0)
 		self.board.draw()
+		for chip in self.preinstalled_chips:
+			chip.draw()
 		glPopMatrix()
 		glPopAttrib()
 
 	def destroy(self):
 		self.board.destroy()
+		for chip in self.preinstalled_chips:
+			chip.destroy()

@@ -128,8 +128,8 @@ class BoardLayoutFactory:
 				SocketSpec("ROM_BASIC", "MOS 901226-01", (740, 584), DilPackage.wide(24)),
 				SocketSpec("ROM_KERNAL", "MOS 901227-02", (897, 584), DilPackage.wide(24)),
 				SocketSpec("CPU", "MOS 6510", (1087, 525), DilPackage.wide(40)),
-				SocketSpec("PLA", "MOS 906114-01", (1285, 460), DilPackage.wide(28)),
-				SocketSpec("SID", "MOS 6581", (1382, 940), DilPackage.wide(28)),
+				SocketSpec("SID", "MOS 6581", (1285, 460), DilPackage.wide(28)),
+				SocketSpec("PLA", "MOS 906114-01", (1382, 940), DilPackage.wide(28)),
 				SocketSpec("VIC", "MOS 6569", (2000, 1112), DilPackage.wide(40), "left"),
 			) + ram_sockets + (
 				SocketSpec("U31", "U31", (2117, 952), DilPackage.narrow(16), "left"),

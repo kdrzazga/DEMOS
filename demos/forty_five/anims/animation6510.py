@@ -1,6 +1,6 @@
 from lib.flying_logo import ease_out_cubic
 from lib.laser_line import smooth_step
-from demos.forty_five.chip_animation import ChipAnimation, ChipPose
+from demos.forty_five.anims.chip_animation import ChipAnimation, ChipPose
 from demos.forty_five.chips.mos65xx import MOS65xx
 
 

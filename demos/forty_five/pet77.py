@@ -11,7 +11,7 @@ FORTY_FIVE_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 PET_IMAGE_PATH = os.path.join(os.path.dirname(FORTY_FIVE_DIRECTORY), "common", "commodore", "pet.png")
 PET_SOUND_PATH = os.path.join(FORTY_FIVE_DIRECTORY, "resources", "history", "c=", "77PET.mp3")
 PET_CHIPS_HEADER = "Chips used in PET:"
-PET_CHIP_NAMES = ("Processor 6502", "PIA", "VIA", "BASIC ROM", "Character ROM")
+PET_CHIP_NAMES = ("Processor 6502", "PIA (I/O support)", "VIA (I/O support)", "BASIC ROM", "Character ROM")
 
 
 class PetIntroduction:

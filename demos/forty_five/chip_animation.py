@@ -8,32 +8,39 @@ from lib.laser_line import smooth_step
 
 class ChipPose:
 
-	def __init__(self, fraction_from_left, fraction_from_top, depth_behind_photo, height_in_photo_heights):
+	def __init__(self, fraction_from_left, fraction_from_top, depth_behind_photo, height_in_photo_heights,
+	             roll_degrees=0.0):
 		self.fraction_from_left = fraction_from_left
 		self.fraction_from_top = fraction_from_top
 		self.depth_behind_photo = depth_behind_photo
 		self.height_in_photo_heights = height_in_photo_heights
+		self.roll_degrees = roll_degrees
 
-	def blended_toward(self, target_pose, progress):
-		def blend(start_value, target_value):
-			return start_value + (target_value - start_value) * progress
+	def blended_toward(self, target_pose, progress, roll_progress):
+		def blend(start_value, target_value, blend_progress=progress):
+			return start_value + (target_value - start_value) * blend_progress
 		return ChipPose(blend(self.fraction_from_left, target_pose.fraction_from_left),
 		                blend(self.fraction_from_top, target_pose.fraction_from_top),
 		                blend(self.depth_behind_photo, target_pose.depth_behind_photo),
-		                blend(self.height_in_photo_heights, target_pose.height_in_photo_heights))
+		                blend(self.height_in_photo_heights, target_pose.height_in_photo_heights),
+		                blend(self.roll_degrees, target_pose.roll_degrees, roll_progress))
 
 	def with_height(self, height_in_photo_heights):
 		return ChipPose(self.fraction_from_left, self.fraction_from_top, self.depth_behind_photo,
-		                height_in_photo_heights)
+		                height_in_photo_heights, self.roll_degrees)
+
+	def copy(self):
+		return self.with_height(self.height_in_photo_heights)
 
 
 class ChipPoseGlide:
 
-	def __init__(self, start_pose, target_pose, glide_seconds, easing):
+	def __init__(self, start_pose, target_pose, glide_seconds, easing, roll_easing):
 		self.start_pose = start_pose
 		self.target_pose = target_pose
 		self.glide_seconds = glide_seconds
 		self.easing = easing
+		self.roll_easing = roll_easing
 		self.elapsed_seconds = 0.0
 
 	def update(self, seconds):
@@ -46,7 +53,7 @@ class ChipPoseGlide:
 	@property
 	def current_pose(self):
 		progress = min(1.0, self.elapsed_seconds / self.glide_seconds)
-		return self.start_pose.blended_toward(self.target_pose, self.easing(progress))
+		return self.start_pose.blended_toward(self.target_pose, self.easing(progress), self.roll_easing(progress))
 
 
 class ChipAnimation:
@@ -94,8 +101,12 @@ class ChipAnimation:
 		return self.photo_camera_distance / (self.photo_camera_distance + pose.depth_behind_photo)
 
 	def screen_size_fractions(self, pose):
-		world_height = pose.height_in_photo_heights * self.photo_height * self._apparent_scale(pose)
-		world_width = world_height * self.chip_width_with_legs / self.chip_length
+		chip_world_length = pose.height_in_photo_heights * self.photo_height * self._apparent_scale(pose)
+		chip_world_width = chip_world_length * self.chip_width_with_legs / self.chip_length
+		roll_radians = math.radians(pose.roll_degrees)
+		roll_cosine, roll_sine = abs(math.cos(roll_radians)), abs(math.sin(roll_radians))
+		world_width = roll_cosine * chip_world_width + roll_sine * chip_world_length
+		world_height = roll_sine * chip_world_width + roll_cosine * chip_world_length
 		return world_width / self.visible_width_on_photo_plane, world_height / self.visible_height_on_photo_plane
 
 	def bottom_center_screen_fractions(self):
@@ -174,9 +185,9 @@ class ChipAnimation:
 		resting_pose.fraction_from_top = neighbour_top + own_height / 2
 		return resting_pose
 
-	def glide_to(self, target_pose, glide_seconds, easing=smooth_step):
+	def glide_to(self, target_pose, glide_seconds, easing=smooth_step, roll_easing=None):
 		self.visible = True
-		self.active_glide = ChipPoseGlide(self.pose, target_pose, glide_seconds, easing)
+		self.active_glide = ChipPoseGlide(self.pose, target_pose, glide_seconds, easing, roll_easing or easing)
 
 	def rise_next_to(self, neighbour_chip_animation, rise_seconds):
 		self.glide_to(self.pose_right_of_with_tops_aligned(neighbour_chip_animation,
@@ -218,6 +229,7 @@ class ChipAnimation:
 		glLoadIdentity()
 		glLightfv(GL_LIGHT0, GL_POSITION, self.light_direction)
 		glTranslatef(*self._world_position())
+		glRotatef(self.pose.roll_degrees, 0.0, 0.0, 1.0)
 		glRotatef(self.sway_yaw_amplitude_degrees * math.sin(sway_angle), 0.0, 1.0, 0.0)
 		glRotatef(self.sway_pitch_amplitude_degrees * math.sin(sway_angle * 0.7), 1.0, 0.0, 0.0)
 		glRotatef(90.0, 1.0, 0.0, 0.0)

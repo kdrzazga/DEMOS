@@ -52,6 +52,8 @@ from demos.forty_five.animation901225 import CharacterRom901225Animation
 from demos.forty_five.animation6560 import VicChip6560Animation
 from demos.forty_five.pet77 import PetIntroduction
 from demos.forty_five.vic20_80 import Vic20Arrival
+from demos.forty_five.animation6510 import Processor6510Animation
+from demos.forty_five.mos6510_82 import Mos6510Arrival
 from demos.forty_five.scene import setup_scene
 from demos.forty_five.typed_label import TypedLabel
 
@@ -144,6 +146,9 @@ class C64Demo(PygameDemo):
 		self.al_charpentier_show = MosTeamFactory.create_al_charpentier_show(aspect, self.fov)
 		self.vic_sound = self._load_sound(self.vic_sound_path)
 		self.vic20_arrival = Vic20Arrival(self.screen_plane)
+		self.processor_6510 = Processor6510Animation(aspect, self.fov, self.mos_team.camera_distance,
+		                                             self.mos_team.picture_width, self.mos_team.params.picture_height)
+		self.mos6510_arrival = Mos6510Arrival(self.screen_plane)
 
 		self.intro = IntroCaptionVideo(os.path.join(self.resources, self.intro_video),
 		                        os.path.join(self.resources, self.intro_audio), aspect)
@@ -180,13 +185,16 @@ class C64Demo(PygameDemo):
 			self._year_1980_step(seconds)
 		elif self.phase == "vic20_arrival":
 			self._vic20_arrival_step(seconds)
+		elif self.phase == "mos6510_arrival":
+			self._mos6510_arrival_step(seconds)
 		else:
 			self._caption_step()
 		self._lower_music_while_speaking()
 
 	def _spoken_sounds(self):
 		spoken_sounds = [self.mos_team_sound, self.pia_via_sound, self.mos_acquisition_sound,
-		                 self.pet_introduction.pet_sound, self.vic_sound, self.vic20_arrival.vic20_sound]
+		                 self.pet_introduction.pet_sound, self.vic_sound, self.vic20_arrival.vic20_sound,
+		                 self.mos6510_arrival.mos6510_sound]
 		if self.basic_license is not None:
 			spoken_sounds.append(self.basic_license.basic_license_sound)
 		return spoken_sounds
@@ -294,6 +302,7 @@ class C64Demo(PygameDemo):
 		self.basic_rom_901226.update(seconds)
 		self.character_rom_901225.update(seconds)
 		self.vic_chip_6560.update(seconds)
+		self.processor_6510.update(seconds)
 		if self.chuck_peddle is not None:
 			self.chuck_peddle.update(seconds)
 
@@ -430,6 +439,17 @@ class C64Demo(PygameDemo):
 			                               self.character_rom_901225, self.vic_chip_6560))
 		if self.vic20_arrival.done:
 			self.vic20_arrival.destroy()
+			self._enter("mos6510_arrival")
+			self.mos6510_arrival.begin(self.processor_6510, self.processor_6502)
+
+	def _mos6510_arrival_step(self, seconds):
+		self._update_travellers(seconds)
+		self.mos6510_arrival.update(seconds)
+		self._draw_chips()
+		self.processor_6510.draw()
+		self.mos6510_arrival.draw_overlay()
+		if self.mos6510_arrival.done:
+			self.mos6510_arrival.destroy()
 			self._finish()
 
 	def _close_gap_left_by_pia(self):

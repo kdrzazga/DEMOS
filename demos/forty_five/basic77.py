@@ -53,7 +53,7 @@ class BasicLicense:
 		self.speech_bubble_shift_right_in_bubble_widths = 0.6
 		self.speech_bubble_shift_down_in_bubble_heights = 0.6
 		self.speech_bubble_nudge_up_in_screen_heights = 0.025
-		self.speech_bubble_nudge_right_in_screen_heights = 0.075
+		self.speech_bubble_nudge_right_in_screen_heights = 0.1
 		self.seconds_after_sound_before_exit = 0.5
 		self.exit_seconds = 1.5
 		self.bill_picture = PictureTexture.load(BILL_GATES_IMAGE_PATH)

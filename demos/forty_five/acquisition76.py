@@ -46,7 +46,7 @@ class MosAcquisition:
 		self.pause_seconds_between_year_flashes = 0.25
 		self.year_flash_color = (230, 40, 40)
 		self.year_flash_font_pixel_size = 110
-		self.year_flash_margin_from_top_left_pixels = (170.0, 110.0)
+		self.year_flash_margin_from_top_left_pixels = (115.0, 110.0)
 		self.year_flash_gap_below_chips_pixels = 30.0
 		self.design_screen_height = 800.0
 		self.hold_seconds_after_speech = 1.0

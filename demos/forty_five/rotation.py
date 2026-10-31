@@ -15,6 +15,12 @@ def rotation_y(degrees):
 	return np.array(((cosine, 0.0, sine), (0.0, 1.0, 0.0), (-sine, 0.0, cosine)))
 
 
+def rotation_z(degrees):
+	angle = math.radians(degrees)
+	cosine, sine = math.cos(angle), math.sin(angle)
+	return np.array(((cosine, -sine, 0.0), (sine, cosine, 0.0), (0.0, 0.0, 1.0)))
+
+
 def quaternion_from_matrix(rotation):
 	trace = np.trace(rotation)
 	if trace > 0.0:

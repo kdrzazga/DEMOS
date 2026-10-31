@@ -42,6 +42,11 @@ class Key:
 		self.graphic_cap_height = 0.72
 		self.graphic_centres = ((0.32, 0.74), (0.68, 0.74))
 		self.graphic_line_px = 3
+		self.shows_graphic_squares = True
+		self.legend_font_px = None
+		self.shifted_font_px = 40
+		self.shifted_centre_y = 0.24
+		self.legend_below_shifted_centre_y = 0.6
 
 		self.footprint_gap = 0.14
 		self.side_taper = 0.22
@@ -82,7 +87,7 @@ class Key:
 		return self.petscii_graphics or (len(self.legend) == 1 and self.legend.isalpha())
 
 	def _graphic_squares(self):
-		if not self._has_graphics():
+		if not self._has_graphics() or not self.shows_graphic_squares:
 			return ()
 		side_px = round(self.letter_font_px * self.graphic_cap_height * self.graphic_scale)
 		return tuple((side_px, self.graphic_line_px, self.ink, centre) for centre in self.graphic_centres)
@@ -99,15 +104,15 @@ class Key:
 		lines = []
 		legend_rows = self.legend.split("\n")
 		if self.shifted:
-			lines.append((self.shifted, 40, self.ink, (0.5, 0.24)))
+			lines.append((self.shifted, self.shifted_font_px, self.ink, (0.5, self.shifted_centre_y)))
 		if len(legend_rows) > 1:
 			lines.append((legend_rows[0], 30, self.ink, (0.5, 0.36)))
 			lines.append((legend_rows[1], 30, self.ink, (0.5, 0.66)))
 		elif self.legend:
-			font_px = 60 if len(self.legend) <= 2 else 30
-			if self.shifted:
+			font_px = self.legend_font_px or (60 if len(self.legend) <= 2 else 30)
+			if self.shifted and self.legend_font_px is None:
 				font_px = min(font_px, 46)
-			centre_y = 0.6 if self.shifted else (0.42 if self.subtitle else 0.5)
+			centre_y = self.legend_below_shifted_centre_y if self.shifted else (0.42 if self.subtitle else 0.5)
 			lines.append((self.legend, font_px, self.ink, (0.5, centre_y)))
 		if self.subtitle:
 			lines.append((self.subtitle, 22, self.ink, (0.5, 0.86)))
@@ -172,8 +177,11 @@ class FunctionKey(Key):
 	def __init__(self, legend, subtitle, pygame_keys):
 		super().__init__(legend, subtitle=subtitle, width=1.5, pygame_keys=pygame_keys,
 		                 cap_color=FUNCTION_KEY_TAN)
+		self.centred_caption = None
 
 	def _legend_lines(self):
+		if self.centred_caption is not None:
+			return ((self.centred_caption, 46, self.ink, (0.5, 0.5)),)
 		return ((self.legend, 46, self.ink, (0.27, 0.3)),
 		        (self.subtitle, 46, self.ink, (0.73, 0.7)))
 
@@ -510,3 +518,22 @@ class KeyF7(FunctionKey):
 class KeySpace(Key):
 	def __init__(self):
 		super().__init__("", width=9.0, pygame_keys=(pygame.K_SPACE,))
+
+
+def c64_keyboard_rows():
+	return (
+		(KeyArrowLeft(), Key1(), Key2(), Key3(), Key4(), Key5(), Key6(), Key7(),
+		 Key8(), Key9(), Key0(), KeyPlus(), KeyMinus(), KeyPound(), KeyClrHome(),
+		 KeyInstDel()),
+		(KeyControl(), KeyQ(), KeyW(), KeyE(), KeyR(), KeyT(), KeyY(), KeyU(),
+		 KeyI(), KeyO(), KeyP(), KeyAt(), KeyAsterisk(), KeyArrowUp(), KeyRestore()),
+		(KeyRunStop(), KeyShiftLock(), KeyA(), KeyS(), KeyD(), KeyF(), KeyG(), KeyH(),
+		 KeyJ(), KeyK(), KeyL(), KeyColon(), KeySemicolon(), KeyEquals(), KeyReturn()),
+		(KeyCommodore(), KeyLeftShift(), KeyZ(), KeyX(), KeyC(), KeyV(), KeyB(), KeyN(),
+		 KeyM(), KeyLessThan(), KeyGreaterThan(), KeyQuestionMark(), KeyRightShift(),
+		 KeyCursorUpDown(), KeyCursorLeftRight()),
+	)
+
+
+def c64_function_keys():
+	return KeyF1(), KeyF3(), KeyF5(), KeyF7()

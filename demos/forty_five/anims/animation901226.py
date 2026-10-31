@@ -1,4 +1,4 @@
-from demos.forty_five.rom_animation import Rom901xxxAnimation
+from demos.forty_five.anims.rom_animation import Rom901xxxAnimation
 
 
 class BasicRom901226Animation(Rom901xxxAnimation):

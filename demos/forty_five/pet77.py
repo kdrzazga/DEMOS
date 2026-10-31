@@ -11,7 +11,8 @@ FORTY_FIVE_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 PET_IMAGE_PATH = os.path.join(os.path.dirname(FORTY_FIVE_DIRECTORY), "common", "commodore", "pet.png")
 PET_SOUND_PATH = os.path.join(FORTY_FIVE_DIRECTORY, "resources", "history", "c=", "77PET.mp3")
 PET_CHIPS_HEADER = "Chips used in PET:"
-PET_CHIP_NAMES = ("Processor 6502", "PIA", "VIA", "BASIC ROM", "Character ROM")
+PET_CHIP_NAMES = ("Processor 6502", "PIA (I/O support)", "VIA (I/O support)", "BASIC ROM", "Character ROM",
+                  "KERNAL ROM")
 
 
 class PetIntroduction:
@@ -28,6 +29,7 @@ class PetIntroduction:
 		self.rom_sway_seconds = 2.0
 		self.rom_join_seconds = 2.0
 		self.rom_fraction_from_top = 0.72
+		self.gap_between_appearing_roms_fraction = 0.02
 		self.clear_stage_seconds = 1.5
 		self.final_hold_seconds = 2.0
 		self.pet_drop_seconds = 1.5
@@ -37,9 +39,14 @@ class PetIntroduction:
 		                          swing_amplitude_degrees=self.pet_swing_amplitude_degrees)
 		self.pet_sound = self._load_sound(PET_SOUND_PATH)
 		self.chip_listing = ChipListing(screen_plane, PET_CHIPS_HEADER, PET_CHIP_NAMES, self.pet,
-		                                ((0.25, 0.05), (0.375, 0.05), (0.5, 0.05), (0.625, 0.05), (0.75, 0.05)))
+		                                ((0.25, 0.05), (0.35, 0.05), (0.45, 0.05), (0.55, 0.05), (0.65, 0.05),
+		                                 (0.75, 0.05)))
+		self.chip_listing_margin_in_screen_heights = 0.04
+		self.chip_listing.place_in_bottom_right_corner(self.chip_listing_margin_in_screen_heights
+		                                               * screen_plane.visible_height)
 		self.chuck_peddle = None
 		self.character_rom = None
+		self.kernal_rom = None
 		self.peddle_destroyed = False
 		self.phase = "idle"
 		self.phase_seconds = 0.0
@@ -50,12 +57,13 @@ class PetIntroduction:
 			pygame.mixer.init()
 		return pygame.mixer.Sound(sound_path)
 
-	def begin(self, chuck_peddle, processor, pia, via, basic_rom, character_rom):
+	def begin(self, chuck_peddle, processor, pia, via, basic_rom, character_rom, kernal_rom):
 		self.chuck_peddle = chuck_peddle
 		self.basic_rom = basic_rom
 		self.character_rom = character_rom
+		self.kernal_rom = kernal_rom
 		self.peddle_destroyed = False
-		self.chip_listing.begin((processor, pia, via, basic_rom, character_rom))
+		self.chip_listing.begin((processor, pia, via, basic_rom, character_rom, kernal_rom))
 		self.pet_drop_start_y = None
 		self._enter("wait")
 
@@ -79,11 +87,12 @@ class PetIntroduction:
 		if self.phase == "wait" and self.phase_seconds >= self.wait_seconds:
 			self._start_pet_arrival()
 		elif self.phase == "pet_arrives" and self.phase_seconds >= self.pet_sound.get_length():
-			self._show_character_rom()
+			self._show_character_and_kernal_roms()
 		elif self.phase == "rom_sways" and self.phase_seconds >= self.rom_appear_seconds + self.rom_sway_seconds:
 			self.character_rom.rise_next_to(self.basic_rom, self.rom_join_seconds)
+			self.kernal_rom.rise_next_to(self.character_rom, self.rom_join_seconds)
 			self._enter("rom_joins")
-		elif self.phase == "rom_joins" and not self.character_rom.is_gliding:
+		elif self.phase == "rom_joins" and not self.character_rom.is_gliding and not self.kernal_rom.is_gliding:
 			self._clear_stage()
 		elif self.phase == "clear_stage" and self.phase_seconds >= self.clear_stage_seconds:
 			self._destroy_peddle()
@@ -121,12 +130,18 @@ class PetIntroduction:
 		self.pet.glide_center_to((self.pet_rest_fraction_from_left, pet_fraction_from_top), self.pet_enter_seconds,
 		                         easing=ease_out_cubic)
 
-	def _show_character_rom(self):
+	def _show_character_and_kernal_roms(self):
 		self._enter("rom_sways")
 		pet_right_edge = self.pet.center_screen_fractions[0] + self.pet.width_in_screen_widths / 2
 		peddle_left_edge = self.chuck_peddle.center_screen_fractions[0] - self.chuck_peddle.width_in_screen_widths / 2
-		self.character_rom.appear_at((pet_right_edge + peddle_left_edge) / 2, self.rom_fraction_from_top,
+		middle_between_pet_and_peddle = (pet_right_edge + peddle_left_edge) / 2
+		self.character_rom.appear_at(middle_between_pet_and_peddle, self.rom_fraction_from_top, self.rom_appear_seconds)
+		rom_width_fraction, _ = self.character_rom.screen_size_fractions(self.character_rom.resting_pose)
+		half_rom_spacing = (rom_width_fraction + self.gap_between_appearing_roms_fraction) / 2
+		self.character_rom.appear_at(middle_between_pet_and_peddle - half_rom_spacing, self.rom_fraction_from_top,
 		                             self.rom_appear_seconds)
+		self.kernal_rom.appear_at(middle_between_pet_and_peddle + half_rom_spacing, self.rom_fraction_from_top,
+		                          self.rom_appear_seconds)
 
 	def _clear_stage(self):
 		self._enter("clear_stage")

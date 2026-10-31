@@ -62,6 +62,10 @@ class SpeechBubble:
 		return self.width * self.units_per_pixel
 
 	@property
+	def world_height(self):
+		return self.height * self.units_per_pixel
+
+	@property
 	def speaking(self):
 		return self.started and self.elapsed < self.length
 

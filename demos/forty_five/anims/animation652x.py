@@ -1,4 +1,4 @@
-from demos.forty_five.chip_animation import ChipAnimation
+from demos.forty_five.anims.chip_animation import ChipAnimation
 from demos.forty_five.chips.mos652x import MOS652x
 
 

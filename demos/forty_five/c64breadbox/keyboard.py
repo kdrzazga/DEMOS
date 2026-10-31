@@ -49,6 +49,10 @@ class Keyboard:
 				key.shifted_font_px = self.number_symbol_font_px
 				key.shifted_centre_y = self.number_symbol_centre_y
 				key.legend_below_shifted_centre_y = self.number_below_symbol_centre_y
+		self.single_symbol_key_classes = (k.KeyArrowUp,)
+		for key in self.main_keys:
+			if isinstance(key, self.single_symbol_key_classes):
+				key.shifted = ""
 		self.function_key_captions = ("F1", "F3", "F5", "F7")
 		for key, caption in zip(self.function_keys, self.function_key_captions):
 			key.centred_caption = caption

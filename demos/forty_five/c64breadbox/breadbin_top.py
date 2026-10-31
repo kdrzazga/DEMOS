@@ -4,7 +4,7 @@ import pygame
 from OpenGL.GL import *
 
 from demos.forty_five.c64breadbox.opening_face import OpeningFace
-from demos.forty_five.geometry import color, quad, text_texture, upload_texture
+from demos.forty_five.geometry import color, quad, upload_texture
 
 
 class KeyboardFace:
@@ -94,14 +94,14 @@ class BreadbinTop:
 		self.groove_rgb = (96, 92, 82)
 		self.grill_margin_share = 0.008
 		self.grill_gap_share = 0.006
-		self.power_led_share_from_left = 0.874
-		self.power_led_gap_share = 0.03
+		self.power_led_share_from_left = 0.905
 		self.power_led_radius = 0.25
 		self.power_led_segments = 24
 		self.power_led_rgb = (120, 22, 16)
 		self.power_label_text = "POWER"
-		self.power_label_width = 1.3
-		self.power_label_height = 0.32
+		self.power_label_letters_width = 1.29
+		self.power_label_font_px = 96
+		self.power_label_aspect = 1.0
 		self.power_label_gap = 0.15
 		self.power_label_ink = (70, 66, 58)
 		self._power_label_texture = None
@@ -128,8 +128,7 @@ class BreadbinTop:
 		badge_picture = pygame.image.load(self.layout.badge_picture_path)
 		self._badge_aspect = badge_picture.get_width() / badge_picture.get_height()
 		self._badge_texture = upload_texture(badge_picture)
-		self._power_label_texture = text_texture(256, 64, (0, 0, 0, 0),
-		                                         ((self.power_label_text, 44, self.power_label_ink, (0.5, 0.5)),))
+		self._power_label_texture = upload_texture(self._power_label_letters())
 		self._display_list = glGenLists(1)
 		glNewList(self._display_list, GL_COMPILE)
 		self._draw_shell()
@@ -197,8 +196,10 @@ class BreadbinTop:
 		back_share, front_share = self._badge_back_and_front_shares()
 		groove_depth_share = self.groove_width / self._strip_depth()
 		badge_right_share = self.badge_left_share + self.badge_width_share
-		led_left_share = self.power_led_share_from_left - self.power_led_gap_share
-		led_right_share = self.power_led_share_from_left + self.power_led_gap_share
+		label_left_share, _ = self._power_label_shares()
+		led_left_share = label_left_share - self.grill_gap_share
+		led_right_share = (self.power_led_share_from_left + self.power_led_radius / (2 * self.half_width)
+		                   + self.grill_gap_share)
 		spans = ((self.grill_margin_share, self.badge_left_share - self.grill_gap_share),
 		         (badge_right_share + self.grill_gap_share, led_left_share),
 		         (led_right_share, 1.0 - self.grill_margin_share))
@@ -225,12 +226,23 @@ class BreadbinTop:
 			           centre_z + self.power_led_radius * math.sin(angle))
 		glEnd()
 
-	def _draw_power_label(self):
+	def _power_label_letters(self):
+		pygame.font.init()
+		rendered = pygame.font.SysFont("arial", self.power_label_font_px, bold=True).render(
+			self.power_label_text, True, self.power_label_ink)
+		letters = rendered.subsurface(rendered.get_bounding_rect()).copy()
+		self.power_label_aspect = letters.get_width() / letters.get_height()
+		return letters
+
+	def _power_label_shares(self):
 		strip_width = 2 * self.half_width
 		right_share = (self.power_led_share_from_left
 		               - (self.power_led_radius + self.power_label_gap) / strip_width)
-		left_share = right_share - self.power_label_width / strip_width
-		half_depth_share = self.power_label_height / self._strip_depth() / 2
+		return right_share - self.power_label_letters_width / strip_width, right_share
+
+	def _draw_power_label(self):
+		left_share, right_share = self._power_label_shares()
+		half_depth_share = self.power_label_letters_width / self.power_label_aspect / self._strip_depth() / 2
 		glEnable(GL_BLEND)
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 		self._draw_strip_texture(self._power_label_texture, left_share, right_share,

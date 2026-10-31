@@ -54,7 +54,9 @@ from demos.forty_five.anims.animation6560 import VicChip6560Animation
 from demos.forty_five.pet77 import PetIntroduction
 from demos.forty_five.vic20_80 import Vic20Arrival
 from demos.forty_five.anims.animation6510 import Processor6510Animation
-from demos.forty_five.mos6510_82 import Mos6510Arrival
+from demos.forty_five.anims.animation6567 import VicIIChip6567Animation
+from demos.forty_five.chip_replacement import (ChipReplacement, MOS6510_SOUND_PATH, MOS6510_TEXT_LINES,
+                                                VIC_II_SOUND_PATH, VIC_II_TEXT_LINES)
 from demos.forty_five.scene import setup_scene
 from demos.forty_five.typed_label import TypedLabel
 
@@ -152,7 +154,11 @@ class C64Demo(PygameDemo):
 		self.vic20_arrival = Vic20Arrival(self.screen_plane)
 		self.processor_6510 = Processor6510Animation(aspect, self.fov, self.mos_team.camera_distance,
 		                                             self.mos_team.picture_width, self.mos_team.params.picture_height)
-		self.mos6510_arrival = Mos6510Arrival(self.screen_plane)
+		self.mos6510_arrival = ChipReplacement(self.screen_plane, MOS6510_SOUND_PATH, MOS6510_TEXT_LINES)
+		self.vic_ii_6567 = VicIIChip6567Animation(aspect, self.fov, self.mos_team.camera_distance,
+		                                          self.mos_team.picture_width, self.mos_team.params.picture_height)
+		self.vic_ii_arrival = ChipReplacement(self.screen_plane, VIC_II_SOUND_PATH, VIC_II_TEXT_LINES)
+		self.pause_seconds_before_vic_ii = 2.0
 
 		self.intro = IntroCaptionVideo(os.path.join(self.resources, self.intro_video),
 		                        os.path.join(self.resources, self.intro_audio), aspect)
@@ -191,6 +197,10 @@ class C64Demo(PygameDemo):
 			self._vic20_arrival_step(seconds)
 		elif self.phase == "mos6510_arrival":
 			self._mos6510_arrival_step(seconds)
+		elif self.phase == "pause_before_vic_ii":
+			self._pause_before_vic_ii_step(seconds)
+		elif self.phase == "vic_ii_arrival":
+			self._vic_ii_arrival_step(seconds)
 		else:
 			self._caption_step()
 		self._lower_music_while_speaking()
@@ -198,7 +208,7 @@ class C64Demo(PygameDemo):
 	def _spoken_sounds(self):
 		spoken_sounds = [self.mos_team_sound, self.pia_via_sound, self.mos_acquisition_sound,
 		                 self.pet_introduction.pet_sound, self.vic_sound, self.vic20_arrival.vic20_sound,
-		                 self.mos6510_arrival.mos6510_sound]
+		                 self.mos6510_arrival.replacement_sound, self.vic_ii_arrival.replacement_sound]
 		if self.basic_license is not None:
 			spoken_sounds.append(self.basic_license.basic_license_sound)
 		return spoken_sounds
@@ -309,6 +319,7 @@ class C64Demo(PygameDemo):
 		self.kernal_rom_901xxx.update(seconds)
 		self.vic_chip_6560.update(seconds)
 		self.processor_6510.update(seconds)
+		self.vic_ii_6567.update(seconds)
 		if self.chuck_peddle is not None:
 			self.chuck_peddle.update(seconds)
 
@@ -451,12 +462,32 @@ class C64Demo(PygameDemo):
 	def _mos6510_arrival_step(self, seconds):
 		self._update_travellers(seconds)
 		self.mos6510_arrival.update(seconds)
-		self._draw_chips()
-		self.processor_6510.draw()
+		self._draw_chips_with_newcomers()
 		self.mos6510_arrival.draw_overlay()
 		if self.mos6510_arrival.done:
 			self.mos6510_arrival.destroy()
+			self._enter("pause_before_vic_ii")
+
+	def _pause_before_vic_ii_step(self, seconds):
+		self._update_travellers(seconds)
+		self._draw_chips_with_newcomers()
+		if self.phase_seconds >= self.pause_seconds_before_vic_ii:
+			self._enter("vic_ii_arrival")
+			self.vic_ii_arrival.begin(self.vic_ii_6567, self.vic_chip_6560)
+
+	def _vic_ii_arrival_step(self, seconds):
+		self._update_travellers(seconds)
+		self.vic_ii_arrival.update(seconds)
+		self._draw_chips_with_newcomers()
+		self.vic_ii_arrival.draw_overlay()
+		if self.vic_ii_arrival.done:
+			self.vic_ii_arrival.destroy()
 			self._finish()
+
+	def _draw_chips_with_newcomers(self):
+		self._draw_chips()
+		self.processor_6510.draw()
+		self.vic_ii_6567.draw()
 
 	def _close_gap_left_by_pia(self):
 		self.chip_row_gap_is_closing = True

@@ -57,8 +57,9 @@ class ChipAssembly:
 
 	def update(self, seconds):
 		self.phase_seconds += seconds
-		for socket_move in self._current_step.socket_moves:
-			socket_move.update(seconds)
+		for step in self.steps:
+			for socket_move in step.socket_moves:
+				socket_move.update(seconds)
 		if self.phase == "typing":
 			self._current_label.update()
 			if self._current_label.finished:

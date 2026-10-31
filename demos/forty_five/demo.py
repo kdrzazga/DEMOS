@@ -228,6 +228,8 @@ class C64Demo(PygameDemo):
 			self._board_arrival_step(seconds)
 		elif self.phase == "assembly":
 			self._assembly_step(seconds)
+		elif self.phase == "board_showcase":
+			self._board_showcase_step(seconds)
 		else:
 			self._caption_step()
 		self._lower_music_while_speaking()
@@ -573,6 +575,16 @@ class C64Demo(PygameDemo):
 		self._draw_chips_with_newcomers()
 		self.chip_assembly.draw_overlay()
 		if self.chip_assembly.done:
+			self._enter("board_showcase")
+			self.board_arrival.begin_showcase()
+
+	def _board_showcase_step(self, seconds):
+		self._update_travellers(seconds)
+		self.board_arrival.update(seconds)
+		self.chip_assembly.update(seconds)
+		self.board_arrival.draw()
+		self._draw_chips_with_newcomers()
+		if self.board_arrival.showcase_finished:
 			self.chip_assembly.destroy()
 			self.board_arrival.destroy()
 			self._finish()

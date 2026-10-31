@@ -21,7 +21,7 @@ class BreadbinMergeStep:
 
 class BreadbinMerge:
 
-	def __init__(self, breadbin):
+	def __init__(self, breadbin, board_drops_in):
 		self.breadbin = breadbin
 		self.base_rise_seconds = 1.5
 		self.board_drop_seconds = 1.5
@@ -32,12 +32,12 @@ class BreadbinMerge:
 		self.board_start_offset = (0.0, 20.0, 0.0)
 		self.keyboard_start_offset = (0.0, 20.0, 0.0)
 		self.top_start_offset = (0.0, 30.0, 0.0)
-		self.steps = self._steps_one_after_another((
-			(self.base_rise_seconds, self.base_start_offset, self._set_base_offset),
-			(self.board_drop_seconds, self.board_start_offset, self._set_board_offset),
-			(self.keyboard_drop_seconds, self.keyboard_start_offset, self._set_keyboard_offset),
-			(self.top_drop_seconds, self.top_start_offset, self._set_top_offset),
-		))
+		board_step = ((self.board_drop_seconds, self.board_start_offset, self._set_board_offset),) if board_drops_in else ()
+		self.steps = self._steps_one_after_another(
+			((self.base_rise_seconds, self.base_start_offset, self._set_base_offset),)
+			+ board_step
+			+ ((self.keyboard_drop_seconds, self.keyboard_start_offset, self._set_keyboard_offset),
+			   (self.top_drop_seconds, self.top_start_offset, self._set_top_offset)))
 		self.elapsed_seconds = 0.0
 		self.restart()
 

@@ -57,6 +57,7 @@ from demos.forty_five.anims.animation6510 import Processor6510Animation
 from demos.forty_five.anims.animation6567 import VicIIChip6567Animation
 from demos.forty_five.quick_chip_swap import QuickChipSwap, CIA_SOUND_PATH, CIA_SWAP_CAPTION
 from demos.forty_five.board_arrival import BoardArrival
+from demos.forty_five.board_packing import BoardPacking
 from demos.forty_five.anims.animation6581 import SidChip6581Animation
 from demos.forty_five.yannes82 import RobertYannesIntroduction
 from demos.forty_five.assembly84 import AssemblyStep, ChipAssembly
@@ -176,6 +177,7 @@ class C64Demo(PygameDemo):
 		                                                   self.mos_team.picture_width,
 		                                                   self.mos_team.params.picture_height)
 		self.chip_assembly = ChipAssembly(self.screen_plane)
+		self.board_packing = BoardPacking(self.board_arrival)
 
 		self.intro = IntroCaptionVideo(os.path.join(self.resources, self.intro_video),
 		                        os.path.join(self.resources, self.intro_audio), aspect)
@@ -230,6 +232,10 @@ class C64Demo(PygameDemo):
 			self._assembly_step(seconds)
 		elif self.phase == "board_showcase":
 			self._board_showcase_step(seconds)
+		elif self.phase == "board_yaw_sway":
+			self._board_yaw_sway_step(seconds)
+		elif self.phase == "board_packing":
+			self._board_packing_step(seconds)
 		else:
 			self._caption_step()
 		self._lower_music_while_speaking()
@@ -579,12 +585,30 @@ class C64Demo(PygameDemo):
 			self.board_arrival.begin_showcase()
 
 	def _board_showcase_step(self, seconds):
+		self._draw_board_with_seated_chips(seconds)
+		if self.board_arrival.showcase_finished:
+			self._enter("board_yaw_sway")
+			self.board_arrival.begin_yaw_sway()
+
+	def _draw_board_with_seated_chips(self, seconds):
 		self._update_travellers(seconds)
 		self.board_arrival.update(seconds)
 		self.chip_assembly.update(seconds)
 		self.board_arrival.draw()
 		self._draw_chips_with_newcomers()
-		if self.board_arrival.showcase_finished:
+
+	def _board_yaw_sway_step(self, seconds):
+		self._draw_board_with_seated_chips(seconds)
+		if self.board_arrival.yaw_sway_finished:
+			self._enter("board_packing")
+			self.board_packing.begin()
+
+	def _board_packing_step(self, seconds):
+		self.board_packing.update(seconds)
+		self._draw_board_with_seated_chips(seconds)
+		self.board_packing.draw()
+		if self.board_packing.done:
+			self.board_packing.destroy()
 			self.chip_assembly.destroy()
 			self.board_arrival.destroy()
 			self._finish()

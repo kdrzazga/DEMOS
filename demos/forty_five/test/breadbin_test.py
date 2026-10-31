@@ -43,7 +43,7 @@ class BreadbinTest(PygameDemo):
 		self.board.build()
 		self.breadbin = Breadbin(board_layout)
 		self.breadbin.build()
-		self.merge = BreadbinMerge(self.breadbin)
+		self.merge = BreadbinMerge(self.breadbin, board_drops_in=True)
 
 	def handle_event(self, event):
 		if event.type == pygame.KEYDOWN:

@@ -30,12 +30,10 @@ class Breadbin:
 		self.top.build()
 
 	def enter_board_frame(self):
-		glTranslatef(*self.base_offset)
 		glTranslatef(*self.board_assembly_offset)
 		glTranslatef(*self.board_offset)
 
 	def enter_keyboard_frame(self):
-		glTranslatef(*self.base_offset)
 		glTranslatef(*self.keyboard_offset)
 		self.top.enter_keyboard_frame()
 
@@ -47,7 +45,6 @@ class Breadbin:
 
 	def draw_top(self):
 		glPushMatrix()
-		glTranslatef(*self.base_offset)
 		glTranslatef(*self.top_offset)
 		self.top.draw()
 		glPopMatrix()

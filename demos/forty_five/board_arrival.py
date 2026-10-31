@@ -27,12 +27,15 @@ class BoardArrival:
 		self.spin_seconds = 8.0
 		self.sway_pitch_amplitude_degrees = 6.0
 		self.sway_period_seconds = 4.0
+		self.yaw_sway_amplitude_degrees = 30.0
+		self.yaw_sway_seconds = 4.0
 		self.light_direction = (-0.35, 1.0, 0.7, 0.0)
 		self.board = C64Board(BoardLayoutFactory.create_assy_250425())
 		self.board.build()
 		self.preinstalled_chips = self._preinstall_chips((("PLA", MOS906114()), ("U31", TTL74xx("74LS629", 16))))
 		self.elapsed_seconds = None
 		self.showcase_elapsed_seconds = None
+		self.yaw_sway_elapsed_seconds = None
 
 	def _preinstall_chips(self, socket_names_and_chips):
 		for socket_name, chip in socket_names_and_chips:
@@ -56,8 +59,15 @@ class BoardArrival:
 		return (self.showcase_elapsed_seconds is not None
 		        and self.showcase_elapsed_seconds >= self.zoom_seconds + self.spin_seconds)
 
+	@property
+	def yaw_sway_finished(self):
+		return self.yaw_sway_elapsed_seconds is not None and self.yaw_sway_elapsed_seconds >= self.yaw_sway_seconds
+
 	def begin(self):
 		self.elapsed_seconds = 0.0
+
+	def begin_yaw_sway(self):
+		self.yaw_sway_elapsed_seconds = 0.0
 
 	def begin_showcase(self):
 		self.showcase_elapsed_seconds = 0.0
@@ -67,6 +77,8 @@ class BoardArrival:
 			self.elapsed_seconds += seconds
 		if self.showcase_elapsed_seconds is not None:
 			self.showcase_elapsed_seconds += seconds
+		if self.yaw_sway_elapsed_seconds is not None:
+			self.yaw_sway_elapsed_seconds += seconds
 
 	def _zoom_progress(self):
 		if self.showcase_elapsed_seconds is None:
@@ -94,8 +106,14 @@ class BoardArrival:
 		sway_angle = 2 * math.pi * self.showcase_elapsed_seconds / self.sway_period_seconds
 		return self.sway_pitch_amplitude_degrees * math.sin(sway_angle)
 
+	def _yaw_sway_degrees(self):
+		if self.yaw_sway_elapsed_seconds is None:
+			return 0.0
+		progress = min(1.0, self.yaw_sway_elapsed_seconds / self.yaw_sway_seconds)
+		return -self.yaw_sway_amplitude_degrees * math.sin(2 * math.pi * progress)
+
 	def _spin_yaw_degrees(self):
-		return 360.0 * self._spin_progress()
+		return 360.0 * self._spin_progress() + self._yaw_sway_degrees()
 
 	def _board_centre_in_eye(self):
 		camera_distance = self._current_camera_distance()
@@ -118,8 +136,15 @@ class BoardArrival:
 		return self._board_to_eye_rotation() @ np.array((0.0, 1.0, 0.0))
 
 	def draw(self):
-		if not self.started:
-			return
+		if self.started:
+			self.draw_in_board_frame(self._draw_board_with_preinstalled_chips)
+
+	def _draw_board_with_preinstalled_chips(self):
+		self.board.draw()
+		for chip in self.preinstalled_chips:
+			chip.draw()
+
+	def draw_in_board_frame(self, draw_in_frame):
 		glPushAttrib(GL_ENABLE_BIT | GL_LIGHTING_BIT | GL_CURRENT_BIT | GL_DEPTH_BUFFER_BIT | GL_TEXTURE_BIT)
 		glEnable(GL_DEPTH_TEST)
 		glEnable(GL_LIGHTING)
@@ -133,9 +158,7 @@ class BoardArrival:
 		glLightfv(GL_LIGHT0, GL_POSITION, self.light_direction)
 		glRotatef(self._sway_pitch_degrees(), 1.0, 0.0, 0.0)
 		glRotatef(self._spin_yaw_degrees(), 0.0, 1.0, 0.0)
-		self.board.draw()
-		for chip in self.preinstalled_chips:
-			chip.draw()
+		draw_in_frame()
 		glPopMatrix()
 		glPopAttrib()
 

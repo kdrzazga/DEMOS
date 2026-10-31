@@ -51,6 +51,7 @@ class MosTeamParams:
 		self.picture_height = 10.0
 		self.screen_fill_fraction = 0.8
 		self.picture_shift_down_in_picture_heights = 0.0
+		self.picture_centre_fraction_from_left = 0.5
 		self.drive_in_seconds = 2.0
 		self.drive_in_entry_yaw_degrees = -35.0
 		self.drive_in_offscreen_margin_in_picture_widths = 0.15
@@ -144,7 +145,18 @@ class MosTeam:
 		vertical_half_angle_tangent = math.tan(math.radians(self.params.field_of_view_degrees) / 2)
 		visible_half_width = self.camera_distance * vertical_half_angle_tangent * self.params.aspect_ratio
 		offscreen_margin = self.picture_width * self.params.drive_in_offscreen_margin_in_picture_widths
-		return visible_half_width + self.picture_width / 2 + offscreen_margin
+		return visible_half_width + self.picture_width / 2 + offscreen_margin - self._picture_centre_x()
+
+	def _visible_width(self):
+		vertical_half_angle_tangent = math.tan(math.radians(self.params.field_of_view_degrees) / 2)
+		return 2 * self.camera_distance * vertical_half_angle_tangent * self.params.aspect_ratio
+
+	def _picture_centre_x(self):
+		return (self.params.picture_centre_fraction_from_left - 0.5) * self._visible_width()
+
+	@property
+	def picture_right_edge_screen_fraction(self):
+		return self.params.picture_centre_fraction_from_left + self.picture_screen_width_fraction / 2
 
 	def restart(self):
 		if self.flying_logo is not None:
@@ -187,6 +199,13 @@ class MosTeam:
 	def picture_screen_width_fraction(self):
 		visible_height = 2 * self.camera_distance * math.tan(math.radians(self.params.field_of_view_degrees) / 2)
 		return self.picture_width / (visible_height * self.params.aspect_ratio)
+
+	def picture_right_edge_point_on_plane_at(self, plane_distance, fraction_from_bottom):
+		plane_scale = plane_distance / self.camera_distance
+		picture_bottom_y = (-self.params.picture_shift_down_in_picture_heights * self.params.picture_height
+		                    - self._exit_drop() - self.params.picture_height / 2)
+		edge_y = picture_bottom_y + fraction_from_bottom * self.params.picture_height
+		return (self._picture_centre_x() + self.picture_width / 2) * plane_scale, edge_y * plane_scale
 
 	def leave_through_bottom(self, exit_seconds):
 		self.exit_seconds = exit_seconds
@@ -332,7 +351,7 @@ class MosTeam:
 		glPushMatrix()
 		glLoadIdentity()
 		picture_shift_down = self.params.picture_shift_down_in_picture_heights * self.params.picture_height
-		glTranslatef(0.0, -self._exit_drop() - picture_shift_down, -self.camera_distance)
+		glTranslatef(self._picture_centre_x(), -self._exit_drop() - picture_shift_down, -self.camera_distance)
 		self._apply_drive_in_offset_and_turn()
 		self._apply_sway()
 		self._apply_zoom_to_target()
@@ -428,6 +447,10 @@ class MosTeamFactory:
 	def create_al_charpentier_show(aspect_ratio, field_of_view_degrees):
 		return MosTeam(AlCharpentierParams(aspect_ratio, field_of_view_degrees))
 
+	@staticmethod
+	def create_robert_yannes_show(aspect_ratio, field_of_view_degrees):
+		return MosTeam(RobertYannesParams(aspect_ratio, field_of_view_degrees))
+
 
 class AlCharpentierParams(MosTeamParams):
 
@@ -443,3 +466,14 @@ class AlCharpentierParams(MosTeamParams):
 		self.zoom_target_pixel_rectangle = None
 		self.screen_fill_fraction = 0.72
 		self.picture_shift_down_in_picture_heights = 0.06
+
+
+class RobertYannesParams(AlCharpentierParams):
+
+	def __init__(self, aspect_ratio, field_of_view_degrees):
+		super().__init__(aspect_ratio, field_of_view_degrees)
+		self.picture_file_names = ("RobertYannes.png", "RobertYannes2.png")
+		self.transition_styles = ("laser_sweep",)
+		self.screen_fill_fraction = 0.25
+		self.picture_centre_fraction_from_left = 1.0 / 3.0
+		self.picture_shift_down_in_picture_heights = 0.1

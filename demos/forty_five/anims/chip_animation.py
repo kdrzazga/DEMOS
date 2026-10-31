@@ -1,9 +1,11 @@
 import math
 
+import numpy as np
 from OpenGL.GL import *
 
 from lib.flying_logo import ease_in_cubic, ease_out_cubic
 from lib.laser_line import smooth_step
+from demos.forty_five.rotation import rotation_x, rotation_y, rotation_z, transform_matrix
 
 
 class ChipPose:
@@ -77,6 +79,7 @@ class ChipAnimation:
 		self.chip.build()
 		self.chip_length = 2 * self.chip.body_half_length
 		self.chip_width_with_legs = 2 * (self.chip.package.row_spacing_cm / 2 + self.chip.leg_thickness)
+		self.eye_transform_override = None
 		self.restart()
 
 	def restart(self):
@@ -141,6 +144,11 @@ class ChipAnimation:
 		left_margin_pose.fraction_from_left = 1.0 - left_margin_pose.fraction_from_left
 		return left_margin_pose
 
+	def slide_in_from_right(self, fraction_from_left, slide_seconds, height_in_photo_heights=1.0):
+		self.pose = self.pose_just_beyond_right_edge(height_in_photo_heights)
+		self.glide_to(ChipPose(fraction_from_left, 0.5, 0.0, height_in_photo_heights), slide_seconds,
+		              easing=ease_out_cubic)
+
 	def slide_into_left_margin(self, slide_seconds, depth_behind_photo=0.0):
 		self._slide_in(self.pose_just_beyond_left_edge(), self.pose_in_left_margin_beside_photo(), slide_seconds,
 		               depth_behind_photo)
@@ -162,6 +170,12 @@ class ChipAnimation:
 
 	def leave_through_top_edge(self, leave_seconds):
 		self.glide_to(self.pose_just_beyond_top_edge(), leave_seconds, easing=ease_in_cubic)
+
+	def drop_in_from_top_edge_to(self, place_pose, drop_seconds):
+		self.pose = place_pose.copy()
+		_, height_fraction = self.screen_size_fractions(self.pose)
+		self.pose.fraction_from_top = -height_fraction
+		self.glide_to(place_pose.copy(), drop_seconds, easing=ease_out_cubic)
 
 	@property
 	def has_left_through_top_edge(self):
@@ -213,11 +227,21 @@ class ChipAnimation:
 		world_y = (0.5 - self.pose.fraction_from_top) * self.visible_height_on_photo_plane * depth_spread
 		return world_x, world_y, -distance_from_camera
 
+	def eye_transform(self):
+		if self.eye_transform_override is not None:
+			return self.eye_transform_override
+		sway_angle = 2 * math.pi * self.sway_elapsed_seconds / self.sway_period_seconds
+		rotation = (rotation_z(self.pose.roll_degrees)
+		            @ rotation_y(self.sway_yaw_amplitude_degrees * math.sin(sway_angle))
+		            @ rotation_x(self.sway_pitch_amplitude_degrees * math.sin(sway_angle * 0.7))
+		            @ rotation_x(90.0))
+		chip_scale = self.pose.height_in_photo_heights * self.photo_height / self.chip_length
+		return np.array(self._world_position()), rotation, chip_scale
+
 	def draw(self):
 		if not self.visible:
 			return
-		sway_angle = 2 * math.pi * self.sway_elapsed_seconds / self.sway_period_seconds
-		chip_scale = self.pose.height_in_photo_heights * self.photo_height / self.chip_length
+		position, rotation, chip_scale = self.eye_transform()
 		glPushAttrib(GL_ENABLE_BIT | GL_LIGHTING_BIT | GL_CURRENT_BIT | GL_DEPTH_BUFFER_BIT | GL_TEXTURE_BIT)
 		glEnable(GL_DEPTH_TEST)
 		glEnable(GL_LIGHTING)
@@ -228,11 +252,7 @@ class ChipAnimation:
 		glPushMatrix()
 		glLoadIdentity()
 		glLightfv(GL_LIGHT0, GL_POSITION, self.light_direction)
-		glTranslatef(*self._world_position())
-		glRotatef(self.pose.roll_degrees, 0.0, 0.0, 1.0)
-		glRotatef(self.sway_yaw_amplitude_degrees * math.sin(sway_angle), 0.0, 1.0, 0.0)
-		glRotatef(self.sway_pitch_amplitude_degrees * math.sin(sway_angle * 0.7), 1.0, 0.0, 0.0)
-		glRotatef(90.0, 1.0, 0.0, 0.0)
+		glMultMatrixf(transform_matrix(position, rotation).T.copy())
 		glScalef(chip_scale, chip_scale, chip_scale)
 		self.chip.draw()
 		glPopMatrix()

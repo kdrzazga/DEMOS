@@ -63,6 +63,7 @@ class ChipAnimation:
 		self.sway_period_seconds = sway_period_seconds
 		self.light_direction = light_direction
 		self.screen_margin_fraction = screen_margin_fraction
+		self.gap_to_left_neighbour_fraction = 0.08
 		self.visible_height_on_photo_plane = 2 * photo_camera_distance * math.tan(math.radians(field_of_view_degrees) / 2)
 		self.visible_width_on_photo_plane = self.visible_height_on_photo_plane * aspect_ratio
 		self.chip = chip
@@ -101,6 +102,10 @@ class ChipAnimation:
 		_, height_fraction = self.screen_size_fractions(self.pose)
 		return self.pose.fraction_from_left, self.pose.fraction_from_top + height_fraction / 2
 
+	def resting_bottom_fraction_from_top(self):
+		_, height_fraction = self.screen_size_fractions(self.resting_pose)
+		return self.resting_pose.fraction_from_top + height_fraction / 2
+
 	def height_matching_scale_of(self, other_chip_animation, pose_of_other_chip):
 		return pose_of_other_chip.height_in_photo_heights * self.chip_length / other_chip_animation.chip_length
 
@@ -125,13 +130,19 @@ class ChipAnimation:
 		left_margin_pose.fraction_from_left = 1.0 - left_margin_pose.fraction_from_left
 		return left_margin_pose
 
-	def slide_into_left_margin(self, slide_seconds):
-		self.pose = self.pose_just_beyond_left_edge()
-		self.glide_to(self.pose_in_left_margin_beside_photo(), slide_seconds, easing=ease_out_cubic)
+	def slide_into_left_margin(self, slide_seconds, depth_behind_photo=0.0):
+		self._slide_in(self.pose_just_beyond_left_edge(), self.pose_in_left_margin_beside_photo(), slide_seconds,
+		               depth_behind_photo)
 
-	def slide_into_right_margin(self, slide_seconds):
-		self.pose = self.pose_just_beyond_right_edge()
-		self.glide_to(self.pose_in_right_margin_beside_photo(), slide_seconds, easing=ease_out_cubic)
+	def slide_into_right_margin(self, slide_seconds, depth_behind_photo=0.0):
+		self._slide_in(self.pose_just_beyond_right_edge(), self.pose_in_right_margin_beside_photo(), slide_seconds,
+		               depth_behind_photo)
+
+	def _slide_in(self, start_pose, target_pose, slide_seconds, depth_behind_photo):
+		start_pose.depth_behind_photo = depth_behind_photo
+		target_pose.depth_behind_photo = depth_behind_photo
+		self.pose = start_pose
+		self.glide_to(target_pose, slide_seconds, easing=ease_out_cubic)
 
 	def pose_just_beyond_top_edge(self):
 		_, height_fraction = self.screen_size_fractions(self.pose)
@@ -167,9 +178,10 @@ class ChipAnimation:
 		self.visible = True
 		self.active_glide = ChipPoseGlide(self.pose, target_pose, glide_seconds, easing)
 
-	def rise_next_to(self, neighbour_chip_animation, rise_seconds, gap_fraction=0.02):
+	def rise_next_to(self, neighbour_chip_animation, rise_seconds):
 		self.glide_to(self.pose_right_of_with_tops_aligned(neighbour_chip_animation,
-		                                                   neighbour_chip_animation.resting_pose, gap_fraction),
+		                                                   neighbour_chip_animation.resting_pose,
+		                                                   self.gap_to_left_neighbour_fraction),
 		              rise_seconds)
 
 	def grow_into_view_at(self, target_pose, grow_seconds, easing=smooth_step):

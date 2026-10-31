@@ -38,6 +38,9 @@ class PetIntroduction:
 		self.pet_sound = self._load_sound(PET_SOUND_PATH)
 		self.chip_listing = ChipListing(screen_plane, PET_CHIPS_HEADER, PET_CHIP_NAMES, self.pet,
 		                                ((0.25, 0.05), (0.375, 0.05), (0.5, 0.05), (0.625, 0.05), (0.75, 0.05)))
+		self.chip_listing_margin_in_screen_heights = 0.04
+		self.chip_listing.place_in_bottom_right_corner(self.chip_listing_margin_in_screen_heights
+		                                               * screen_plane.visible_height)
 		self.chuck_peddle = None
 		self.character_rom = None
 		self.peddle_destroyed = False

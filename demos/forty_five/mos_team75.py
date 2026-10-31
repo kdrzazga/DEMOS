@@ -50,6 +50,7 @@ class MosTeamParams:
 		self.hold_seconds_before_color_fade = 0.2
 		self.picture_height = 10.0
 		self.screen_fill_fraction = 0.8
+		self.picture_shift_down_in_picture_heights = 0.0
 		self.drive_in_seconds = 2.0
 		self.drive_in_entry_yaw_degrees = -35.0
 		self.drive_in_offscreen_margin_in_picture_widths = 0.15
@@ -330,7 +331,8 @@ class MosTeam:
 		glMatrixMode(GL_MODELVIEW)
 		glPushMatrix()
 		glLoadIdentity()
-		glTranslatef(0.0, -self._exit_drop(), -self.camera_distance)
+		picture_shift_down = self.params.picture_shift_down_in_picture_heights * self.params.picture_height
+		glTranslatef(0.0, -self._exit_drop() - picture_shift_down, -self.camera_distance)
 		self._apply_drive_in_offset_and_turn()
 		self._apply_sway()
 		self._apply_zoom_to_target()
@@ -439,3 +441,5 @@ class AlCharpentierParams(MosTeamParams):
 		self.closing_captions = ()
 		self.closing_hold_seconds = 1.0
 		self.zoom_target_pixel_rectangle = None
+		self.screen_fill_fraction = 0.72
+		self.picture_shift_down_in_picture_heights = 0.06

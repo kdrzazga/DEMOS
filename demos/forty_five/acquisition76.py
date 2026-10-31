@@ -47,6 +47,7 @@ class MosAcquisition:
 		self.year_flash_color = (230, 40, 40)
 		self.year_flash_font_pixel_size = 110
 		self.year_flash_margin_from_top_left_pixels = (170.0, 110.0)
+		self.year_flash_gap_below_chips_pixels = 30.0
 		self.design_screen_height = 800.0
 		self.hold_seconds_after_speech = 1.0
 		self.big_jack_fade_seconds = 0.4
@@ -77,6 +78,12 @@ class MosAcquisition:
 		                                    margin_from_top_left_pixels=self.year_flash_margin_from_top_left_pixels,
 		                                    font_path=FONT_PATH)
 		self.restart()
+
+	def place_year_flashes_below(self, chips_bottom_fraction_from_top):
+		screen_scale = glGetIntegerv(GL_VIEWPORT)[3] / self.design_screen_height
+		left_margin_pixels, _ = self.year_flash_margin_from_top_left_pixels
+		top_margin_pixels = chips_bottom_fraction_from_top * self.design_screen_height + self.year_flash_gap_below_chips_pixels
+		self.year_flashes.margin_from_top_left_pixels = (left_margin_pixels * screen_scale, top_margin_pixels * screen_scale)
 
 	def _build_mos_logo(self):
 		logo_picture = PictureTexture.load(MOS_LOGO_IMAGE_PATH)

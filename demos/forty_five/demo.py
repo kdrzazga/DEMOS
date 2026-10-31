@@ -87,6 +87,7 @@ class C64Demo(PygameDemo):
 		self.processor_hide_seconds = 1.2
 		self.pia_via_slide_in_seconds = 2.5
 		self.pia_via_join_seconds = 1.2
+		self.pia_via_depth_behind_photo = 2.0
 		self.pia_leave_seconds = 1.5
 		self.chip_row_gap_close_seconds = 1.2
 		self.basic_rom_appear_seconds = 0.4
@@ -252,6 +253,7 @@ class C64Demo(PygameDemo):
 			if self.pia_and_via_have_joined_processor:
 				self._line_up_pia_and_via_next_to_processor(self.chuck_peddle_drift_seconds)
 			self.mos_acquisition.restart()
+			self.mos_acquisition.place_year_flashes_below(self.processor_6502.resting_bottom_fraction_from_top())
 			self.mos_acquisition_sound_seconds = None
 
 	def _processor_with_pia_and_via(self):
@@ -268,8 +270,8 @@ class C64Demo(PygameDemo):
 		                        and transition_progress >= self.processor_hides_at_transition_progress)
 		if hiding_time_has_come and not self.pia_6520.visible:
 			self.processor_6502.move_behind_photo(self.processor_hide_seconds)
-			self.pia_6520.slide_into_left_margin(self.pia_via_slide_in_seconds)
-			self.via_6522.slide_into_right_margin(self.pia_via_slide_in_seconds)
+			self.pia_6520.slide_into_left_margin(self.pia_via_slide_in_seconds, self.pia_via_depth_behind_photo)
+			self.via_6522.slide_into_right_margin(self.pia_via_slide_in_seconds, self.pia_via_depth_behind_photo)
 			self.pia_via_sound.play()
 			self.pia_via_sound_seconds = 0.0
 

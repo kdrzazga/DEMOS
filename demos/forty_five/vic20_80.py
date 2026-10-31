@@ -28,7 +28,11 @@ class Vic20Arrival:
 		self.vic20_sound = self._load_sound(VIC20_SOUND_PATH)
 		self.chip_listing = ChipListing(screen_plane, VIC20_CHIPS_HEADER, VIC20_CHIP_NAMES, self.vic20,
 		                                ((0.3, 0.1), (0.4, 0.1), (0.5, 0.1), (0.6, 0.1), (0.7, 0.1)))
-		self.listing_shift_left_in_characters = 1
+		self.chip_listing_margin_in_screen_heights = 0.04
+		self.chip_listing_raise_in_lines = 2
+		self.chip_listing.place_in_bottom_right_corner(self.chip_listing_margin_in_screen_heights
+		                                               * screen_plane.visible_height)
+		self.chip_listing.raise_by_lines(self.chip_listing_raise_in_lines)
 		self.listing_hold_seconds = 2.0
 		self.vic20_drop_seconds = 1.5
 		self.vic20_drop_start_y = None
@@ -61,14 +65,8 @@ class Vic20Arrival:
 		return self.phase == "done"
 
 	def list_chips(self, chip_animations):
-		self.chip_listing.centre_x = self._centre_x_of_space_right_of_vic20()
 		self.chip_listing.begin(chip_animations)
 		self._enter("typing")
-
-	def _centre_x_of_space_right_of_vic20(self):
-		vic20_right_edge_x = self.vic20.world_center_point[0] + self.vic20.picture_width / 2
-		screen_right_edge_x = self.screen_plane.visible_width / 2
-		return (vic20_right_edge_x + screen_right_edge_x) / 2 - self.listing_shift_left_in_characters * self.chip_listing.character_width
 
 	def update(self, seconds):
 		self.phase_seconds += seconds

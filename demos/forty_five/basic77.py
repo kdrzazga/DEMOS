@@ -50,7 +50,10 @@ class BasicLicense:
 		self.jack_question_seconds = 5.5
 		self.speech_bubble_font_size = 13
 		self.speech_bubble_screen_margin = 0.3
-		self.speech_bubble_shift_right_in_bubble_widths = 0.35
+		self.speech_bubble_shift_right_in_bubble_widths = 0.6
+		self.speech_bubble_shift_down_in_bubble_heights = 0.6
+		self.speech_bubble_nudge_up_in_screen_heights = 0.025
+		self.speech_bubble_nudge_right_in_screen_heights = 0.075
 		self.seconds_after_sound_before_exit = 0.5
 		self.exit_seconds = 1.5
 		self.bill_picture = PictureTexture.load(BILL_GATES_IMAGE_PATH)
@@ -151,7 +154,10 @@ class BasicLicense:
 		screen_left_x = -self.screen_plane.visible_width / 2 + self.speech_bubble_screen_margin
 		bubble_left_x = max(head_top_left_x - bubble_offset_x - bubble_width, screen_left_x)
 		bubble_left_x += bubble_width * self.speech_bubble_shift_right_in_bubble_widths
-		return bubble_left_x - bubble_offset_x, head_top_left_y
+		bubble_shift_down = self.jack_question_bubble.world_height * self.speech_bubble_shift_down_in_bubble_heights
+		nudge_up = self.speech_bubble_nudge_up_in_screen_heights * self.screen_plane.visible_height
+		nudge_right = self.speech_bubble_nudge_right_in_screen_heights * self.screen_plane.visible_height
+		return bubble_left_x - bubble_offset_x + nudge_right, head_top_left_y - bubble_shift_down + nudge_up
 
 	def _draw_question_bubble_left_of_jack_head(self):
 		anchor_x, anchor_y = self._question_bubble_anchor_kept_on_screen()

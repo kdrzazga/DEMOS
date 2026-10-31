@@ -510,3 +510,22 @@ class KeyF7(FunctionKey):
 class KeySpace(Key):
 	def __init__(self):
 		super().__init__("", width=9.0, pygame_keys=(pygame.K_SPACE,))
+
+
+def c64_keyboard_rows():
+	return (
+		(KeyArrowLeft(), Key1(), Key2(), Key3(), Key4(), Key5(), Key6(), Key7(),
+		 Key8(), Key9(), Key0(), KeyPlus(), KeyMinus(), KeyPound(), KeyClrHome(),
+		 KeyInstDel()),
+		(KeyControl(), KeyQ(), KeyW(), KeyE(), KeyR(), KeyT(), KeyY(), KeyU(),
+		 KeyI(), KeyO(), KeyP(), KeyAt(), KeyAsterisk(), KeyArrowUp(), KeyRestore()),
+		(KeyRunStop(), KeyShiftLock(), KeyA(), KeyS(), KeyD(), KeyF(), KeyG(), KeyH(),
+		 KeyJ(), KeyK(), KeyL(), KeyColon(), KeySemicolon(), KeyEquals(), KeyReturn()),
+		(KeyCommodore(), KeyLeftShift(), KeyZ(), KeyX(), KeyC(), KeyV(), KeyB(), KeyN(),
+		 KeyM(), KeyLessThan(), KeyGreaterThan(), KeyQuestionMark(), KeyRightShift(),
+		 KeyCursorUpDown(), KeyCursorLeftRight()),
+	)
+
+
+def c64_function_keys():
+	return KeyF1(), KeyF3(), KeyF5(), KeyF7()

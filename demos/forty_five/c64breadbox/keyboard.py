@@ -25,6 +25,33 @@ class Keyboard:
 		for key in self.main_keys:
 			key.cap_color = self.cap_rgb
 			key.ink = self.legend_rgb
+			key.shows_graphic_squares = False
+		self.legend_replacements = ((k.KeyControl, "CTRL"),)
+		for key in self.main_keys:
+			for key_class, legend in self.legend_replacements:
+				if isinstance(key, key_class):
+					key.legend = legend
+		self.centred_legend_font_px = 60
+		self.centred_legend_key_classes = (k.KeyLeftShift, k.KeyRightShift, k.KeyControl, k.KeyReturn, k.KeyRestore)
+		for key in self.main_keys:
+			if isinstance(key, self.centred_legend_key_classes):
+				key.legend_top_left = False
+				key.legend_font_px = self.centred_legend_font_px
+		self.number_key_classes = (k.Key1, k.Key2, k.Key3, k.Key4, k.Key5, k.Key6, k.Key7, k.Key8, k.Key9, k.Key0)
+		self.number_font_px = 60
+		self.number_symbol_font_px = 48
+		self.number_symbol_centre_y = 0.27
+		self.number_below_symbol_centre_y = 0.7
+		for key in self.main_keys:
+			if isinstance(key, self.number_key_classes):
+				key.subtitle = ""
+				key.legend_font_px = self.number_font_px
+				key.shifted_font_px = self.number_symbol_font_px
+				key.shifted_centre_y = self.number_symbol_centre_y
+				key.legend_below_shifted_centre_y = self.number_below_symbol_centre_y
+		self.function_key_captions = ("F1", "F3", "F5", "F7")
+		for key, caption in zip(self.function_keys, self.function_key_captions):
+			key.centred_caption = caption
 		self._place_keys()
 		self._display_list = None
 

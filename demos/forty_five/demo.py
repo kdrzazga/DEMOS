@@ -49,6 +49,7 @@ from demos.forty_five.animation6502 import Processor6502Animation
 from demos.forty_five.animation652x import PeripheralChip652xAnimation
 from demos.forty_five.animation901226 import BasicRom901226Animation
 from demos.forty_five.animation901225 import CharacterRom901225Animation
+from demos.forty_five.animation901xxx import KernalRom901xxxAnimation
 from demos.forty_five.animation6560 import VicChip6560Animation
 from demos.forty_five.pet77 import PetIntroduction
 from demos.forty_five.vic20_80 import Vic20Arrival
@@ -130,6 +131,9 @@ class C64Demo(PygameDemo):
 		self.basic_rom_901226 = BasicRom901226Animation(aspect, self.fov, self.mos_team.camera_distance,
 		                                                self.mos_team.picture_width,
 		                                                self.mos_team.params.picture_height)
+		self.kernal_rom_901xxx = KernalRom901xxxAnimation(aspect, self.fov, self.mos_team.camera_distance,
+		                                                  self.mos_team.picture_width,
+		                                                  self.mos_team.params.picture_height)
 		self.character_rom_901225 = CharacterRom901225Animation(aspect, self.fov, self.mos_team.camera_distance,
 		                                                        self.mos_team.picture_width,
 		                                                        self.mos_team.params.picture_height)
@@ -231,6 +235,7 @@ class C64Demo(PygameDemo):
 				self.pia_and_via_have_joined_processor = False
 				self.basic_rom_901226.restart()
 				self.character_rom_901225.restart()
+				self.kernal_rom_901xxx.restart()
 				self.vic_chip_6560.restart()
 				self.mos_team_sound.play()
 
@@ -301,6 +306,7 @@ class C64Demo(PygameDemo):
 		self._update_processor_with_pia_and_via(seconds)
 		self.basic_rom_901226.update(seconds)
 		self.character_rom_901225.update(seconds)
+		self.kernal_rom_901xxx.update(seconds)
 		self.vic_chip_6560.update(seconds)
 		self.processor_6510.update(seconds)
 		if self.chuck_peddle is not None:
@@ -342,7 +348,7 @@ class C64Demo(PygameDemo):
 			self._enter("pet_introduction")
 			self.pet_introduction.begin(self.chuck_peddle, self.processor_6502, self.pia_6520, self.via_6522,
 			                            self.basic_rom_901226,
-			                            self.character_rom_901225)
+			                            self.character_rom_901225, self.kernal_rom_901xxx)
 
 	def _move_basic_rom_with_basic_license(self):
 		if self.basic_license.talk_finished and not self.basic_rom_901226.visible:
@@ -380,7 +386,7 @@ class C64Demo(PygameDemo):
 
 	def _chip_row(self):
 		return self._processor_with_pia_and_via() + (self.basic_rom_901226, self.character_rom_901225,
-		                                             self.vic_chip_6560)
+		                                             self.kernal_rom_901xxx, self.vic_chip_6560)
 
 	def _al_charpentier_step(self, seconds):
 		self._update_travellers(seconds)
@@ -436,7 +442,7 @@ class C64Demo(PygameDemo):
 			chip_animation.is_gliding for chip_animation in self._chip_row())
 		if gap_is_closed and self.vic20_arrival.phase == "arrived":
 			self.vic20_arrival.list_chips((self.processor_6502, self.via_6522, self.basic_rom_901226,
-			                               self.character_rom_901225, self.vic_chip_6560))
+			                               self.character_rom_901225, self.kernal_rom_901xxx, self.vic_chip_6560))
 		if self.vic20_arrival.done:
 			self.vic20_arrival.destroy()
 			self._enter("mos6510_arrival")
@@ -454,7 +460,8 @@ class C64Demo(PygameDemo):
 
 	def _close_gap_left_by_pia(self):
 		self.chip_row_gap_is_closing = True
-		chips_right_of_pia = (self.via_6522, self.basic_rom_901226, self.character_rom_901225, self.vic_chip_6560)
+		chips_right_of_pia = (self.via_6522, self.basic_rom_901226, self.character_rom_901225, self.kernal_rom_901xxx,
+		                      self.vic_chip_6560)
 		left_neighbour = self.processor_6502
 		for chip_animation in chips_right_of_pia:
 			chip_animation.rise_next_to(left_neighbour, self.chip_row_gap_close_seconds)
@@ -467,7 +474,7 @@ class C64Demo(PygameDemo):
 			self.vic_chip_6560.slide_in_from_right(right_margin_middle, self.vic_chip_slide_in_seconds)
 		if show.done and not show.is_leaving:
 			show.leave_through_bottom(self.al_charpentier_exit_seconds)
-			self.vic_chip_6560.rise_next_to(self.character_rom_901225, self.al_charpentier_exit_seconds)
+			self.vic_chip_6560.rise_next_to(self.kernal_rom_901xxx, self.al_charpentier_exit_seconds)
 
 	@staticmethod
 	def _load_sound(path):

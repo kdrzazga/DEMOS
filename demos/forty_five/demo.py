@@ -58,6 +58,7 @@ from demos.forty_five.anims.animation6567 import VicIIChip6567Animation
 from demos.forty_five.quick_chip_swap import QuickChipSwap, CIA_SOUND_PATH, CIA_SWAP_CAPTION
 from demos.forty_five.board_arrival import BoardArrival
 from demos.forty_five.board_packing import BoardPacking
+from demos.forty_five.grand_presentation import GrandPresentation
 from demos.forty_five.anims.animation6581 import SidChip6581Animation
 from demos.forty_five.yannes82 import RobertYannesIntroduction
 from demos.forty_five.assembly84 import AssemblyStep, ChipAssembly
@@ -178,6 +179,8 @@ class C64Demo(PygameDemo):
 		                                                   self.mos_team.params.picture_height)
 		self.chip_assembly = ChipAssembly(self.screen_plane)
 		self.board_packing = BoardPacking(self.board_arrival)
+		self.grand_presentation = GrandPresentation(self.screen_plane)
+		self.parked_hold_seconds = 4.0
 
 		self.intro = IntroCaptionVideo(os.path.join(self.resources, self.intro_video),
 		                        os.path.join(self.resources, self.intro_audio), aspect)
@@ -236,6 +239,10 @@ class C64Demo(PygameDemo):
 			self._board_yaw_sway_step(seconds)
 		elif self.phase == "board_packing":
 			self._board_packing_step(seconds)
+		elif self.phase == "grand_presentation":
+			self._grand_presentation_step(seconds)
+		elif self.phase == "acrobatics":
+			self._acrobatics_step(seconds)
 		else:
 			self._caption_step()
 		self._lower_music_while_speaking()
@@ -608,6 +615,27 @@ class C64Demo(PygameDemo):
 		self._draw_board_with_seated_chips(seconds)
 		self.board_packing.draw()
 		if self.board_packing.done:
+			self._enter("grand_presentation")
+			self.grand_presentation.begin()
+
+	def _draw_packed_c64_with_presentation(self, seconds):
+		self.board_packing.update(seconds)
+		self.grand_presentation.update(seconds)
+		self._draw_board_with_seated_chips(seconds)
+		self.board_packing.draw()
+		self.grand_presentation.draw_overlay()
+
+	def _grand_presentation_step(self, seconds):
+		self._draw_packed_c64_with_presentation(seconds)
+		if self.grand_presentation.done:
+			self._enter("acrobatics")
+			self.board_arrival.begin_acrobatics()
+			self.grand_presentation.begin_retreat()
+
+	def _acrobatics_step(self, seconds):
+		self._draw_packed_c64_with_presentation(seconds)
+		if self.board_arrival.parked_seconds >= self.parked_hold_seconds:
+			self.grand_presentation.destroy()
 			self.board_packing.destroy()
 			self.chip_assembly.destroy()
 			self.board_arrival.destroy()

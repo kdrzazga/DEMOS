@@ -312,7 +312,8 @@ class Commodore64:
 	def _panel_rect(self, a0, b0, a1, b1, rgb, layer):
 		self._panel_polygon(((a0, b0), (a1, b0), (a1, b1), (a0, b1)), rgb, layer)
 
-	def _panel_polygon(self, points, rgb, layer):
+	@staticmethod
+	def _panel_polygon(points, rgb, layer):
 		color(rgb)
 		glBegin(GL_POLYGON)
 		glNormal3f(0.0, 0.0, 1.0)
@@ -320,7 +321,8 @@ class Commodore64:
 			glVertex3f(a, b, layer * 0.01)
 		glEnd()
 
-	def _panel_disc(self, centre_a, centre_b, radius, rgb, layer, segments=32):
+	@staticmethod
+	def _panel_disc(centre_a, centre_b, radius, rgb, layer, segments=32):
 		color(rgb)
 		glBegin(GL_TRIANGLE_FAN)
 		glNormal3f(0.0, 0.0, 1.0)

@@ -89,7 +89,8 @@ class CrashAnimation:
 			self.sound.stop()
 		self.flying_keys = self._launch_keys(random.Random(self.seed))
 
-	def _load_sound(self, sound_path):
+	@staticmethod
+	def _load_sound(sound_path):
 		if not pygame.mixer.get_init():
 			pygame.mixer.init()
 		return pygame.mixer.Sound(sound_path)

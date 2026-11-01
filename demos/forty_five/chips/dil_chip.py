@@ -19,7 +19,7 @@ class DilChip:
 	             leg_reach_cm=0.35, leg_exit_height_cm=0.08, leg_thickness_cm=0.025, leg_wide_half_cm=0.075,
 	             leg_tip_half_cm=0.025, shoulder_drop_cm=0.05, notch_radius_cm=0.11, dot_radius_cm=0.07,
 	             label_end_inset_cm=0.6, label_side_inset_cm=0.1, label_texture_width_px=1024,
-	             body_rgb=(28, 28, 30), mark_rgb=(12, 12, 12), leg_rgb=(205, 205, 200), ink_rgb=(205, 205, 205)):
+	             body_rgb=(52, 52, 56), mark_rgb=(12, 12, 12), leg_rgb=(205, 205, 200), ink_rgb=(205, 205, 205)):
 		self.package = package
 		self.label_lines = tuple(label_lines)
 		self.body_height = body_height_cm

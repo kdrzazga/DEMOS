@@ -34,7 +34,8 @@ class BoardPhoto:
 		glBindTexture(GL_TEXTURE_2D, self.texture)
 		glColor3f(1.0, 1.0, 1.0)
 
-	def end(self):
+	@staticmethod
+	def end():
 		glDisable(GL_TEXTURE_2D)
 
 	def vertex(self, x, y, z):

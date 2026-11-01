@@ -61,19 +61,8 @@ class Commodore64:
 		self.label_ink = (140, 130, 108)
 		self.led_color = (255, 40, 30)
 
-		self.keyboard_rows = (
-			(k.KeyArrowLeft(), k.Key1(), k.Key2(), k.Key3(), k.Key4(), k.Key5(), k.Key6(), k.Key7(),
-			 k.Key8(), k.Key9(), k.Key0(), k.KeyPlus(), k.KeyMinus(), k.KeyPound(), k.KeyClrHome(),
-			 k.KeyInstDel()),
-			(k.KeyControl(), k.KeyQ(), k.KeyW(), k.KeyE(), k.KeyR(), k.KeyT(), k.KeyY(), k.KeyU(),
-			 k.KeyI(), k.KeyO(), k.KeyP(), k.KeyAt(), k.KeyAsterisk(), k.KeyArrowUp(), k.KeyRestore()),
-			(k.KeyRunStop(), k.KeyShiftLock(), k.KeyA(), k.KeyS(), k.KeyD(), k.KeyF(), k.KeyG(), k.KeyH(),
-			 k.KeyJ(), k.KeyK(), k.KeyL(), k.KeyColon(), k.KeySemicolon(), k.KeyEquals(), k.KeyReturn()),
-			(k.KeyCommodore(), k.KeyLeftShift(), k.KeyZ(), k.KeyX(), k.KeyC(), k.KeyV(), k.KeyB(), k.KeyN(),
-			 k.KeyM(), k.KeyLessThan(), k.KeyGreaterThan(), k.KeyQuestionMark(), k.KeyRightShift(),
-			 k.KeyCursorUpDown(), k.KeyCursorLeftRight()),
-		)
-		self.function_keys = (k.KeyF1(), k.KeyF3(), k.KeyF5(), k.KeyF7())
+		self.keyboard_rows = k.c64_keyboard_rows()
+		self.function_keys = k.c64_function_keys()
 		self.space_bar = k.KeySpace()
 		self.keys = tuple(key for row in self.keyboard_rows for key in row) + self.function_keys + (self.space_bar,)
 
@@ -323,7 +312,8 @@ class Commodore64:
 	def _panel_rect(self, a0, b0, a1, b1, rgb, layer):
 		self._panel_polygon(((a0, b0), (a1, b0), (a1, b1), (a0, b1)), rgb, layer)
 
-	def _panel_polygon(self, points, rgb, layer):
+	@staticmethod
+	def _panel_polygon(points, rgb, layer):
 		color(rgb)
 		glBegin(GL_POLYGON)
 		glNormal3f(0.0, 0.0, 1.0)
@@ -331,7 +321,8 @@ class Commodore64:
 			glVertex3f(a, b, layer * 0.01)
 		glEnd()
 
-	def _panel_disc(self, centre_a, centre_b, radius, rgb, layer, segments=32):
+	@staticmethod
+	def _panel_disc(centre_a, centre_b, radius, rgb, layer, segments=32):
 		color(rgb)
 		glBegin(GL_TRIANGLE_FAN)
 		glNormal3f(0.0, 0.0, 1.0)

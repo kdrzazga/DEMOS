@@ -71,6 +71,7 @@ class ChipListing:
 		self.line_grow_seconds = 0.5
 		self.line_width_px = 2.0
 		self.centre_x = 0.0
+		self.centre_y = 0.0
 		self.vertical_offset = 0.0
 		self.labels = tuple(TypedLabel(text, self.text_line_height, frames_per_letter=self.text_frames_per_letter)
 		                    for text in (header,) + chip_names)
@@ -82,14 +83,28 @@ class ChipListing:
 		self.finished = False
 
 	@property
-	def character_width(self):
-		header_label = self.labels[0]
-		return header_label.height * header_label.aspect / len(header_label.text)
+	def line_step(self):
+		return self.text_line_height + self.text_line_gap
+
+	def raise_by_lines(self, line_count):
+		self.centre_y += line_count * self.line_step
+
+	@property
+	def _half_block_height(self):
+		line_step = self.line_step
+		return line_step * (len(self.labels) - 1) / 2 + self.text_line_height / 2
+
+	@property
+	def _widest_label_width(self):
+		return max(label.height * label.aspect for label in self.labels)
 
 	@property
 	def top_y(self):
-		line_step = self.text_line_height + self.text_line_gap
-		return line_step * (len(self.labels) - 1) / 2 + self.text_line_height / 2 + self.vertical_offset
+		return self.centre_y + self._half_block_height + self.vertical_offset
+
+	def place_in_bottom_right_corner(self, margin):
+		self.centre_x = self.screen_plane.visible_width / 2 - margin - self._widest_label_width / 2
+		self.centre_y = -self.screen_plane.visible_height / 2 + margin + self._half_block_height
 
 	def begin(self, chip_animations):
 		self.chip_lines = tuple(
@@ -145,7 +160,7 @@ class ChipListing:
 
 	def _draw_labels(self):
 		line_step = self.text_line_height + self.text_line_gap
-		top_centre_y = line_step * (len(self.labels) - 1) / 2 + self.vertical_offset
+		top_centre_y = self.centre_y + line_step * (len(self.labels) - 1) / 2 + self.vertical_offset
 		depth = -self.screen_plane.camera_distance
 		for index, label in enumerate(self.labels):
 			label.draw((self.centre_x, top_centre_y - index * line_step, depth), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0))

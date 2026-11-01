@@ -11,7 +11,8 @@ FORTY_FIVE_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 VIC20_IMAGE_PATH = os.path.join(os.path.dirname(FORTY_FIVE_DIRECTORY), "common", "commodore", "vic20.png")
 VIC20_SOUND_PATH = os.path.join(FORTY_FIVE_DIRECTORY, "resources", "history", "c=", "80VIC-20.mp3")
 VIC20_CHIPS_HEADER = "Chips used in VIC-20:"
-VIC20_CHIP_NAMES = ("Processor 6502", "VIA", "BASIC ROM", "Character ROM", "VIC")
+VIC20_CHIP_NAMES = ("Processor 6502", "VIA (I/O chip)", "BASIC ROM", "Character ROM", "KERNAL ROM",
+                    "VIC (MOS 6560)")
 
 
 class Vic20Arrival:
@@ -27,9 +28,14 @@ class Vic20Arrival:
 		                            swing_amplitude_degrees=self.vic20_swing_amplitude_degrees)
 		self.vic20_sound = self._load_sound(VIC20_SOUND_PATH)
 		self.chip_listing = ChipListing(screen_plane, VIC20_CHIPS_HEADER, VIC20_CHIP_NAMES, self.vic20,
-		                                ((0.3, 0.1), (0.4, 0.1), (0.5, 0.1), (0.6, 0.1), (0.7, 0.1)))
-		self.listing_shift_left_in_characters = 1
-		self.listing_hold_seconds = 2.0
+		                                ((0.25, 0.1), (0.35, 0.1), (0.45, 0.1), (0.55, 0.1), (0.65, 0.1),
+		                                 (0.75, 0.1)))
+		self.chip_listing_margin_in_screen_heights = 0.04
+		self.chip_listing_raise_in_lines = 2
+		self.chip_listing.place_in_bottom_right_corner(self.chip_listing_margin_in_screen_heights
+		                                               * screen_plane.visible_height)
+		self.chip_listing.raise_by_lines(self.chip_listing_raise_in_lines)
+		self.listing_hold_seconds = 4.0
 		self.vic20_drop_seconds = 1.5
 		self.vic20_drop_start_y = None
 		self.phase = "idle"
@@ -61,14 +67,8 @@ class Vic20Arrival:
 		return self.phase == "done"
 
 	def list_chips(self, chip_animations):
-		self.chip_listing.centre_x = self._centre_x_of_space_right_of_vic20()
 		self.chip_listing.begin(chip_animations)
 		self._enter("typing")
-
-	def _centre_x_of_space_right_of_vic20(self):
-		vic20_right_edge_x = self.vic20.world_center_point[0] + self.vic20.picture_width / 2
-		screen_right_edge_x = self.screen_plane.visible_width / 2
-		return (vic20_right_edge_x + screen_right_edge_x) / 2 - self.listing_shift_left_in_characters * self.chip_listing.character_width
 
 	def update(self, seconds):
 		self.phase_seconds += seconds

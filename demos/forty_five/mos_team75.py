@@ -8,6 +8,7 @@ from lib.caption_sequence import CaptionSequence
 from lib.flying_logo import FlyingLogo, ease_in_cubic
 from lib.picture_crossfade import PictureCrossfade
 from lib.pointed_name_label import PointedNameLabel, ScreenSpaceProjector
+from demos.forty_five.name_caption import NameCaption
 
 LOGO_FILE_NAME = "logo.png"
 LOGO_FLIGHT_SECONDS = 6.5
@@ -50,6 +51,8 @@ class MosTeamParams:
 		self.hold_seconds_before_color_fade = 0.2
 		self.picture_height = 10.0
 		self.screen_fill_fraction = 0.8
+		self.picture_shift_down_in_picture_heights = 0.0
+		self.picture_centre_fraction_from_left = 0.5
 		self.drive_in_seconds = 2.0
 		self.drive_in_entry_yaw_degrees = -35.0
 		self.drive_in_offscreen_margin_in_picture_widths = 0.15
@@ -81,6 +84,9 @@ class MosTeamParams:
 		self.zoom_target_pixel_rectangle = ((445, 222), (500, 280))
 		self.zoom_seconds = 1.25
 		self.zoom_target_screen_fill_fraction = 0.85
+		self.name_caption_lines = ()
+		self.name_caption_line_height_in_screen_heights = 0.035
+		self.name_caption_gap_in_screen_heights = 0.01
 
 
 class MosTeam:
@@ -100,6 +106,10 @@ class MosTeam:
 			params.closing_captions, seconds_per_caption=params.seconds_per_closing_caption,
 			pause_seconds_between_captions=params.pause_seconds_between_closing_captions,
 			text_color=params.closing_caption_color, screen_scale=self._screen_scale())
+		self.name_caption = None
+		if params.name_caption_lines:
+			self.name_caption = NameCaption(params.name_caption_lines)
+			self.name_caption.build()
 		self.flying_logo = None
 		if params.logo_file_name is not None:
 			self.flying_logo = FlyingLogo(os.path.join(params.picture_directory, params.logo_file_name),
@@ -143,7 +153,18 @@ class MosTeam:
 		vertical_half_angle_tangent = math.tan(math.radians(self.params.field_of_view_degrees) / 2)
 		visible_half_width = self.camera_distance * vertical_half_angle_tangent * self.params.aspect_ratio
 		offscreen_margin = self.picture_width * self.params.drive_in_offscreen_margin_in_picture_widths
-		return visible_half_width + self.picture_width / 2 + offscreen_margin
+		return visible_half_width + self.picture_width / 2 + offscreen_margin - self._picture_centre_x()
+
+	def _visible_width(self):
+		vertical_half_angle_tangent = math.tan(math.radians(self.params.field_of_view_degrees) / 2)
+		return 2 * self.camera_distance * vertical_half_angle_tangent * self.params.aspect_ratio
+
+	def _picture_centre_x(self):
+		return (self.params.picture_centre_fraction_from_left - 0.5) * self._visible_width()
+
+	@property
+	def picture_right_edge_screen_fraction(self):
+		return self.params.picture_centre_fraction_from_left + self.picture_screen_width_fraction / 2
 
 	def restart(self):
 		if self.flying_logo is not None:
@@ -186,6 +207,13 @@ class MosTeam:
 	def picture_screen_width_fraction(self):
 		visible_height = 2 * self.camera_distance * math.tan(math.radians(self.params.field_of_view_degrees) / 2)
 		return self.picture_width / (visible_height * self.params.aspect_ratio)
+
+	def picture_right_edge_point_on_plane_at(self, plane_distance, fraction_from_bottom):
+		plane_scale = plane_distance / self.camera_distance
+		picture_bottom_y = (-self.params.picture_shift_down_in_picture_heights * self.params.picture_height
+		                    - self._exit_drop() - self.params.picture_height / 2)
+		edge_y = picture_bottom_y + fraction_from_bottom * self.params.picture_height
+		return (self._picture_centre_x() + self.picture_width / 2) * plane_scale, edge_y * plane_scale
 
 	def leave_through_bottom(self, exit_seconds):
 		self.exit_seconds = exit_seconds
@@ -330,16 +358,26 @@ class MosTeam:
 		glMatrixMode(GL_MODELVIEW)
 		glPushMatrix()
 		glLoadIdentity()
-		glTranslatef(0.0, -self._exit_drop(), -self.camera_distance)
+		picture_shift_down = self.params.picture_shift_down_in_picture_heights * self.params.picture_height
+		glTranslatef(self._picture_centre_x(), -self._exit_drop() - picture_shift_down, -self.camera_distance)
 		self._apply_drive_in_offset_and_turn()
 		self._apply_sway()
 		self._apply_zoom_to_target()
 		self._draw_pictures()
+		self._draw_name_caption()
 		self.laser_line.draw()
 		self._draw_team_member_annotations()
 		self.closing_caption_sequence.draw()
 		glPopMatrix()
 		glPopAttrib()
+
+	def _draw_name_caption(self):
+		if self.name_caption is None:
+			return
+		visible_height = 2 * self.camera_distance * math.tan(math.radians(self.params.field_of_view_degrees) / 2)
+		gap = self.params.name_caption_gap_in_screen_heights * visible_height
+		line_height = self.params.name_caption_line_height_in_screen_heights * visible_height
+		self.name_caption.draw_below(0.0, -self.params.picture_height / 2 - gap, 0.0, line_height)
 
 	def _currently_visible_annotations(self):
 		if self.annotation_timeline_seconds is None:
@@ -412,6 +450,8 @@ class MosTeam:
 			annotation.destroy()
 		self.team_member_annotations = []
 		self.closing_caption_sequence.destroy()
+		if self.name_caption is not None:
+			self.name_caption.destroy()
 		if self.flying_logo is not None:
 			self.flying_logo.destroy()
 
@@ -426,6 +466,10 @@ class MosTeamFactory:
 	def create_al_charpentier_show(aspect_ratio, field_of_view_degrees):
 		return MosTeam(AlCharpentierParams(aspect_ratio, field_of_view_degrees))
 
+	@staticmethod
+	def create_robert_yannes_show(aspect_ratio, field_of_view_degrees):
+		return MosTeam(RobertYannesParams(aspect_ratio, field_of_view_degrees))
+
 
 class AlCharpentierParams(MosTeamParams):
 
@@ -439,3 +483,18 @@ class AlCharpentierParams(MosTeamParams):
 		self.closing_captions = ()
 		self.closing_hold_seconds = 1.0
 		self.zoom_target_pixel_rectangle = None
+		self.screen_fill_fraction = 0.72
+		self.picture_shift_down_in_picture_heights = 0.06
+		self.name_caption_lines = ("Albert Charpentier",)
+
+
+class RobertYannesParams(AlCharpentierParams):
+
+	def __init__(self, aspect_ratio, field_of_view_degrees):
+		super().__init__(aspect_ratio, field_of_view_degrees)
+		self.picture_file_names = ("RobertYannes.png", "RobertYannes2.png")
+		self.transition_styles = ("laser_sweep",)
+		self.screen_fill_fraction = 0.25
+		self.picture_centre_fraction_from_left = 1.0 / 3.0
+		self.picture_shift_down_in_picture_heights = 0.1
+		self.name_caption_lines = ("Robert", "Yannes")

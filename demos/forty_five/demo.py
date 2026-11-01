@@ -42,6 +42,7 @@ from demos.forty_five.acquisition76 import MosAcquisition
 from demos.forty_five.basic77 import BasicLicense
 from demos.forty_five.c64c.commodore64 import Commodore64
 from demos.forty_five.c64c.crash_animation import CrashAnimationText
+from demos.forty_five.chip_name_flash import ChipNameFlash
 from demos.forty_five.chuck_peddle import ChuckPeddleSurface
 from demos.forty_five.intro import IntroCaptionVideo
 from demos.forty_five.mos_team75 import MosTeamFactory
@@ -58,7 +59,9 @@ from demos.forty_five.anims.animation6567 import VicIIChip6567Animation
 from demos.forty_five.quick_chip_swap import QuickChipSwap, CIA_SOUND_PATH, CIA_SWAP_CAPTION
 from demos.forty_five.board_arrival import BoardArrival
 from demos.forty_five.board_packing import BoardPacking
+from demos.forty_five.farewell_message import FarewellMessage
 from demos.forty_five.grand_presentation import GrandPresentation
+from demos.forty_five.music_fade_out import MusicFadeOut
 from demos.forty_five.anims.animation6581 import SidChip6581Animation
 from demos.forty_five.yannes82 import RobertYannesIntroduction
 from demos.forty_five.assembly84 import AssemblyStep, ChipAssembly
@@ -137,6 +140,9 @@ class C64Demo(PygameDemo):
 		self.pia_via_sound = self._load_sound(self.pia_via_sound_path)
 		self.pia_via_sound_seconds = None
 		self.pia_and_via_have_joined_processor = False
+		self.pia_via_name_flashes = (ChipNameFlash(self.pia_6520, "PIA"), ChipNameFlash(self.via_6522, "VIA"))
+		for name_flash in self.pia_via_name_flashes:
+			name_flash.build()
 		self.basic_rom_901226 = BasicRom901226Animation(aspect, self.fov, self.mos_team.camera_distance,
 		                                                self.mos_team.picture_width,
 		                                                self.mos_team.params.picture_height)
@@ -173,6 +179,7 @@ class C64Demo(PygameDemo):
 		self.robert_yannes_introduction = RobertYannesIntroduction(self.screen_plane, aspect, self.fov)
 		self.cia_swap = QuickChipSwap(self.screen_plane, CIA_SOUND_PATH, CIA_SWAP_CAPTION)
 		self.cia_caption_hold_seconds = 2.0
+		self.year_1982_flashes = None
 		self.board_arrival = BoardArrival(self.fov)
 		self.second_cia_6526 = PeripheralChip652xAnimation("6526", aspect, self.fov, self.mos_team.camera_distance,
 		                                                   self.mos_team.picture_width,
@@ -180,7 +187,9 @@ class C64Demo(PygameDemo):
 		self.chip_assembly = ChipAssembly(self.screen_plane)
 		self.board_packing = BoardPacking(self.board_arrival)
 		self.grand_presentation = GrandPresentation(self.screen_plane)
-		self.parked_hold_seconds = 4.0
+		self.seconds_parked_before_farewell = 1.5
+		self.farewell_message = FarewellMessage(self.screen_plane, self.grand_presentation.corner_block_right_x())
+		self.music_fade_out = MusicFadeOut()
 
 		self.intro = IntroCaptionVideo(os.path.join(self.resources, self.intro_video),
 		                        os.path.join(self.resources, self.intro_audio), aspect)
@@ -192,6 +201,7 @@ class C64Demo(PygameDemo):
 		self.phase_seconds = 0.0
 
 	def step(self):
+		self.music_fade_out.advance()
 		if self.phase == "intro":
 			self.intro.render()
 			if self.intro.done:
@@ -258,7 +268,8 @@ class C64Demo(PygameDemo):
 
 	def _lower_music_while_speaking(self):
 		speaking = any(sound.get_num_channels() > 0 for sound in self._spoken_sounds())
-		music_volume = self.music_volume * (self.music_volume_while_speaking if speaking else 1.0)
+		music_volume = (self.music_volume * (self.music_volume_while_speaking if speaking else 1.0)
+		                * self.music_fade_out.volume_factor)
 		if pygame.mixer.get_init() and pygame.mixer.music.get_volume() != music_volume:
 			pygame.mixer.music.set_volume(music_volume)
 
@@ -286,6 +297,8 @@ class C64Demo(PygameDemo):
 				self.via_6522.restart()
 				self.pia_via_sound_seconds = None
 				self.pia_and_via_have_joined_processor = False
+				for name_flash in self.pia_via_name_flashes:
+					name_flash.reset()
 				self.basic_rom_901226.restart()
 				self.character_rom_901225.restart()
 				self.kernal_rom_901xxx.restart()
@@ -311,7 +324,10 @@ class C64Demo(PygameDemo):
 		self.mos_team.draw()
 		for chip_animation in chips_in_front_of_photo:
 			chip_animation.draw()
+		self._flash_pia_and_via_names(seconds)
 		if self.mos_team.done:
+			for name_flash in self.pia_via_name_flashes:
+				name_flash.destroy()
 			self._enter("mos_acquisition")
 			self.chuck_peddle.place_at_bottom_middle()
 			self.chuck_peddle.drift_to_top_right_corner(self.chuck_peddle_drift_seconds)
@@ -321,6 +337,15 @@ class C64Demo(PygameDemo):
 			self.mos_acquisition.restart()
 			self.mos_acquisition.place_year_flashes_below(self.processor_6502.resting_bottom_fraction_from_top())
 			self.mos_acquisition_sound_seconds = None
+
+	def _flash_pia_and_via_names(self, seconds):
+		for name_flash in self.pia_via_name_flashes:
+			chip_animation = name_flash.chip_animation
+			has_slid_in = chip_animation.visible and not chip_animation.is_gliding
+			if has_slid_in and not name_flash.started and not self.pia_and_via_have_joined_processor:
+				name_flash.start()
+			name_flash.update(seconds)
+			name_flash.draw()
 
 	def _processor_with_pia_and_via(self):
 		return self.processor_6502, self.pia_6520, self.via_6522
@@ -395,6 +420,8 @@ class C64Demo(PygameDemo):
 	def _basic_license_step(self, seconds):
 		self.mos_acquisition.update(seconds)
 		self.basic_license.update(seconds)
+		if self.basic_license.bill_has_set_off:
+			self.chuck_peddle.name_caption_visible = False
 		self._move_basic_rom_with_basic_license()
 		self._update_and_draw_travellers(seconds)
 		self.mos_acquisition.draw()
@@ -457,21 +484,29 @@ class C64Demo(PygameDemo):
 			self.al_charpentier_show.destroy()
 			self._start_year_1980_flashes()
 
-	def _chip_row_bottom_fraction(self):
-		return max(chip_animation.bottom_center_screen_fractions()[1]
-		           for chip_animation in self._chip_row())
+	@staticmethod
+	def _bottom_fraction_of(chip_animations):
+		return max(chip_animation.bottom_center_screen_fractions()[1] for chip_animation in chip_animations)
 
-	def _start_year_1980_flashes(self):
-		top_margin_pixels = (self._chip_row_bottom_fraction() * self.year_flash_design_screen_height
+	def _year_flashes_below(self, year, chip_animations):
+		top_margin_pixels = (self._bottom_fraction_of(chip_animations) * self.year_flash_design_screen_height
 		                     + self.year_flash_gap_below_chips_pixels)
-		self.year_1980_flashes = CaptionSequence(
-			("1980",) * self.year_flash_count, seconds_per_caption=self.year_flash_seconds,
+		year_flashes = CaptionSequence(
+			(year,) * self.year_flash_count, seconds_per_caption=self.year_flash_seconds,
 			pause_seconds_between_captions=self.pause_seconds_between_year_flashes, text_color=self.year_flash_color,
 			screen_scale=glGetIntegerv(GL_VIEWPORT)[3] / self.year_flash_design_screen_height,
 			font_pixel_size=self.year_flash_font_pixel_size, margin_from_top_left_pixels=(self.year_flash_left_margin_pixels, top_margin_pixels),
 			font_path=FONT_PATH)
-		self.year_1980_flashes.start()
+		year_flashes.start()
+		return year_flashes
+
+	def _start_year_1980_flashes(self):
+		self.year_1980_flashes = self._year_flashes_below("1980", self._chip_row())
 		self._enter("year_1980")
+
+	def _gallery_before_assembly(self):
+		return (self.processor_6510, self.vic_ii_6567, self.sid_6581, self.cia_6526, self.basic_rom_901226,
+		        self.character_rom_901225, self.kernal_rom_901xxx)
 
 	def _year_1980_step(self, seconds):
 		self._update_travellers(seconds)
@@ -557,15 +592,31 @@ class C64Demo(PygameDemo):
 			self.cia_swap.destroy()
 			self._enter("board_arrival")
 			self.board_arrival.begin()
+			self.year_1982_flashes = self._year_flashes_below("1982", self._gallery_before_assembly())
 
 	def _board_arrival_step(self, seconds):
 		self._update_travellers(seconds)
 		self.board_arrival.update(seconds)
 		self.board_arrival.draw()
 		self._draw_chips_with_newcomers()
+		self._flash_year_1982(seconds)
 		if self.board_arrival.arrived:
+			self._stop_year_1982_flashes()
 			self._enter("assembly")
 			self.chip_assembly.begin(self._assembly_steps())
+
+	def _flash_year_1982(self, seconds):
+		if self.year_1982_flashes is None:
+			return
+		self.year_1982_flashes.update(seconds)
+		self.year_1982_flashes.draw()
+		if self.year_1982_flashes.finished:
+			self._stop_year_1982_flashes()
+
+	def _stop_year_1982_flashes(self):
+		if self.year_1982_flashes is not None:
+			self.year_1982_flashes.destroy()
+			self.year_1982_flashes = None
 
 	def _assembly_steps(self):
 		board = self.board_arrival
@@ -634,7 +685,15 @@ class C64Demo(PygameDemo):
 
 	def _acrobatics_step(self, seconds):
 		self._draw_packed_c64_with_presentation(seconds)
-		if self.board_arrival.parked_seconds >= self.parked_hold_seconds:
+		if self.board_arrival.parked_seconds > 0.0 and not self.grand_presentation.anniversary_revealed:
+			self.grand_presentation.reveal_anniversary()
+		farewell_time_has_come = self.board_arrival.parked_seconds >= self.seconds_parked_before_farewell
+		if farewell_time_has_come and not self.farewell_message.started:
+			self.farewell_message.begin()
+		self.farewell_message.update(seconds)
+		self.farewell_message.draw_overlay()
+		if self.farewell_message.done:
+			self.farewell_message.destroy()
 			self.grand_presentation.destroy()
 			self.board_packing.destroy()
 			self.chip_assembly.destroy()

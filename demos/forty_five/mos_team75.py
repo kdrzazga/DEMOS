@@ -8,6 +8,7 @@ from lib.caption_sequence import CaptionSequence
 from lib.flying_logo import FlyingLogo, ease_in_cubic
 from lib.picture_crossfade import PictureCrossfade
 from lib.pointed_name_label import PointedNameLabel, ScreenSpaceProjector
+from demos.forty_five.name_caption import NameCaption
 
 LOGO_FILE_NAME = "logo.png"
 LOGO_FLIGHT_SECONDS = 6.5
@@ -83,6 +84,9 @@ class MosTeamParams:
 		self.zoom_target_pixel_rectangle = ((445, 222), (500, 280))
 		self.zoom_seconds = 1.25
 		self.zoom_target_screen_fill_fraction = 0.85
+		self.name_caption_lines = ()
+		self.name_caption_line_height_in_screen_heights = 0.035
+		self.name_caption_gap_in_screen_heights = 0.01
 
 
 class MosTeam:
@@ -102,6 +106,10 @@ class MosTeam:
 			params.closing_captions, seconds_per_caption=params.seconds_per_closing_caption,
 			pause_seconds_between_captions=params.pause_seconds_between_closing_captions,
 			text_color=params.closing_caption_color, screen_scale=self._screen_scale())
+		self.name_caption = None
+		if params.name_caption_lines:
+			self.name_caption = NameCaption(params.name_caption_lines)
+			self.name_caption.build()
 		self.flying_logo = None
 		if params.logo_file_name is not None:
 			self.flying_logo = FlyingLogo(os.path.join(params.picture_directory, params.logo_file_name),
@@ -356,11 +364,20 @@ class MosTeam:
 		self._apply_sway()
 		self._apply_zoom_to_target()
 		self._draw_pictures()
+		self._draw_name_caption()
 		self.laser_line.draw()
 		self._draw_team_member_annotations()
 		self.closing_caption_sequence.draw()
 		glPopMatrix()
 		glPopAttrib()
+
+	def _draw_name_caption(self):
+		if self.name_caption is None:
+			return
+		visible_height = 2 * self.camera_distance * math.tan(math.radians(self.params.field_of_view_degrees) / 2)
+		gap = self.params.name_caption_gap_in_screen_heights * visible_height
+		line_height = self.params.name_caption_line_height_in_screen_heights * visible_height
+		self.name_caption.draw_below(0.0, -self.params.picture_height / 2 - gap, 0.0, line_height)
 
 	def _currently_visible_annotations(self):
 		if self.annotation_timeline_seconds is None:
@@ -433,6 +450,8 @@ class MosTeam:
 			annotation.destroy()
 		self.team_member_annotations = []
 		self.closing_caption_sequence.destroy()
+		if self.name_caption is not None:
+			self.name_caption.destroy()
 		if self.flying_logo is not None:
 			self.flying_logo.destroy()
 
@@ -466,6 +485,7 @@ class AlCharpentierParams(MosTeamParams):
 		self.zoom_target_pixel_rectangle = None
 		self.screen_fill_fraction = 0.72
 		self.picture_shift_down_in_picture_heights = 0.06
+		self.name_caption_lines = ("Albert Charpentier",)
 
 
 class RobertYannesParams(AlCharpentierParams):
@@ -477,3 +497,4 @@ class RobertYannesParams(AlCharpentierParams):
 		self.screen_fill_fraction = 0.25
 		self.picture_centre_fraction_from_left = 1.0 / 3.0
 		self.picture_shift_down_in_picture_heights = 0.1
+		self.name_caption_lines = ("Robert", "Yannes")

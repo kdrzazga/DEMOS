@@ -60,6 +60,7 @@ from demos.forty_five.quick_chip_swap import QuickChipSwap, CIA_SOUND_PATH, CIA_
 from demos.forty_five.board_arrival import BoardArrival
 from demos.forty_five.board_packing import BoardPacking
 from demos.forty_five.farewell_message import FarewellMessage
+from demos.forty_five.final_goodbye import FinalGoodbye
 from demos.forty_five.grand_presentation import GrandPresentation
 from demos.forty_five.music_fade_out import MusicFadeOut
 from demos.forty_five.anims.animation6581 import SidChip6581Animation
@@ -190,6 +191,7 @@ class C64Demo(PygameDemo):
 		self.seconds_parked_before_farewell = 1.5
 		self.farewell_message = FarewellMessage(self.screen_plane, self.grand_presentation.corner_block_right_x())
 		self.music_fade_out = MusicFadeOut()
+		self.final_goodbye = FinalGoodbye(self.screen_plane, self.grand_presentation, self.farewell_message)
 
 		self.intro = IntroCaptionVideo(os.path.join(self.resources, self.intro_video),
 		                        os.path.join(self.resources, self.intro_audio), aspect)
@@ -269,7 +271,7 @@ class C64Demo(PygameDemo):
 	def _lower_music_while_speaking(self):
 		speaking = any(sound.get_num_channels() > 0 for sound in self._spoken_sounds())
 		music_volume = (self.music_volume * (self.music_volume_while_speaking if speaking else 1.0)
-		                * self.music_fade_out.volume_factor)
+		                * self.music_fade_out.volume_factor * self.final_goodbye.music_volume_factor)
 		if pygame.mixer.get_init() and pygame.mixer.music.get_volume() != music_volume:
 			pygame.mixer.music.set_volume(music_volume)
 
@@ -692,7 +694,12 @@ class C64Demo(PygameDemo):
 			self.farewell_message.begin()
 		self.farewell_message.update(seconds)
 		self.farewell_message.draw_overlay()
-		if self.farewell_message.done:
+		if self.farewell_message.done and not self.final_goodbye.started:
+			self.final_goodbye.begin()
+		self.final_goodbye.update(seconds)
+		self.final_goodbye.draw_overlay()
+		if self.final_goodbye.done:
+			self.final_goodbye.destroy()
 			self.farewell_message.destroy()
 			self.grand_presentation.destroy()
 			self.board_packing.destroy()

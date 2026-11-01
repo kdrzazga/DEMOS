@@ -26,6 +26,7 @@ class ZoomingCaption:
 		self.font_px = 160
 		self.font_rgb = (255, 255, 255)
 		self.opacity = 0.7
+		self.dimming = 1.0
 		self.zoom_seconds = 3.0
 		self.hold_seconds = 3.0
 		self.start_width_in_screen_widths = 0.05
@@ -72,7 +73,7 @@ class ZoomingCaption:
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 		glEnable(GL_TEXTURE_2D)
 		glBindTexture(GL_TEXTURE_2D, self._texture)
-		glColor4f(1.0, 1.0, 1.0, self.opacity)
+		glColor4f(1.0, 1.0, 1.0, self.opacity * self.dimming)
 		glBegin(GL_QUADS)
 		for (s, t), (across, along) in (((0, 0), (-1, -1)), ((1, 0), (1, -1)), ((1, 1), (1, 1)), ((0, 1), (-1, 1))):
 			glTexCoord2f(s, t)
@@ -94,6 +95,7 @@ class FadingCaption:
 		self.font_px = 160
 		self.font_rgb = (255, 255, 255)
 		self.opacity = 0.7
+		self.dimming = 1.0
 		self.fade_in_seconds = 1.0
 		self.elapsed_seconds = 0.0
 		self.started = False
@@ -123,7 +125,7 @@ class FadingCaption:
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 		glEnable(GL_TEXTURE_2D)
 		glBindTexture(GL_TEXTURE_2D, self._texture)
-		glColor4f(1.0, 1.0, 1.0, self.opacity * fade_progress)
+		glColor4f(1.0, 1.0, 1.0, self.opacity * self.dimming * fade_progress)
 		glBegin(GL_QUADS)
 		for (s, t), (across, along) in (((0, 0), (-1, -1)), ((1, 0), (1, -1)), ((1, 1), (1, 1)), ((0, 1), (-1, 1))):
 			glTexCoord2f(s, t)
@@ -165,6 +167,9 @@ class GrandPresentation:
 		self.retreated_scale = 0.25
 		self.corner_margin = 0.6
 		self.retreat_elapsed_seconds = 0.0
+		self.years_count_corner_centre = (0.0, 0.0)
+		self.years_count_height = 0.0
+		self.years_count_centre_override = None
 		self.years_count_caption = FadingCaption(YEARS_COUNT_CAPTION, 2.6)
 		self.years_of_caption = FadingCaption(YEARS_OF_CAPTION, 0.5)
 		self.years_span_caption = FadingCaption(YEARS_SPAN_CAPTION, 0.78)
@@ -279,6 +284,14 @@ class GrandPresentation:
 		                            self.model_caption.final_width_in_screen_widths) * self.retreated_scale
 		return -self.screen_plane.visible_width / 2 + self.corner_margin + retreated_stack_width * self.screen_plane.visible_width
 
+	def dim_all_but_years_count(self, dimming):
+		for caption in (self.make_caption, self.model_caption, self.years_of_caption, self.years_span_caption):
+			caption.dimming = dimming
+
+	@property
+	def years_count_width(self):
+		return self.years_count_height * self.years_count_caption.aspect
+
 	def _draw_anniversary(self, centre_x, stack_top_y, stack_bottom_y, make_height, gap):
 		depth = -self.screen_plane.camera_distance
 		years_of_height = self.years_of_caption.height_in_make_heights * make_height
@@ -287,7 +300,10 @@ class GrandPresentation:
 		years_of_y = stack_top_y + gap + years_of_height / 2
 		years_count_y = stack_top_y + gap + years_of_height + gap + years_count_height / 2
 		years_span_y = stack_bottom_y - gap - years_span_height / 2
-		self.years_count_caption.draw(centre_x, years_count_y, years_count_height, depth)
+		self.years_count_corner_centre = (centre_x, years_count_y)
+		self.years_count_height = years_count_height
+		years_count_centre = self.years_count_centre_override or self.years_count_corner_centre
+		self.years_count_caption.draw(*years_count_centre, years_count_height, depth)
 		self.years_of_caption.draw(centre_x, years_of_y, years_of_height, depth)
 		self.years_span_caption.draw(centre_x, years_span_y, years_span_height, depth)
 

@@ -22,6 +22,7 @@ class TypedLabel:
 		self.font_px = font_px
 		self.beeping = beeping
 		self.tint_rgb = (1.0, 1.0, 1.0)
+		self.opacity = 1.0
 		self.frame = 0
 		self._shown_letters = -1
 		self._texture = None
@@ -69,7 +70,7 @@ class TypedLabel:
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 		glEnable(GL_TEXTURE_2D)
 		glBindTexture(GL_TEXTURE_2D, self._texture)
-		glColor3f(*self.tint_rgb)
+		glColor4f(*self.tint_rgb, self.opacity)
 		glBegin(GL_QUADS)
 		for (s, t), (across, along) in (((0, 0), (-1, -1)), ((1, 0), (1, -1)), ((1, 1), (1, 1)), ((0, 1), (-1, 1))):
 			glTexCoord2f(s, t)

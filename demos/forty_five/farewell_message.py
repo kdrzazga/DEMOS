@@ -81,6 +81,10 @@ class FarewellMessage:
 		else:
 			self.phase = "holding"
 
+	def set_opacity(self, opacity):
+		for label in self.labels:
+			label.opacity = opacity
+
 	def _shows(self, label):
 		if self.phase != "holding" or label not in self.blinking_labels:
 			return True

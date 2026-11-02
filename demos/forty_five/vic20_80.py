@@ -2,10 +2,10 @@ import os
 
 import pygame
 
+from demos.forty_five.chip_listing import ChipListing
 from lib.flying_logo import ease_in_cubic, ease_out_cubic
 from lib.laser_line import PictureTexture
 from lib.picture_surface import PictureSurface
-from demos.forty_five.chip_listing import ChipListing
 
 FORTY_FIVE_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 VIC20_IMAGE_PATH = os.path.join(os.path.dirname(FORTY_FIVE_DIRECTORY), "common", "commodore", "vic20.png")

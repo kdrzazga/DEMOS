@@ -3,12 +3,12 @@ import os
 
 from OpenGL.GL import *
 
-from lib.laser_line import LaserLine, LaserSweepPath, PictureTexture, PictureTransition, smooth_step
+from demos.forty_five.name_caption import NameCaption
 from lib.caption_sequence import CaptionSequence
 from lib.flying_logo import FlyingLogo, ease_in_cubic
+from lib.laser_line import LaserLine, LaserSweepPath, PictureTexture, PictureTransition, smooth_step
 from lib.picture_crossfade import PictureCrossfade
 from lib.pointed_name_label import PointedNameLabel, ScreenSpaceProjector
-from demos.forty_five.name_caption import NameCaption
 
 LOGO_FILE_NAME = "logo.png"
 LOGO_FLIGHT_SECONDS = 6.5

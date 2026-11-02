@@ -1,7 +1,7 @@
 from OpenGL.GL import *
 
-from lib.laser_line import smooth_step
 from demos.forty_five.typed_label import TypedLabel
+from lib.laser_line import smooth_step
 
 
 class ChipToPictureLine:

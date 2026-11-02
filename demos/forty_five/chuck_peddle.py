@@ -2,9 +2,9 @@ import os
 
 from OpenGL.GL import *
 
+from demos.forty_five.name_caption import NameCaption
 from lib.laser_line import PictureTexture
 from lib.picture_surface import PictureSurface
-from demos.forty_five.name_caption import NameCaption
 
 CHUCK_PEDDLE_IMAGE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "history", "mos",
                                        "peddle.jpg")

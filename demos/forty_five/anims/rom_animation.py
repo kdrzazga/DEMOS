@@ -1,6 +1,6 @@
-from lib.flying_logo import ease_out_cubic
 from demos.forty_five.anims.chip_animation import ChipAnimation, ChipPose
 from demos.forty_five.chips.mos901xxx import MOS901xxx
+from lib.flying_logo import ease_out_cubic
 
 
 class Rom901xxxAnimation(ChipAnimation):

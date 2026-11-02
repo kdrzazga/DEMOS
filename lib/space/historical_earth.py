@@ -5,7 +5,7 @@ import pygame
 from OpenGL.GL import *
 from OpenGL.GLU import gluSphere
 
-from lib.earth import Earth
+from lib.space.earth import Earth
 
 
 # (name, latitude, longitude): coastline extremes and cities the historical maps are pinned to.
@@ -269,7 +269,7 @@ class HistoricalEarth(Earth):
 
     def _historical_map(self, year, seam_longitude, warp_smoothing):
         setup = self.maps[year]
-        map_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", setup["file"])
+        map_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "resources", setup["file"])
         geo ={name: (latitude, longitude) for name, latitude, longitude in PLACES}
         landmarks = tuple((name, *geo[name], *pixel) for name, pixel in setup["pixels"].items())
         return HistoricalMap(map_path, landmarks, seam_longitude=seam_longitude,

@@ -5,8 +5,8 @@ from OpenGL.GL import *
 from OpenGL.GLU import gluPerspective, gluLookAt
 
 from lib.particles import TextureLibrary
-from lib.nebula import Config, NebulaGas, StarField, SpikeStars
-from lib.round_nebula import RoundNebula
+from lib.space.nebula import Config, NebulaGas, StarField, SpikeStars
+from lib.space.round_nebula import RoundNebula
 
 
 class SpaceBackdrop:

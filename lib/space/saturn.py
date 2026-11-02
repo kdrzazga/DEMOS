@@ -5,7 +5,7 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 
 from lib.particles import Texture2D
-from lib.moon import Moon
+from lib.space.moon import Moon
 
 
 class Saturn:

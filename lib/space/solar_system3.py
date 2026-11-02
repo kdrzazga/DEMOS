@@ -2,9 +2,9 @@ import math
 
 from OpenGL.GL import *
 
-from lib.earth import Earth
-from lib.mars import Mars
-from lib.saturn import Saturn
+from lib.space.earth import Earth
+from lib.space.mars import Mars
+from lib.space.saturn import Saturn
 
 
 class SolarSystem3:

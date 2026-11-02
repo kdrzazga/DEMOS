@@ -21,11 +21,11 @@ from demos.WinterDemo26.bonfire import Bonfire
 from demos.WinterDemo26.christmas_robin import ChristmasRobin
 from demos.WinterDemo26.cloud import Cloud
 from demos.WinterDemo26.stars import Stars
-from lib.backdrop import SpaceBackdrop
+from demos.WinterDemo26.backdrop import SpaceBackdrop
 from lib.pygame_demo import PygameDemo
-from lib.saturn import Saturn
-from lib.mars import Mars
-from lib.earth import Earth
+from lib.space.saturn import Saturn
+from lib.space.mars import Mars
+from lib.space.earth import Earth
 from demos.WinterDemo26.santa_ride import SantaRide
 from demos.WinterDemo26.santa_claus import SantaClaus
 from lib.urban.city_factory import CityFactory

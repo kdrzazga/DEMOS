@@ -6,7 +6,7 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 
 from lib.particles import Texture2D
-from lib.moon import EarthMoon
+from lib.space.moon import EarthMoon
 from lib.urban.city import CityEntranceSign
 
 
@@ -22,7 +22,7 @@ class Earth:
         self.spin_speed = spin_speed
         self.spin = 0.0
         self.texture_path = texture_path or os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "resources", "earth_texture.png")
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "resources", "earth_texture.png")
 
         self.halo_color = (0.32, 0.56, 0.95)
         self.halo_scale = 1.38

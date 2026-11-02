@@ -8,7 +8,7 @@ from OpenGL.GLU import *
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
-from lib.earth import Earth
+from lib.space.earth import Earth
 
 
 class EarthTest:

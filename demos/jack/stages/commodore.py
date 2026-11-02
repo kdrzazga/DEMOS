@@ -7,7 +7,7 @@ from demos.jack.stage import Chapter, MapEra, Stage
 
 class Stage1971(Stage):
     def __init__(self):
-        super().__init__(10, MapEra.MODERN, year_label="1971", locations=(VALLEY_FORGE,))
+        super().__init__(10, MapEra.MODERN, year_label="1971-75", locations=(VALLEY_FORGE,))
 
 
 class Stage1977PET(Stage):

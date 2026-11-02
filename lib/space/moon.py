@@ -44,7 +44,7 @@ class EarthMoon(Moon):
         super().__init__(name, radius, orbit_radius, angular_speed, inclination=inclination,
                          color=color, phase=phase, slices=slices, stacks=stacks)
         self.texture_path = texture_path or os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "resources", "moon.png")
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "resources", "moon.png")
         gluQuadricTexture(self.quadric, GL_TRUE)
         self.surface = self._load_surface()
 

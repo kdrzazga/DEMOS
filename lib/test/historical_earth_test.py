@@ -8,7 +8,7 @@ from OpenGL.GLU import gluLookAt
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
-from lib.historical_earth import HistoricalEarth
+from lib.space.historical_earth import HistoricalEarth
 from lib.test.earth_test import EarthTest
 
 

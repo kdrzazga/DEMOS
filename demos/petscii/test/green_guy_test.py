@@ -40,7 +40,7 @@ from OpenGL.GLU import gluPerspective
 _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 sys.path.insert(0, _ROOT)
 
-from demos.petscii.files.globals import Constants
+from lib.globals import Constants
 from demos.petscii.files.petscii.green_guy import GreenGuy
 
 CHAR_SIZE = 24

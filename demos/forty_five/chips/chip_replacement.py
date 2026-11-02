@@ -3,9 +3,9 @@ import os
 import pygame
 from OpenGL.GL import *
 
-from demos.forty_five.typed_label import TypedLabel
+from lib.typing_effect.typed_label import TypedLabel
 
-FORTY_FIVE_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
+FORTY_FIVE_DIRECTORY = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 COMMODORE_HISTORY_DIRECTORY = os.path.join(FORTY_FIVE_DIRECTORY, "resources", "history", "c=")
 MOS6510_SOUND_PATH = os.path.join(COMMODORE_HISTORY_DIRECTORY, "6510.mp3")
 MOS6510_TEXT_LINES = ("MOS 6510 was supposed to replace", "its older buddy 6502")

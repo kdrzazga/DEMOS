@@ -98,7 +98,7 @@ DEMOS = {
     "jack": jack_demo,
 }
 
-DEFAULT_DEMO = "45"
+DEFAULT_DEMO = "jack"
 
 
 def close_boot_splash():

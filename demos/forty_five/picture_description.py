@@ -1,11 +1,11 @@
 import pygame
 from OpenGL.GL import *
 
-from demos.forty_five.geometry import upload_texture
-from lib.typer import FONT_PATH
+from lib.geometry import upload_texture
+from lib.typing_effect.typer import FONT_PATH
 
 
-class NameCaption:
+class PictureDescription:
 
 	def __init__(self, lines):
 		self.lines = lines

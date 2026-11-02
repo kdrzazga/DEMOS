@@ -5,7 +5,7 @@ from array import array
 
 import pygame
 
-FONT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "C64_Pro_Mono-STYLE.ttf")
+FONT_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "resources", "C64_Pro_Mono-STYLE.ttf")
 
 
 class Typer:

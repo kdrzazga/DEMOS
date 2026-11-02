@@ -3,7 +3,7 @@ import math
 from OpenGL.GL import *
 
 from demos.forty_five.c64breadbox.primitives import Box, Cylinder
-from demos.forty_five.geometry import color, quad
+from lib.geometry import color, quad
 
 
 class FacePlane:

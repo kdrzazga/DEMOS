@@ -4,7 +4,7 @@ import numpy as np
 from OpenGL.GL import *
 
 from demos.forty_five.c64breadbox.primitives import Box
-from demos.forty_five.geometry import color, text_texture, textured_quad
+from lib.geometry import color, text_texture, textured_quad
 from demos.forty_five.rotation import rotation_y, transform_matrix
 
 

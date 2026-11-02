@@ -16,7 +16,7 @@ from OpenGL.GL import (
 _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 sys.path.insert(0, _ROOT)
 
-from demos.petscii.files.globals import Constants
+from lib.globals import Constants
 from demos.petscii.files.yamo_animation import YamoAnimation
 
 

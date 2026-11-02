@@ -19,7 +19,7 @@ import os
 from OpenGL.GL import *
 
 import demos.forty_five.c64c.keys as k
-from demos.forty_five.geometry import color, image_texture, quad, text_texture, textured_quad
+from lib.geometry import color, image_texture, quad, text_texture, textured_quad
 
 
 class Commodore64:

@@ -1,6 +1,6 @@
 from OpenGL.GL import *
 
-from demos.forty_five.geometry import color, quad
+from lib.geometry import color, quad
 
 
 class OpeningFace:

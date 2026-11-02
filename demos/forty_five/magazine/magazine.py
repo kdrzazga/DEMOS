@@ -22,7 +22,7 @@ import os
 import pygame
 from OpenGL.GL import *
 
-from demos.forty_five.geometry import upload_texture
+from lib.geometry import upload_texture
 
 C64_RESOURCES = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "resources")
 MAGAZINE_RESOURCES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources")

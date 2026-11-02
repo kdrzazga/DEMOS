@@ -5,7 +5,7 @@ import pygame
 from OpenGL.GL import *
 
 from lib.particles import Texture2D
-from lib.typer import FONT_PATH
+from lib.typing_effect.typer import FONT_PATH
 
 RESOURCES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "res")
 COMMODORE_PICTURES = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "common", "commodore")

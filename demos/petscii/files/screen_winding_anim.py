@@ -6,7 +6,7 @@ from lib.c64_frame import C64Frame
 from lib.petscii_screen import PetsciiScreen
 from lib.petscii_image import PetsciiImage
 from lib.test.corpus import build_lines
-from demos.petscii.files.globals import Constants
+from lib.globals import Constants
 
 RESOURCES = os.path.join(os.path.dirname(__file__), "resources")
 LARGE_TEXT = os.path.join(RESOURCES, "large-text")

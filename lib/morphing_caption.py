@@ -2,7 +2,7 @@ import pygame
 from OpenGL.GL import *
 
 from lib.laser_line import PictureTexture
-from lib.typer import FONT_PATH
+from lib.typing_effect.typer import FONT_PATH
 
 
 class MorphingCaptionSegment:

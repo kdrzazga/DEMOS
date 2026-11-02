@@ -2,7 +2,7 @@ import os
 
 import pygame
 
-from demos.forty_five.chip_listing import ChipListing
+from demos.forty_five.chips.chip_listing import ChipListing
 from lib.flying_logo import ease_in_cubic, ease_out_cubic
 from lib.laser_line import PictureTexture
 from lib.picture_surface import PictureSurface

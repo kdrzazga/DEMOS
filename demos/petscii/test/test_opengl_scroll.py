@@ -2,7 +2,7 @@ import math
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
 
 import pygame
 from pygame.locals import DOUBLEBUF, OPENGL
@@ -19,8 +19,7 @@ SWAY_DEGREES = 45.0
 SWAY_PERIOD = 3.0
 DISTANCE = 4.5
 HALF_H = 1.5
-RESOURCE_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "demos", "petscii",
-                             "files", "resources")
+RESOURCE_PATH = os.path.join(os.path.dirname(__file__), "..", "files", "resources")
 LARGE_TEXT_PATH = os.path.join(RESOURCE_PATH, "large-text")
 
 

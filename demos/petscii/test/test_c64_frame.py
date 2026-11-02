@@ -1,7 +1,7 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
 
 import pygame
 
@@ -16,8 +16,7 @@ WIDTH, HEIGHT = 800, 600
 GREEN = (51, 255, 102)
 CHAR_SIZE = 16
 BACKGROUND_CYCLE = (6, 0, 11, 14)
-RESOURCE_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "demos", "petscii",
-                            "files", "resources")
+RESOURCE_PATH = os.path.join(os.path.dirname(__file__), "..", "files", "resources")
 PETSCII_PATH = os.path.join(RESOURCE_PATH, "petscii")
 LARGE_TEXT_PATH = os.path.join(RESOURCE_PATH, "large-text")
 

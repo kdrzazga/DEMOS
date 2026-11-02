@@ -37,12 +37,12 @@ from lib.caption_sequence import CaptionSequence
 from lib.laser_line import smooth_step
 from lib.picture_surface import ScreenPlane
 from lib.pygame_demo import PygameDemo
-from lib.typer import FONT_PATH
+from lib.typing_effect.typer import FONT_PATH
 from demos.forty_five.acquisition76 import MosAcquisition
 from demos.forty_five.basic77 import BasicLicense
 from demos.forty_five.c64c.commodore64 import Commodore64
-from demos.forty_five.c64c.crash_animation import CrashAnimationText
-from demos.forty_five.chip_name_flash import ChipNameFlash
+from demos.forty_five.c64c.keyboard_crash_anim import CrashAnimationText
+from demos.forty_five.chips.chip_name_flash import ChipNameFlash
 from demos.forty_five.chuck_peddle import ChuckPeddleSurface
 from demos.forty_five.intro import IntroCaptionVideo
 from demos.forty_five.mos_team75 import MosTeamFactory
@@ -56,20 +56,20 @@ from demos.forty_five.pet77 import PetIntroduction
 from demos.forty_five.vic20_80 import Vic20Arrival
 from demos.forty_five.anims.animation6510 import Processor6510Animation
 from demos.forty_five.anims.animation6567 import VicIIChip6567Animation
-from demos.forty_five.quick_chip_swap import QuickChipSwap, CIA_SOUND_PATH, CIA_SWAP_CAPTION
+from demos.forty_five.chips.quick_chip_swap import QuickChipSwap, CIA_SOUND_PATH, CIA_SWAP_CAPTION
 from demos.forty_five.board_arrival import BoardArrival
 from demos.forty_five.board_packing import BoardPacking
 from demos.forty_five.farewell_message import FarewellMessage
 from demos.forty_five.final_goodbye import FinalGoodbye
 from demos.forty_five.grand_presentation import GrandPresentation
-from demos.forty_five.music_fade_out import MusicFadeOut
+from lib.music_fade_out import MusicFadeOut
 from demos.forty_five.anims.animation6581 import SidChip6581Animation
 from demos.forty_five.yannes82 import RobertYannesIntroduction
 from demos.forty_five.assembly84 import AssemblyStep, ChipAssembly
-from demos.forty_five.chip_replacement import (ChipReplacement, MOS6510_SOUND_PATH, MOS6510_TEXT_LINES,
+from demos.forty_five.chips.chip_replacement import (ChipReplacement, MOS6510_SOUND_PATH, MOS6510_TEXT_LINES,
                                                 VIC_II_SOUND_PATH, VIC_II_TEXT_LINES)
 from demos.forty_five.scene import setup_scene
-from demos.forty_five.typed_label import TypedLabel
+from lib.typing_effect.typed_label import TypedLabel
 
 
 class C64Demo(PygameDemo):
@@ -423,7 +423,7 @@ class C64Demo(PygameDemo):
 		self.mos_acquisition.update(seconds)
 		self.basic_license.update(seconds)
 		if self.basic_license.bill_has_set_off:
-			self.chuck_peddle.name_caption_visible = False
+			self.chuck_peddle.picture_description_visible = False
 		self._move_basic_rom_with_basic_license()
 		self._update_and_draw_travellers(seconds)
 		self.mos_acquisition.draw()

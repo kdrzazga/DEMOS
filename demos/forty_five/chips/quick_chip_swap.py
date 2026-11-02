@@ -3,9 +3,9 @@ import os
 import pygame
 from OpenGL.GL import *
 
-from demos.forty_five.typed_label import TypedLabel
+from lib.typing_effect.typed_label import TypedLabel
 
-FORTY_FIVE_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
+FORTY_FIVE_DIRECTORY = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CIA_SOUND_PATH = os.path.join(FORTY_FIVE_DIRECTORY, "resources", "history", "c=", "CIA.mp3")
 CIA_SWAP_CAPTION = "VIA (6522) -> CIA (6526)"
 

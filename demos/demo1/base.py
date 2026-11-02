@@ -5,7 +5,7 @@ from arcade import Text
 from arcade.color import BLACK, WHITE, AQUA, YELLOW, PINK
 
 from demos.demo1 import Globals, Constants
-from lib.c64 import C64
+from demos.demo1.c64 import C64
 
 
 class Demo1Base(C64):

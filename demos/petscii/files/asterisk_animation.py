@@ -41,7 +41,7 @@ from OpenGL.GL import (
     glVertex2f,
 )
 
-from demos.petscii.files.globals import Constants
+from lib.globals import Constants
 
 
 class _Speck:

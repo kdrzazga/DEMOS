@@ -1,7 +1,7 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
 
 import pygame
 
@@ -11,8 +11,7 @@ from lib.test.corpus import load_text, build_lines
 WIDTH, HEIGHT = 800, 600
 GREEN = (51, 255, 102)
 BLUE = (102, 204, 255)
-RESOURCE_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "demos", "petscii",
-                             "files", "resources")
+RESOURCE_PATH = os.path.join(os.path.dirname(__file__), "..", "files", "resources")
 LARGE_TEXT_PATH = os.path.join(RESOURCE_PATH, "large-text")
 
 

@@ -1,4 +1,4 @@
-"""Text typed letter by letter (lib.typer.Typer) and shown as a quad in 3D.
+"""Text typed letter by letter (lib.typing_effect.typer.Typer) and shown as a quad in 3D.
 
 The Typer draws onto an off-screen pygame surface sized for the whole text, so
 the label keeps its size while it fills up from the left; the surface goes to
@@ -8,8 +8,8 @@ a texture whenever a new letter appears.
 import pygame
 from OpenGL.GL import *
 
-from demos.forty_five.geometry import upload_texture
-from lib.typer import FONT_PATH, Typer
+from lib.geometry import upload_texture
+from lib.typing_effect.typer import FONT_PATH, Typer
 
 
 class TypedLabel:

@@ -9,7 +9,7 @@ from lib.laser_line import PictureTexture, smooth_step
 from lib.morphing_caption import MorphingCaption
 from lib.picture_surface import PictureSurface
 from lib.speech_bubble import SpeechBubble
-from lib.typer import FONT_PATH
+from lib.typing_effect.typer import FONT_PATH
 
 HISTORY_DIRECTORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "history")
 JABBA_IMAGE_PATH = os.path.join(HISTORY_DIRECTORY, "c=", "jabba.png")

@@ -35,9 +35,9 @@ from OpenGL.GL import (
 from OpenGL.GLU import gluPerspective
 
 from demos.petscii.files.c64_base_screen import C64BaseScreen
-from demos.petscii.files.globals import Constants
+from lib.globals import Constants
 from demos.petscii.files.mesh import PetsciiMesh
-from lib.typer import Typer
+from lib.typing_effect.typer import Typer
 
 
 class C64Screen(C64BaseScreen):

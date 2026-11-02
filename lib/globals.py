@@ -1,7 +1,5 @@
 import os
 
-_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-
 
 class Constants:
 
@@ -22,7 +20,7 @@ class Constants:
     ROWS = 25
     FONT_BASE = 0xE000
 
-    FONT_PATH = os.path.join(_ROOT, "lib", "resources", "C64_Pro_Mono-STYLE.ttf")
+    FONT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "C64_Pro_Mono-STYLE.ttf")
 
     SPACE = 32
 

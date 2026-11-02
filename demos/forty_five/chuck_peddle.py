@@ -2,7 +2,7 @@ import os
 
 from OpenGL.GL import *
 
-from demos.forty_five.name_caption import NameCaption
+from demos.forty_five.picture_description import PictureDescription
 from lib.laser_line import PictureTexture
 from lib.picture_surface import PictureSurface
 
@@ -15,11 +15,11 @@ class ChuckPeddleSurface(PictureSurface):
 
 	def __init__(self, screen_plane, height_in_screen_heights=0.45):
 		super().__init__(PictureTexture.load(CHUCK_PEDDLE_IMAGE_PATH), screen_plane, height_in_screen_heights)
-		self.name_caption_line_height_in_screen_heights = 0.035
-		self.name_caption_gap_in_screen_heights = 0.01
-		self.name_caption = NameCaption(CHUCK_PEDDLE_NAME_LINES)
-		self.name_caption.build()
-		self.name_caption_visible = True
+		self.picture_description_line_height_in_screen_heights = 0.035
+		self.picture_description_gap_in_screen_heights = 0.01
+		self.picture_description = PictureDescription(CHUCK_PEDDLE_NAME_LINES)
+		self.picture_description.build()
+		self.picture_description_visible = True
 
 	def place_at_bottom_middle(self):
 		self.place_center_at(self.center_fractions_with_bottom_edge_on_screen_bottom(0.5))
@@ -29,24 +29,24 @@ class ChuckPeddleSurface(PictureSurface):
 
 	def draw(self):
 		super().draw()
-		if self.name_caption_visible:
-			self._draw_name_caption()
+		if self.picture_description_visible:
+			self._draw_picture_description()
 
-	def _draw_name_caption(self):
+	def _draw_picture_description(self):
 		center_x, center_y = self.world_center_point
 		visible_height = self.screen_plane.visible_height
-		caption_top_y = center_y - self.picture_height / 2 - self.name_caption_gap_in_screen_heights * visible_height
+		caption_top_y = center_y - self.picture_height / 2 - self.picture_description_gap_in_screen_heights * visible_height
 		glPushAttrib(GL_ENABLE_BIT | GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT)
 		glDisable(GL_LIGHTING)
 		glDisable(GL_DEPTH_TEST)
 		glMatrixMode(GL_MODELVIEW)
 		glPushMatrix()
 		glLoadIdentity()
-		self.name_caption.draw_below(center_x, caption_top_y, -self.screen_plane.camera_distance,
-		                             self.name_caption_line_height_in_screen_heights * visible_height)
+		self.picture_description.draw_below(center_x, caption_top_y, -self.screen_plane.camera_distance,
+		                             self.picture_description_line_height_in_screen_heights * visible_height)
 		glPopMatrix()
 		glPopAttrib()
 
 	def destroy(self):
 		super().destroy()
-		self.name_caption.destroy()
+		self.picture_description.destroy()

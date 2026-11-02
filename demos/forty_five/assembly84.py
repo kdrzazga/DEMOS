@@ -1,7 +1,7 @@
 from OpenGL.GL import *
 
 from demos.forty_five.anims.socket_move import SocketMove
-from demos.forty_five.typed_label import TypedLabel
+from lib.typing_effect.typed_label import TypedLabel
 
 
 class AssemblyStep:

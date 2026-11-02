@@ -1,10 +1,10 @@
 import pygame
 from OpenGL.GL import *
 
-from demos.forty_five.geometry import upload_texture
-from demos.forty_five.typed_label import TypedLabel
+from lib.geometry import upload_texture
+from lib.typing_effect.typed_label import TypedLabel
 from lib.laser_line import smooth_step
-from lib.typer import FONT_PATH
+from lib.typing_effect.typer import FONT_PATH
 
 ANNOUNCEMENT_LINES = (
 	"Ladies and gentlemen!",

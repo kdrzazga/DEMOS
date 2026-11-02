@@ -17,7 +17,7 @@ import pygame
 from OpenGL.GL import *
 
 from demos.forty_five.cable import Cable
-from demos.forty_five.geometry import color, face_normal, quad, textured_quad, upload_texture
+from lib.geometry import color, face_normal, quad, textured_quad, upload_texture
 from demos.forty_five.surfaces import (circle_outline, draw_cap, draw_ring_surface, ring, rounded_rect_outline,
                                        superellipse_outline)
 

@@ -5,7 +5,7 @@ from demos.forty_five.c64breadbox.connectors import ControlPort, DinSocket, Powe
 from demos.forty_five.c64breadbox.dil_socket import DilSocket
 from demos.forty_five.c64breadbox.layout import ControlPortSpec, DinSocketSpec, PowerSwitchSpec
 from demos.forty_five.c64breadbox.photo import BoardPhoto
-from demos.forty_five.geometry import text_texture, textured_quad
+from lib.geometry import text_texture, textured_quad
 
 CONNECTOR_TYPES = {DinSocketSpec: DinSocket, ControlPortSpec: ControlPort, PowerSwitchSpec: PowerSwitch}
 

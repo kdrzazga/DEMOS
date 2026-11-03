@@ -39,13 +39,11 @@ class BallStage(Stage):
         super().__init__(11.0)
         self.build_position = (0.0, 0.6, 0.0)
         self.build_radius = 1.0
-        self.entry_position = (7.0, 1.3, 0.0)
         self.points_duration = 3.0
         self.cover_start = 3.5
         self.cover_duration = 2.5
         self.shading_time = 6.5
         self.move_start = 7.5
-        self.join_start = 8.5
         self.travel_duration = 2.0
         self.travel_arc = 0.6
 
@@ -53,14 +51,14 @@ class BallStage(Stage):
         show.welcome.alpha = 0.0
         show.camera.target_tilt = 20.0
         show.balls_bobbing = False
-        first, second = show.balls
+        first = show.balls[0]
         first.visible = True
         first.shaded = False
         first.point_share = 0.0
         first.cover_share = 0.0
 
     def update(self, show, time):
-        first, second = show.balls
+        first = show.balls[0]
         first.point_share = self.phase(time, 0.0, self.points_duration)
         first.cover_share = self.phase(time, self.cover_start,
                                        self.cover_duration)
@@ -68,12 +66,7 @@ class BallStage(Stage):
         first.glide(self.build_position, first.home, self.build_radius,
                     first.full_radius, self.travel_arc,
                     self.phase(time, self.move_start, self.travel_duration))
-        second.visible = time >= self.join_start
-        second.glide(self.entry_position, second.home, second.full_radius,
-                     second.full_radius, self.travel_arc,
-                     self.phase(time, self.join_start,
-                                self.travel_duration))
-        show.balls_bobbing = time >= self.join_start + self.travel_duration
+        show.balls_bobbing = time >= self.move_start + self.travel_duration
 
 
 class MeshStage(Stage):
@@ -154,6 +147,24 @@ class BackStage(Stage):
     def update(self, show, time):
         show.head.set_back_depth(self.eased(time, 0.5, 2.5))
         self.turn_once(show, time, 3.5, 6.5)
+
+
+class SecondBallStage(Stage):
+    def __init__(self):
+        super().__init__(3.0)
+        self.entry_position = (7.0, 1.3, 0.0)
+        self.travel_duration = 2.0
+        self.travel_arc = 0.6
+
+    def enter(self, show):
+        show.balls_bobbing = False
+        show.balls[1].visible = True
+
+    def update(self, show, time):
+        second = show.balls[1]
+        second.glide(self.entry_position, second.home, second.full_radius,
+                     second.full_radius, self.travel_arc,
+                     self.phase(time, 0.0, self.travel_duration))
 
 
 class DetailsStage(Stage):
@@ -247,9 +258,18 @@ class OrbitStage(Stage):
 
 
 class ZoomStage(Stage):
-    def __init__(self, animation_duration):
+    def __init__(self, c64_animation, playback_speed):
         self.zoom_duration = 6.0
-        super().__init__(max(animation_duration, self.zoom_duration))
+        self.spinning_before_zoom_out = 5.0
+        self.zoom_out_duration = 6.0
+        self.hold_after_zoom_out = 4.0
+        self.zoom_out_start = ((c64_animation.picture_start
+                                + self.spinning_before_zoom_out)
+                               * playback_speed)
+        zoom_out_end = (self.zoom_out_start + self.zoom_out_duration
+                        + self.hold_after_zoom_out)
+        super().__init__(max(c64_animation.duration * playback_speed,
+                             zoom_out_end))
         self.fill_share = 0.95
         self.start_distance = 0.0
         self.close_distance = 0.0
@@ -267,7 +287,10 @@ class ZoomStage(Stage):
             show.head.screen_height(), self.fill_share)
 
     def update(self, show, time):
-        share = self.eased(time, 0.0, self.zoom_duration)
+        zoom_in = self.eased(time, 0.0, self.zoom_duration)
+        zoom_out = self.eased(time, self.zoom_out_start,
+                              self.zoom_out_duration)
+        share = zoom_in * (1.0 - zoom_out)
         camera = show.camera
         distance_ratio = self.close_distance / self.start_distance
         camera.distance = self.start_distance * distance_ratio ** share

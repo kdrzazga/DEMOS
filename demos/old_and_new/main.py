@@ -11,8 +11,8 @@ from demos.old_and_new.stage_view import (
     Pose, ScreenOverlay, StageCamera, WelcomeText)
 from demos.old_and_new.stages import (
     BackStage, BallStage, DetailsStage, EndingStage, ExitStage, FaceStage,
-    MeshStage, OrbitStage, OvalStage, StageTimeline, SunglassesStage,
-    TalkStage, WelcomeStage, ZoomStage)
+    MeshStage, OrbitStage, OvalStage, SecondBallStage, StageTimeline,
+    SunglassesStage, TalkStage, WelcomeStage, ZoomStage)
 
 
 class Soundtrack:
@@ -101,12 +101,11 @@ class OldAndNewDemo(PygameDemo):
         glClearColor(0.0, 0.0, 0.0, 1.0)
         glEnable(GL_DEPTH_TEST)
         self.show = Show(screen_width, screen_height)
-        c64_duration = (self.show.head.c64_animation.duration
-                        * self.show.playback_speed)
         self.timeline = StageTimeline([
             WelcomeStage(), BallStage(), MeshStage(), FaceStage(),
-            TalkStage(), OvalStage(), BackStage(), DetailsStage(),
-            SunglassesStage(), OrbitStage(), ZoomStage(c64_duration),
+            TalkStage(), OvalStage(), BackStage(), SecondBallStage(),
+            DetailsStage(), SunglassesStage(), OrbitStage(),
+            ZoomStage(self.show.head.c64_animation, self.show.playback_speed),
             EndingStage(), ExitStage(self.show.playback_speed)])
         self.time = 0.0
         if not self.paused:

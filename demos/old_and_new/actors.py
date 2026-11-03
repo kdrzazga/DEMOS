@@ -161,6 +161,9 @@ class BorderColoredLens(Lens):
         super().__init__(outline)
         self.screen = screen
 
+    def lens_color(self):
+        return self.screen.normal_border_color
+
     def draw(self):
         if self.display_list is None:
             self.display_list = glGenLists(1)
@@ -168,7 +171,7 @@ class BorderColoredLens(Lens):
             self.emit_shape()
             glEndList()
         glDisable(GL_LIGHTING)
-        glColor3f(*self.screen.border_color)
+        glColor3f(*self.lens_color())
         glCallList(self.display_list)
         glEnable(GL_LIGHTING)
 
@@ -181,6 +184,9 @@ class ScreenLens(BorderColoredLens):
         self.screen_lift = 0.004
         self.grid = 8
         self.screen_list = None
+
+    def lens_color(self):
+        return self.screen.border_color
 
     def screen_point(self, column, row):
         outline = self.outline

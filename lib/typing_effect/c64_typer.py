@@ -21,6 +21,10 @@ class C64Typer(Typer):
 		self.color = self.text_color
 		self.reverse_color = False
 		self.shows_cursor = True
+		self.home_y = start_y
+
+	def scroll_up(self, rows):
+		self.start_y = self.home_y - rows * self.cell_height
 
 	def frame_at(self, seconds):
 		return int(seconds * self.letters_per_second)

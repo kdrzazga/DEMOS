@@ -24,6 +24,7 @@ class Typer:
 		self.start_x = start_x
 		self.start_y = start_y
 		self.color = Typer.COLOR
+		self.background = None
 		self.speed = 1  # number of frames per one letter typed
 		self._last_letters = 0  # letters shown last frame, so we beep only on new ones
 		self._beeps = []  # short blips, built lazily on first beep
@@ -36,7 +37,7 @@ class Typer:
 			if self.text[letters - 1] != " ":  # no blip on blanks
 				self.beep()
 		self._last_letters = letters
-		glyph = self.font.render(self.text[:letters], False, self.color)
+		glyph = self.font.render(self.text[:letters], False, self.color, self.background)
 		self.surface.blit(glyph, (self.start_x, self.start_y))
 
 		#print(current_frame)

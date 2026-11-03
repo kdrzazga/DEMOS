@@ -8,6 +8,7 @@ class C64Typer(Typer):
 		self.c64_frame = c64_frame
 		self.row = row
 		self.column = column
+		self.start_time = start_time
 		self.letters_per_second = 8.0
 		self.cell_width = c64_frame.cell_width
 		self.cell_height = c64_frame.cell_height
@@ -16,13 +17,36 @@ class C64Typer(Typer):
 		start_y = c64_frame.char_y + row * self.cell_height
 		super().__init__(self.frame_at(start_time), glyphs, c64_frame.surface, start_x, start_y,
 						 self.cell_height, FONT_PATH)
-		self.color = Constants.PALETTE[14]
+		self.text_color = Constants.PALETTE[14]
+		self.color = self.text_color
+		self.reverse_color = False
+		self.shows_cursor = True
 
 	def frame_at(self, seconds):
 		return int(seconds * self.letters_per_second)
 
+	def set_speed(self, letters_per_second):
+		self.letters_per_second = letters_per_second
+		self.start_frame = self.frame_at(self.start_time)
+
+	@property
+	def finish_time(self):
+		return self.start_time + len(self.text) / self.letters_per_second
+
+	def has_started(self, seconds):
+		return seconds >= self.start_time
+
 	def type_at(self, seconds, beeping=False):
+		self.apply_colors()
 		self.type(self.frame_at(seconds), beeping)
+
+	def apply_colors(self):
+		if self.reverse_color:
+			self.color = Constants.PALETTE[self.c64_frame.background_color]
+			self.background = self.text_color
+		else:
+			self.color = self.text_color
+			self.background = None
 
 	def visible_letters(self, seconds):
 		typed = self.frame_at(seconds) - self.start_frame
@@ -41,4 +65,4 @@ class C64Typer(Typer):
 
 	def draw_cursor(self, seconds):
 		cursor_x, cursor_y = self.cursor_position(seconds)
-		self.surface.fill(self.color, (cursor_x, cursor_y, self.cell_width, self.cell_height))
+		self.surface.fill(self.text_color, (cursor_x, cursor_y, self.cell_width, self.cell_height))

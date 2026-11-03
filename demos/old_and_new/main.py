@@ -101,11 +101,13 @@ class OldAndNewDemo(PygameDemo):
         glClearColor(0.0, 0.0, 0.0, 1.0)
         glEnable(GL_DEPTH_TEST)
         self.show = Show(screen_width, screen_height)
+        c64_duration = (self.show.head.c64_animation.duration
+                        * self.show.playback_speed)
         self.timeline = StageTimeline([
             WelcomeStage(), BallStage(), MeshStage(), FaceStage(),
             TalkStage(), OvalStage(), BackStage(), DetailsStage(),
-            SunglassesStage(), OrbitStage(), ZoomStage(), EndingStage(),
-            ExitStage(self.show.playback_speed)])
+            SunglassesStage(), OrbitStage(), ZoomStage(c64_duration),
+            EndingStage(), ExitStage(self.show.playback_speed)])
         self.time = 0.0
         if not self.paused:
             self.on_start()

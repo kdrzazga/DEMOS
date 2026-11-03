@@ -247,9 +247,9 @@ class OrbitStage(Stage):
 
 
 class ZoomStage(Stage):
-    def __init__(self):
-        super().__init__(10.0)
+    def __init__(self, animation_duration):
         self.zoom_duration = 6.0
+        super().__init__(max(animation_duration, self.zoom_duration))
         self.fill_share = 0.95
         self.start_distance = 0.0
         self.close_distance = 0.0

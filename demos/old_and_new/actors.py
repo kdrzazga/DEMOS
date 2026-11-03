@@ -274,6 +274,7 @@ class DemoHead(HeadWithSunglasses):
         self.sprouts = []
         self.c64_animation = C64Animation()
         self.c64_screen = self.c64_animation.c64screen
+        self.c64_screen.hold_typing()
         self.screen_lens = self.create_lenses()
 
     def create_lenses(self):

@@ -9,7 +9,7 @@ class C64Animation:
 
 	def __init__(self):
 		self.c64screen = C64Screen()
-		self.instant_speed = 1000.0
+		self.instant_speed = 2500.0
 		self.row = 6
 		self.time = 2.5
 		self.final_pause = 2.0
@@ -37,7 +37,7 @@ class C64Animation:
 		self.print_line('120  "PORN"                  CBM')
 		self.print_line("2856 BLOCKS FREE.")
 		self.print_prompt()
-		self.pause(6.0)
+		self.pause(4.0)
 		self.type_command('OPEN 15,8,15,"CD:KOALAGFX" : CLOSE15')
 		self.skip_line()
 		self.print_prompt()

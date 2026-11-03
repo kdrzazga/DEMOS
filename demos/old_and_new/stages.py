@@ -1,3 +1,6 @@
+from lib import Globals
+
+
 def smooth(progress):
     return progress * progress * (3.0 - 2.0 * progress)
 
@@ -19,6 +22,9 @@ class Stage:
         pass
 
     def update(self, show, time):
+        pass
+
+    def exit(self, show):
         pass
 
 
@@ -277,6 +283,7 @@ class ZoomStage(Stage):
         self.screen_focus = (0.0, 0.0, 0.0)
 
     def enter(self, show):
+        print("stage C= start -", Globals.get_duration())
         show.head.c64_screen.restart_typing()
         camera = show.camera
         camera.target_tilt = 0.0
@@ -297,6 +304,9 @@ class ZoomStage(Stage):
         camera.focus_point = tuple(
             start + (screen - start) * share
             for start, screen in zip(self.start_focus, self.screen_focus))
+
+    def exit(self, show):
+        print("stage C= end -", Globals.get_duration())
 
 
 class EndingStage(Stage):
@@ -350,6 +360,7 @@ class StageTimeline:
             if self.current_index >= 0:
                 finished_stage = self.stages[self.current_index]
                 finished_stage.update(show, finished_stage.duration)
+                finished_stage.exit(show)
             self.current_index += 1
             self.stages[self.current_index].enter(show)
         self.stages[index].update(show, stage_time)

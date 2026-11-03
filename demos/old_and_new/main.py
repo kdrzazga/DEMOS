@@ -81,6 +81,7 @@ class Show:
             ball.draw()
         self.mesh.draw(self.pose)
         self.head.draw()
+        self.head.c64_animation.draw_unsync()
         self.overlay.begin()
         self.welcome.draw(self.overlay)
         self.overlay.darken(self.darkness)

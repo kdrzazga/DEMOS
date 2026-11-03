@@ -9,6 +9,7 @@ from OpenGL.GL import *
 from OpenGL.GLU import gluPerspective
 
 from lib.specialFX.stripes import StripeEffects
+from lib.specialFX.unsynced import UnsyncedPicture
 
 WIDTH, HEIGHT = 1000, 600
 FPS = 60
@@ -131,7 +132,8 @@ def visible_bands(seconds):
 def main():
     pygame.init()
     pygame.display.set_mode((WIDTH, HEIGHT), DOUBLEBUF | OPENGL)
-    pygame.display.set_caption("Stripes test - space switches shading color, up/down brightness, esc quits")
+    pygame.display.set_caption("Stripes test - space switches shading color, up/down brightness, "
+                               "u toggles unsynced picture, esc quits")
     clock = pygame.time.Clock()
 
     glViewport(0, 0, WIDTH, HEIGHT)
@@ -146,6 +148,8 @@ def main():
     stripe_effects = StripeEffects()
     stripe_effects.place_picture((left, top, z + 0.002), pixel_size())
     stripe_effects.blue_height_share = tuple(share * 3 for share in stripe_effects.blue_height_share)
+    unsynced_picture = UnsyncedPicture()
+    unsynced_enabled = False
     shading_index = 0
     brightness = 1.0
     seconds = 0.0
@@ -155,12 +159,16 @@ def main():
         delta_seconds = clock.tick(FPS) / 1000.0
         seconds += delta_seconds
         stripe_effects.update(delta_seconds)
+        unsynced_picture.update(delta_seconds)
         for event in pygame.event.get():
             if event.type == pygame.QUIT or (
                     event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                 running = False
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                 shading_index = (shading_index + 1) % len(SHADING_COLORS)
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_u:
+                unsynced_enabled = not unsynced_enabled
+                unsynced_picture.restart()
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_UP:
                 brightness = min(1.0, brightness + 0.1)
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN:
@@ -176,6 +184,8 @@ def main():
                                     brightness, SHADING_COLORS[shading_index], transparency=0.5)
         stripe_effects.blue_interference(0, 0, PICTURE_PIXELS[0], MIDDLE_BAND[0], BLUE_STRIPES_COUNT, brightness,
                                          transparency=0.1)
+        if unsynced_enabled:
+            unsynced_picture.draw()
 
         pygame.display.flip()
 

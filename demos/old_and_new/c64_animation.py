@@ -3,6 +3,7 @@ import os
 from lib.c64_screen import C64Screen
 from lib.animated_sprite import PygameAnimatedSprite
 from lib.specialFX.stripes import StripeEffects
+from lib.specialFX.unsynced import UnsyncedPicture
 from lib.typing_effect.c64_typer import C64Typer
 
 
@@ -43,6 +44,10 @@ class C64Animation:
 			stripe_effects.blue_blink_duration = self.blue_interference_duration
 			stripe_effects.blue_travel_period = 2.0 * self.blue_interference_duration
 			self.blue_interferences.append(stripe_effects)
+		self.unsynced_picture = UnsyncedPicture()
+		self.typing_unsync_count = 6
+		self.picture_unsync_count = 1
+		self.unsync_moments = []
 		self.type_command('LOAD"$",8')
 		self.skip_line()
 		self.print_line("SEARCHING FOR $")
@@ -95,6 +100,7 @@ class C64Animation:
 		self.show_picture()
 		self.c64screen.set_typers(self.typers)
 		self.spread_blue_interferences()
+		self.spread_unsyncs()
 
 	@property
 	def duration(self):
@@ -152,6 +158,26 @@ class C64Animation:
 			stripe_effects.time = c64_time - moment
 			stripe_effects.place_picture(corner, pixel_size)
 			stripe_effects.blue_interference(x, y, width, height, stripes_count, transparency=transparency)
+
+	def spread_unsyncs(self):
+		typing_moments = [self.picture_start * (index + 1) / (self.typing_unsync_count + 1)
+						  for index in range(self.typing_unsync_count)]
+		picture_moments = [self.picture_start + self.picture_duration * (index + 1) / (self.picture_unsync_count + 1)
+						   for index in range(self.picture_unsync_count)]
+		self.unsync_moments = typing_moments + picture_moments
+
+	@property
+	def unsync_duration(self):
+		unsynced = self.unsynced_picture
+		return unsynced.jump_count * (unsynced.steady_duration + unsynced.flipped_duration)
+
+	def draw_unsync(self):
+		c64_time = self.c64screen.startup_text.time
+		for moment in self.unsync_moments:
+			if moment <= c64_time < moment + self.unsync_duration:
+				self.unsynced_picture.time = c64_time - moment
+				self.unsynced_picture.draw()
+				return
 
 	def skip_line(self):
 		self.row += 1

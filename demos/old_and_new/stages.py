@@ -36,17 +36,44 @@ class WelcomeStage(Stage):
 
 class BallStage(Stage):
     def __init__(self):
-        super().__init__(3.0)
+        super().__init__(11.0)
+        self.build_position = (0.0, 0.6, 0.0)
+        self.build_radius = 1.0
+        self.entry_position = (7.0, 1.3, 0.0)
+        self.points_duration = 3.0
+        self.cover_start = 3.5
+        self.cover_duration = 2.5
+        self.shading_time = 6.5
+        self.move_start = 7.5
+        self.join_start = 8.5
+        self.travel_duration = 2.0
+        self.travel_arc = 0.6
 
     def enter(self, show):
         show.welcome.alpha = 0.0
         show.camera.target_tilt = 20.0
-        for ball in show.balls:
-            ball.visible = True
+        show.balls_bobbing = False
+        first, second = show.balls
+        first.visible = True
+        first.shaded = False
+        first.point_share = 0.0
+        first.cover_share = 0.0
 
     def update(self, show, time):
-        for ball in show.balls:
-            ball.size = self.eased(time, 0.0, 1.5)
+        first, second = show.balls
+        first.point_share = self.phase(time, 0.0, self.points_duration)
+        first.cover_share = self.phase(time, self.cover_start,
+                                       self.cover_duration)
+        first.shaded = time >= self.shading_time
+        first.glide(self.build_position, first.home, self.build_radius,
+                    first.full_radius, self.travel_arc,
+                    self.phase(time, self.move_start, self.travel_duration))
+        second.visible = time >= self.join_start
+        second.glide(self.entry_position, second.home, second.full_radius,
+                     second.full_radius, self.travel_arc,
+                     self.phase(time, self.join_start,
+                                self.travel_duration))
+        show.balls_bobbing = time >= self.join_start + self.travel_duration
 
 
 class MeshStage(Stage):
@@ -136,10 +163,17 @@ class DetailsStage(Stage):
         self.arc_height = 1.2
         self.targets = []
         self.target_radius = 0.0
+        self.zoom_start = 9.5
+        self.zoom_duration = 2.5
+        self.head_height = 2.3
+        self.head_center_height = 0.25
+        self.fill_share = 0.92
+        self.start_distance = 0.0
 
     def enter(self, show):
         show.pose.turn_degrees = 0.0
         show.balls_bobbing = False
+        self.start_distance = show.camera.distance
         self.targets = show.head.eye_targets()
         self.target_radius = show.head.eye_world_radius()
 
@@ -163,7 +197,17 @@ class DetailsStage(Stage):
         hair_share = self.phase(time, 7.0, 2.0)
         head.haircut.visible_count = round(
             head.haircut.hair_count * hair_share)
+        self.zoom(show, self.eased(time, self.zoom_start,
+                                   self.zoom_duration))
         self.turn_once(show, time, 9.5, 7.0)
+
+    def zoom(self, show, share):
+        camera = show.camera
+        close_distance = camera.distance_to_fill(self.head_height,
+                                                 self.fill_share)
+        camera.distance = (self.start_distance
+                           + (close_distance - self.start_distance) * share)
+        camera.focus_height = self.head_center_height * share
 
 
 class SunglassesStage(Stage):
@@ -183,6 +227,9 @@ class SunglassesStage(Stage):
 class EndingStage(Stage):
     def __init__(self):
         super().__init__(3.0)
+
+    def enter(self, show):
+        show.soundtrack.fade_out(self.duration / show.playback_speed)
 
     def update(self, show, time):
         show.darkness = self.phase(time, 0.0, self.duration)

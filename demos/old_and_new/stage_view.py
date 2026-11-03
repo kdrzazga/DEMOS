@@ -99,6 +99,12 @@ class StageCamera:
         self.tilt = 20.0
         self.target_tilt = 20.0
         self.tilt_follow_rate = 1.5
+        self.focus_height = 0.0
+
+    def distance_to_fill(self, height, fill_share):
+        view_height_per_distance = 2.0 * math.tan(
+            math.radians(self.field_of_view / 2.0))
+        return height / fill_share / view_height_per_distance
 
     def update(self, seconds):
         follow = min(self.tilt_follow_rate * seconds, 1.0)
@@ -114,6 +120,7 @@ class StageCamera:
         glLoadIdentity()
         glTranslatef(0.0, 0.0, -self.distance)
         glRotatef(self.tilt, 1.0, 0.0, 0.0)
+        glTranslatef(0.0, -self.focus_height, 0.0)
 
 
 class Pose:

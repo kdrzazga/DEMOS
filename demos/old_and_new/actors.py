@@ -18,8 +18,12 @@ class StageBall:
         self.position = numpy.array(home)
         self.full_radius = radius
         self.radius = radius
-        self.size = 0.0
+        self.size = 1.0
         self.visible = False
+        self.point_share = 1.0
+        self.cover_share = 1.0
+        self.shaded = True
+        self.point_size = 4.0
         self.bob_height = 0.08
         self.bob_speed = 2.0
         self.bob_offset = home[0]
@@ -29,13 +33,34 @@ class StageBall:
                                           + self.bob_offset)
         self.position = self.home + (0.0, rise, 0.0)
 
-    def jump(self, target, target_radius, arc_height, progress):
+    def glide(self, start, end, start_radius, end_radius, arc_height,
+              progress):
         flight = progress * progress * (3.0 - 2.0 * progress)
         arc = arc_height * 4.0 * progress * (1.0 - progress)
-        self.position = (self.home + (numpy.array(target) - self.home)
-                         * flight + (0.0, arc, 0.0))
-        self.radius = (self.full_radius
-                       + (target_radius - self.full_radius) * flight)
+        start = numpy.array(start)
+        self.position = (start + (numpy.array(end) - start) * flight
+                         + (0.0, arc, 0.0))
+        self.radius = start_radius + (end_radius - start_radius) * flight
+
+    def jump(self, target, target_radius, arc_height, progress):
+        self.glide(self.home, target, self.full_radius, target_radius,
+                   arc_height, progress)
+
+    def draw_unfinished(self):
+        ball = self.ball
+        covered_strips = round(ball.stacks * self.cover_share)
+        visible_rings = round((ball.stacks + 1) * self.point_share)
+        first_open_ring = covered_strips + 1 if covered_strips else 0
+        glDisable(GL_LIGHTING)
+        glColor3f(*ball.color)
+        for stack_index in range(covered_strips):
+            ball.draw_strip(stack_index)
+        glPointSize(self.point_size)
+        glBegin(GL_POINTS)
+        for stack_index in range(first_open_ring, visible_rings):
+            for slice_index in range(ball.slices):
+                glVertex3f(*ball.direction(slice_index, stack_index))
+        glEnd()
 
     def draw(self):
         if not self.visible or self.size <= 0.0:
@@ -45,7 +70,10 @@ class StageBall:
         scale = self.radius * self.size
         glScalef(scale, scale, scale)
         glEnable(GL_NORMALIZE)
-        self.ball.draw()
+        if self.shaded:
+            self.ball.draw()
+        else:
+            self.draw_unfinished()
         glDisable(GL_NORMALIZE)
         glPopMatrix()
 

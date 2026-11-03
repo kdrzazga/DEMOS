@@ -1,3 +1,5 @@
+import os
+
 import pygame
 from OpenGL.GL import *
 
@@ -12,8 +14,26 @@ from demos.old_and_new.stages import (
     OvalStage, StageTimeline, SunglassesStage, TalkStage, WelcomeStage)
 
 
+class Soundtrack:
+    def __init__(self):
+        self.path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "resources",
+            "ElectricElwizz - We Rise Through Fire (Electro Freestyle).mp3")
+        self.volume = 1.0
+
+    def start(self):
+        pygame.mixer.music.load(self.path)
+        pygame.mixer.music.set_volume(self.volume)
+        pygame.mixer.music.play(loops=0)
+
+    def fade_out(self, seconds):
+        pygame.mixer.music.fadeout(int(seconds * 1000))
+
+
 class Show:
     def __init__(self, screen_width, screen_height):
+        self.soundtrack = Soundtrack()
+        self.playback_speed = 2.0
         self.camera = StageCamera(screen_width, screen_height)
         self.overlay = ScreenOverlay(screen_width, screen_height)
         self.welcome = WelcomeText()
@@ -79,9 +99,16 @@ class OldAndNewDemo(PygameDemo):
             TalkStage(), OvalStage(), BackStage(), DetailsStage(),
             SunglassesStage(), EndingStage()])
         self.time = 0.0
+        if not self.paused:
+            self.on_start()
+
+    def on_start(self):
+        self.show.soundtrack.start()
 
     def step(self):
-        seconds = min(self.clock.get_time() / 1000.0, self.longest_frame)
+        real_seconds = min(self.clock.get_time() / 1000.0,
+                           self.longest_frame)
+        seconds = real_seconds * self.show.playback_speed
         self.time += seconds
         self.timeline.update(self.show, self.time)
         self.show.update(seconds)

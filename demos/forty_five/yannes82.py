@@ -3,9 +3,9 @@ import os
 import pygame
 from OpenGL.GL import *
 
-from lib.speech_bubble import SpeechBubble
-from lib.typer import FONT_PATH
 from demos.forty_five.mos_team75 import MosTeamFactory
+from lib.speech_bubble import SpeechBubble
+from lib.typing_effect.typer import FONT_PATH
 
 FORTY_FIVE_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 SID_SOUND_PATH = os.path.join(FORTY_FIVE_DIRECTORY, "resources", "history", "c=", "SID.mp3")

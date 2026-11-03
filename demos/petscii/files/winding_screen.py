@@ -10,7 +10,7 @@ from OpenGL.GL import (
 )
 
 from demos.petscii.files.c64_base_screen import C64BaseScreen
-from demos.petscii.files.globals import Constants
+from lib.globals import Constants
 from demos.petscii.files.screen_winding_anim import ScreenWindingAnim
 
 

@@ -1,7 +1,7 @@
 import pygame
 
 from demos.petscii.files.font_to_mesh_converter import FontToMeshConverter
-from demos.petscii.files.globals import Constants
+from lib.globals import Constants
 
 
 class PetsciiMesh:

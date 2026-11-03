@@ -26,7 +26,7 @@ from lib.floor import Floor, JumpingLettersToCaption
 from lib.pygame_demo import PygameDemo
 from demos.petscii.files.c64_screen import C64Screen
 from demos.petscii.files.petscii.dj_space_thunder import DjSpaceThunder
-from demos.petscii.files.globals import Constants
+from lib.globals import Constants
 from demos.petscii.files.petscii.bruce_lee import BruceLee
 from demos.petscii.files.petscii.bruce_lee_stages import BruceLeeStage1, BruceLeeStage2, BruceLeeStage3
 from demos.petscii.files.petscii.bruce_sprite import BruceSprite

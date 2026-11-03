@@ -4,7 +4,7 @@ import pygame
 from OpenGL.GL import *
 
 from lib.laser_line import PictureTexture, smooth_step
-from lib.typer import FONT_PATH
+from lib.typing_effect.typer import FONT_PATH
 
 
 def ease_out_cubic(progress):

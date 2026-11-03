@@ -12,7 +12,7 @@ plate. Lengths are in centimetres.
 import pygame
 from OpenGL.GL import *
 
-from demos.forty_five.geometry import color, quad, text_texture, textured_quad
+from lib.geometry import color, quad, text_texture, textured_quad
 
 KEYCAP_BEIGE = (226, 216, 188)
 FUNCTION_KEY_TAN = (164, 146, 116)

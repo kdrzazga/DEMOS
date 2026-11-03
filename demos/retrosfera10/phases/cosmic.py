@@ -13,9 +13,9 @@ from OpenGL.GL import (
 )
 from OpenGL.GLU import gluOrtho2D
 
-from lib.earth import Earth
+from lib.space.earth import Earth
 from lib.demo_phases import CameraInterpolationHelper, GeoPoint, Light, DemoPhase
-from lib.typer import Typer
+from lib.typing_effect.typer import Typer
 from demos.retrosfera10.models.townhall import Vector3
 
 

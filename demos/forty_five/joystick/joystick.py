@@ -13,7 +13,8 @@ stands on y = 0.
 import pygame
 from OpenGL.GL import *
 
-from demos.forty_five.joystick.joystick_parts import JoystickBase, JoystickCable, JoystickStick, TopButton, TriggerButton
+from demos.forty_five.joystick.joystick_parts import JoystickBase, JoystickCable, JoystickStick, TopButton, \
+TriggerButton
 
 
 class Joystick:

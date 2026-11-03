@@ -18,7 +18,7 @@ import pygame
 from OpenGL.GL import *
 
 from demos.forty_five.cable import Cable
-from demos.forty_five.geometry import color, face_normal, quad, upload_texture
+from lib.geometry import color, face_normal, quad, upload_texture
 
 BUTTON_BROWN = (72, 54, 44)
 LABEL_INK = (70, 64, 56)

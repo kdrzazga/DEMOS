@@ -45,6 +45,7 @@ from demos.pixeloveole3.main import PixeloveOle3
 from demos.petscii.files.petsciidemo import PetsciiDemo
 from demos.WinterDemo26.main import WinterDemo
 from demos.jack.main import JackDemo
+from demos.old_and_new.main import OldAndNewDemo
 
 
 def kna_demo(windowed, triggered, house_style):
@@ -85,6 +86,10 @@ def jack_demo(windowed, triggered, house_style):
     JackDemo(windowed=windowed, triggered=triggered).run()
 
 
+def old_and_new_demo(windowed, triggered, house_style):
+    OldAndNewDemo(windowed=windowed, triggered=triggered).run()
+
+
 # demo name -> launcher; every launcher takes the same (windowed, triggered, house_style)
 DEMOS = {
     "kna": kna_demo,
@@ -96,9 +101,10 @@ DEMOS = {
     "winter": winter_demo,
     "retrosfera10": retrosfera10_demo,
     "jack": jack_demo,
+    "oldnew": old_and_new_demo,
 }
 
-DEFAULT_DEMO = "45"
+DEFAULT_DEMO = "oldnew"
 
 
 def close_boot_splash():

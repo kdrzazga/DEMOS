@@ -34,7 +34,7 @@ from OpenGL.GL import (
 )
 from OpenGL.GLU import gluPerspective
 
-from demos.petscii.files.globals import Constants
+from lib.globals import Constants
 from demos.petscii.files.petscii.bruce_lee_kick import BruceLeeKick
 
 

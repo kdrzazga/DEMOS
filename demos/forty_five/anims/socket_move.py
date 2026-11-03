@@ -2,8 +2,8 @@ import math
 
 import numpy as np
 
-from lib.laser_line import smooth_step
 from demos.forty_five.rotation import slerp_rotation
+from lib.laser_line import smooth_step
 
 
 class SocketMove:

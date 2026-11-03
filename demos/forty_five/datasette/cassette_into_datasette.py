@@ -36,7 +36,7 @@ import pygame
 from OpenGL.GL import *
 from OpenGL.GLU import gluPerspective
 
-from demos.forty_five.geometry import upload_texture
+from lib.geometry import upload_texture
 
 
 def axis_angle(axis, degrees):

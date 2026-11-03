@@ -19,7 +19,7 @@ import math
 import pygame
 from OpenGL.GL import *
 
-from demos.forty_five.geometry import color, quad, upload_texture
+from lib.geometry import color, quad, upload_texture
 from demos.forty_five.surfaces import draw_ring_surface, ring, rounded_rect_outline
 
 

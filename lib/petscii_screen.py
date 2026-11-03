@@ -1,4 +1,4 @@
-from demos.petscii.files.globals import Constants
+from lib.globals import Constants
 
 
 class PetsciiScreen:

@@ -3,7 +3,7 @@ from collections import namedtuple
 import pygame
 
 from lib.textwall import TextWall
-from demos.petscii.files.globals import Constants
+from lib.globals import Constants
 
 Span = namedtuple("Span", ("start", "codes", "color", "inverted"))
 

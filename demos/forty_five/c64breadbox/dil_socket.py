@@ -5,7 +5,7 @@ from OpenGL.GL import *
 
 from demos.forty_five.c64breadbox.dil_package import DilPackage
 from demos.forty_five.c64breadbox.primitives import Box
-from demos.forty_five.geometry import color
+from lib.geometry import color
 
 PIN1_END_YAW_DEGREES = {"top": 0.0, "right": -90.0, "bottom": 180.0, "left": 90.0}
 

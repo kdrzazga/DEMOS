@@ -4,7 +4,7 @@ import pygame
 from OpenGL.GL import *
 
 from demos.forty_five.c64breadbox.opening_face import OpeningFace
-from demos.forty_five.geometry import color, quad, upload_texture
+from lib.geometry import color, quad, upload_texture
 
 
 class KeyboardFace:

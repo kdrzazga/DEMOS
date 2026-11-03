@@ -3,7 +3,7 @@ import math
 from OpenGL.GL import *
 from OpenGL.GLU import gluLookAt, gluPerspective
 
-from lib.historical_earth import HistoricalEarth
+from lib.space.historical_earth import HistoricalEarth
 from demos.jack.camera import Framing, GlobeCamera
 from demos.jack.framings import WORLD
 from demos.jack.stage import MapEra

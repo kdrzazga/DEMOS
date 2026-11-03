@@ -11,7 +11,7 @@ import math
 
 from OpenGL.GL import *
 
-from demos.forty_five.geometry import color, face_normal
+from lib.geometry import color, face_normal
 
 
 class Cable:

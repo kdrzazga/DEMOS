@@ -3,7 +3,7 @@ from OpenGL.GL import *
 
 from demos.forty_five.c64breadbox.breadbin_layout import OpeningRect
 from demos.forty_five.c64breadbox.opening_face import OpeningFace
-from demos.forty_five.geometry import color, upload_texture
+from lib.geometry import color, upload_texture
 
 
 class BreadbinWall:

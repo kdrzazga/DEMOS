@@ -3,9 +3,9 @@ import math
 import numpy as np
 from OpenGL.GL import *
 
+from demos.forty_five.rotation import rotation_x, rotation_y, rotation_z, transform_matrix
 from lib.flying_logo import ease_in_cubic, ease_out_cubic
 from lib.laser_line import smooth_step
-from demos.forty_five.rotation import rotation_x, rotation_y, rotation_z, transform_matrix
 
 
 class ChipPose:

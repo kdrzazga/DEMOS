@@ -1,0 +1,9 @@
+LOAD"$",8
+LIST
+OPEN 15,8,15,"CD:KOALAGFX" : CLOSE15
+LOAD"$",8
+LIST
+LOAD"HEAD.PRG",8,1
+
+1st list -> lists catalogs KOALAGFX and PORN and file BOCA-JRS.KOA
+2nd list -> lists files HEAD.PRG and MARADONA.PRG

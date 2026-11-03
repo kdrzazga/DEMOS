@@ -1,0 +1,118 @@
+import os
+
+from lib.c64_screen import C64Screen
+from lib.animated_sprite import PygameAnimatedSprite
+from lib.typing_effect.c64_typer import C64Typer
+
+
+class C64Animation:
+
+	def __init__(self):
+		self.c64screen = C64Screen()
+		self.instant_speed = 2500.0
+		self.row = 6
+		self.time = 2.5
+		self.final_pause = 2.0
+		self.picture_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "koalagfx.png")
+		self.picture_frame_count = 29
+		self.picture_frames_per_second = 10.0
+		self.picture_duration = 6.0
+		self.picture_start = 0.0
+		self.typers = []
+		self.type_command('LOAD"$",8')
+		self.skip_line()
+		self.print_line("SEARCHING FOR $")
+		self.pause(1.0)
+		self.print_line("LOADING")
+		self.pause(2.0)
+		self.print_prompt()
+		self.pause(1.0)
+		self.type_command("LIST")
+		self.skip_line()
+		self.print_directory_header("0 ", '"VAMOS, KURWA!      "      3D')
+		self.print_line('120  "KOALAGFX"              CBM')
+		self.print_line('20   "BOCA-JRS"              PRG')
+		self.print_line('23   "RIVERPLT"              PRG')
+		self.print_line('21   "SLORENZO"              PRG')
+		self.print_line('120  "PORN"                  CBM')
+		self.print_line("2856 BLOCKS FREE.")
+		self.print_prompt()
+		self.pause(4.0)
+		self.type_command('OPEN 15,8,15,"CD:KOALAGFX" : CLOSE15')
+		self.skip_line()
+		self.print_prompt()
+		self.pause(1.0)
+		self.type_command('LOAD"$",8')
+		self.skip_line()
+		self.print_line("SEARCHING FOR $")
+		self.pause(1.0)
+		self.print_line("LOADING")
+		self.pause(2.0)
+		self.print_prompt()
+		self.pause(1.0)
+		self.type_command("LIST")
+		self.skip_line()
+		self.print_directory_header("0 ", '"VAMOS, KURWA!      "      3D')
+		self.print_line('38   "MARADONA.PRG"          PRG')
+		self.print_line('36   "FRANCIS1"              PRG')
+		self.print_line('40   "HEAD"                  PRG')
+		self.print_line("2 BLOCKS FREE.")
+		self.print_prompt()
+		self.pause(1.0)
+		self.type_command('LOAD"HEAD",8,1')
+		self.skip_line()
+		self.print_line("SEARCHING FOR HEAD")
+		self.pause(0.5)
+		self.print_line("LOADING")
+		self.pause(1.0)
+		self.print_prompt()
+		self.type_command("RUN")
+		self.pause(0.5)
+		self.show_picture()
+		self.c64screen.set_typers(self.typers)
+
+	@property
+	def duration(self):
+		return self.time + self.final_pause
+
+	def add_typer(self, text, column, instant):
+		typer = C64Typer(self.c64screen.frame, self.row, column, text, self.time)
+		if instant:
+			typer.set_speed(self.instant_speed)
+			typer.shows_cursor = False
+		self.typers.append(typer)
+		self.time = typer.finish_time
+		return typer
+
+	def type_command(self, text):
+		self.add_typer(text, 0, False)
+		self.row += 1
+
+	def print_line(self, text):
+		self.add_typer(text, 0, True)
+		self.row += 1
+
+	def print_prompt(self):
+		self.add_typer("READY.", 0, True).shows_cursor = True
+		self.row += 1
+
+	def print_directory_header(self, number, title):
+		self.add_typer(number, 0, True)
+		self.add_typer(title, len(number), True).reverse_color = True
+		self.row += 1
+
+	def show_picture(self):
+		frame_width = self.c64screen.frame.columns * self.c64screen.frame.cell_width
+		frame_height = self.c64screen.frame.rows * self.c64screen.frame.cell_height
+		center_x, center_y = self.c64screen.center
+		sprite = PygameAnimatedSprite(self.picture_path, center_x, center_y, frame_width, frame_height,
+									  self.picture_frame_count, 1.0 / self.picture_frames_per_second)
+		self.picture_start = self.time
+		self.c64screen.show_picture(sprite, self.time)
+		self.pause(self.picture_duration)
+
+	def skip_line(self):
+		self.row += 1
+
+	def pause(self, seconds):
+		self.time += seconds

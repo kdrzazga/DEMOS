@@ -22,7 +22,7 @@ import pygame
 from OpenGL.GL import *
 
 from lib.pointed_name_label import OutlinedTextTexture, ScreenSpaceProjector
-from lib.typer import FONT_PATH
+from lib.typing_effect.typer import FONT_PATH
 
 FIRST_TEXT_FRAME = 116
 SECOND_TEXT_FRAME = 233

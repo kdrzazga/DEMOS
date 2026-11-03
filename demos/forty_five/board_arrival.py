@@ -3,14 +3,14 @@ import math
 import numpy as np
 from OpenGL.GL import *
 
-from lib.flying_logo import ease_out_cubic
-from lib.laser_line import smooth_step
 from demos.forty_five.c64breadbox.c64_board import C64Board
 from demos.forty_five.c64breadbox.layout import BoardLayoutFactory
 from demos.forty_five.chips.mos906114 import MOS906114
 from demos.forty_five.chips.tms4164 import TMS4164
 from demos.forty_five.chips.ttl74xx import TTL74xx
 from demos.forty_five.rotation import rotation_x, rotation_y
+from lib.flying_logo import ease_out_cubic
+from lib.laser_line import smooth_step
 
 
 class BoardArrival:

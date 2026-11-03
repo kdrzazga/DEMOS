@@ -1,7 +1,7 @@
 import pygame
 
 from lib.photos import Picture
-from lib.typer import Typer
+from lib.typing_effect.typer import Typer
 from demos.jack.overlay import SurfaceSprite, resource
 
 

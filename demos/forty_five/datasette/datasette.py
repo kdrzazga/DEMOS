@@ -21,9 +21,10 @@ import pygame
 from OpenGL.GL import *
 
 from demos.forty_five.datasette.datasette_parts import (ButtonEject, ButtonFastForward, ButtonPlay, ButtonRecord,
-                                                        ButtonRewind, ButtonStop, CassetteDoor, DatasetteCable, LABEL_INK,
+                                                        ButtonRewind, ButtonStop, CassetteDoor, DatasetteCable,
+                                                        LABEL_INK,
                                                         TapeCounter)
-from demos.forty_five.geometry import color, image_texture, textured_quad, upload_texture
+from lib.geometry import color, image_texture, textured_quad, upload_texture
 
 
 class Datasette:

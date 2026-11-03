@@ -3,7 +3,7 @@ from array import array
 
 import pygame
 
-from demos.petscii.files.globals import Constants
+from lib.globals import Constants
 
 
 class Noise:

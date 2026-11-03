@@ -2,8 +2,8 @@ import os
 
 from OpenGL.GL import *
 
-from demos.forty_five.geometry import image_texture
-from demos.forty_five.typed_label import TypedLabel
+from lib.geometry import image_texture
+from lib.typing_effect.typed_label import TypedLabel
 from lib.laser_line import smooth_step
 
 LIB_RESOURCES_DIRECTORY = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),

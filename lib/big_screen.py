@@ -1,8 +1,9 @@
-import colorsys
 import math
 import random
 import pygame
 from OpenGL.GL import *
+
+from lib.specialFX.stripes import StripeEffects
 
 
 class BigScreen:
@@ -51,9 +52,9 @@ class BigScreen:
         self.interference_duration = 1.0
         self.language_cycle = 10.0
         self.shake_pixels = 3
-        self.interference_streak_count = 80
-        self.interference_streak_thickness = (3, 10)
         self.interference_random = random.Random(3)
+        self.stripe_effects = StripeEffects()
+        self.interference_shading_color = None
         self.credit_items = None
         self.credit_reveal_interval = 0.8
         self.credits_started = 0.0
@@ -382,7 +383,7 @@ class BigScreen:
         if self.text_interfered:
             self._draw_interference(brightness)
 
-    def draw(self, brightness=1.0):
+    def draw(self, brightness=1.00):
         glPushMatrix()
         glTranslatef(self.x, self.y, self.z)
         glCallList(self.display_list)
@@ -391,29 +392,8 @@ class BigScreen:
             self._draw_text(brightness)
         glPopMatrix()
 
-    def _random_streak(self):
-        """A streak (left, top, right, bottom) in texture pixels across the whole screen, within a random text line."""
-        _, line_top, _, line_height = self.interference_random.choice(self.text_line_areas)
-        thickness = min(self.interference_random.randint(*self.interference_streak_thickness), line_height)
-        streak_top = line_top + self.interference_random.randint(0, line_height - thickness)
-        return 0, streak_top, self.text_resolution[0], streak_top + thickness
-
     def _draw_interference(self, brightness):
-        if not self.text_line_areas:
-            return
-        pixel_size = self._texture_pixel_size()
-        left = -self.width / 2.0
-        top = self.lift + self.height
-        front = self.frame_depth / 2.0 + 0.015
-        glDisable(GL_LIGHTING)
-        glBegin(GL_QUADS)
-        for _ in range(self.interference_streak_count):
-            streak_left, streak_top, streak_right, streak_bottom = self._random_streak()
-            hue = self.interference_random.random()
-            glColor3f(*colorsys.hsv_to_rgb(hue, 1.0, brightness))
-            glVertex3f(left + streak_left * pixel_size, top - streak_bottom * pixel_size, front)
-            glVertex3f(left + streak_right * pixel_size, top - streak_bottom * pixel_size, front)
-            glVertex3f(left + streak_right * pixel_size, top - streak_top * pixel_size, front)
-            glVertex3f(left + streak_left * pixel_size, top - streak_top * pixel_size, front)
-        glEnd()
-        glEnable(GL_LIGHTING)
+        text_bands = [(line_top, line_height) for _, line_top, _, line_height in self.text_line_areas]
+        picture_corner = (-self.width / 2.0, self.lift + self.height, self.frame_depth / 2.0 + 0.015)
+        self.stripe_effects.interference(picture_corner, self._texture_pixel_size(), self.text_resolution[0],
+                                         text_bands, brightness, self.interference_shading_color)

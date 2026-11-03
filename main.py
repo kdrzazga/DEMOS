@@ -104,7 +104,7 @@ DEMOS = {
     "oldnew": old_and_new_demo,
 }
 
-DEFAULT_DEMO = "oldnew"
+DEFAULT_DEMO = "winter"
 
 
 def close_boot_splash():

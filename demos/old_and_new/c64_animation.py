@@ -2,6 +2,7 @@ import os
 
 from lib.c64_screen import C64Screen
 from lib.animated_sprite import PygameAnimatedSprite
+from lib.specialFX.stripes import StripeEffects
 from lib.typing_effect.c64_typer import C64Typer
 
 
@@ -19,6 +20,29 @@ class C64Animation:
 		self.picture_duration = 6.0
 		self.picture_start = 0.0
 		self.typers = []
+		border = self.c64screen.border
+		screen_width = self.c64screen.width - 2 * border
+		screen_height = self.c64screen.height - 2 * border
+		band_in_area = (0.1, 0.25)
+		whole_area = (1.0, 1.0)
+		area_shares_band_shares_and_lines = [(0.2, 0.6, band_in_area, 80), (0.05, 0.9, whole_area, 120),
+											 (0.35, 0.3, band_in_area, 80), (0.0, 0.45, band_in_area, 80),
+											 (0.0, 1.0, whole_area, 170)]
+		self.blue_interference_areas = [
+			(border, border + round(screen_height * top_share), screen_width, round(screen_height * height_share),
+			 lines, 0.7, band_share)
+			for top_share, height_share, band_share, lines in area_shares_band_shares_and_lines
+		]
+		self.blue_interference_duration = 0.4
+		self.blue_interference_moments = []
+		self.blue_interferences = []
+		for index, area in enumerate(self.blue_interference_areas):
+			stripe_effects = StripeEffects(seed=index + 1)
+			stripe_effects.blue_height_share = area[6]
+			stripe_effects.blue_blink_period = self.blue_interference_duration
+			stripe_effects.blue_blink_duration = self.blue_interference_duration
+			stripe_effects.blue_travel_period = 2.0 * self.blue_interference_duration
+			self.blue_interferences.append(stripe_effects)
 		self.type_command('LOAD"$",8')
 		self.skip_line()
 		self.print_line("SEARCHING FOR $")
@@ -70,6 +94,7 @@ class C64Animation:
 		self.pause(0.5)
 		self.show_picture()
 		self.c64screen.set_typers(self.typers)
+		self.spread_blue_interferences()
 
 	@property
 	def duration(self):
@@ -110,6 +135,23 @@ class C64Animation:
 		self.picture_start = self.time
 		self.c64screen.show_picture(sprite, self.time)
 		self.pause(self.picture_duration)
+
+	def spread_blue_interferences(self):
+		"""One short moment per interference, evenly spread before the animated picture shows."""
+		count = len(self.blue_interferences)
+		self.blue_interference_moments = [self.picture_start * (index + 1) / (count + 1) for index in range(count)]
+
+	def draw_interference(self, corner, pixel_size):
+		"""Draws the blue interference whose moment is running over the C64 screen whose top-left pixel is at corner."""
+		c64_time = self.c64screen.startup_text.time
+		for stripe_effects, area, moment in zip(self.blue_interferences, self.blue_interference_areas,
+												self.blue_interference_moments):
+			if not moment <= c64_time < moment + self.blue_interference_duration:
+				continue
+			x, y, width, height, stripes_count, transparency, _ = area
+			stripe_effects.time = c64_time - moment
+			stripe_effects.place_picture(corner, pixel_size)
+			stripe_effects.blue_interference(x, y, width, height, stripes_count, transparency=transparency)
 
 	def skip_line(self):
 		self.row += 1

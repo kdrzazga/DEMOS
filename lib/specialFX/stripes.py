@@ -13,6 +13,7 @@ class StripeEffects:
     """
 
     def __init__(self, seed=3):
+        self.seed = seed
         self.random = random.Random(seed)
         self.interference_streak_count = 80
         self.interference_streak_thickness = (3, 10)
@@ -57,7 +58,7 @@ class StripeEffects:
         if self.time % self.blue_blink_period >= self.blue_blink_duration:
             return
         blink_number = int(self.time // self.blue_blink_period)
-        band_height = round(height * random.Random(blink_number).uniform(*self.blue_height_share))
+        band_height = round(height * random.Random(self.seed * 1000003 + blink_number).uniform(*self.blue_height_share))
         travel_share = 0.5 - 0.5 * math.cos(2.0 * math.pi * self.time / self.blue_travel_period)
         band_top = y + round((height - band_height) * travel_share)
         corner_left, top, front = self.corner

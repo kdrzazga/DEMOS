@@ -184,6 +184,8 @@ class ScreenLens(BorderColoredLens):
         self.screen_lift = 0.004
         self.grid = 8
         self.screen_list = None
+        self.interference_lift = 0.002
+        self.interference_source = None
 
     def lens_color(self):
         return self.screen.border_color
@@ -234,6 +236,19 @@ class ScreenLens(BorderColoredLens):
         glDisable(GL_BLEND)
         glDisable(GL_TEXTURE_2D)
         glEnable(GL_LIGHTING)
+        if self.interference_source is not None:
+            self.draw_interference()
+
+    def draw_interference(self):
+        """Flat interference over the screen, just above the top of the bulge, pixel rows towards +z."""
+        half_length = self.outline.half_length * self.screen_height_share
+        half_width = half_length * self.screen.aspect
+        glPushMatrix()
+        glTranslatef(*self.outline.center)
+        glRotatef(-90.0, 1.0, 0.0, 0.0)
+        corner = (-half_width, half_length, self.bulge + self.screen_lift + self.interference_lift)
+        self.interference_source.draw_interference(corner, 2.0 * half_width / self.screen.width)
+        glPopMatrix()
 
 
 class FaceGrowth:
@@ -282,6 +297,7 @@ class DemoHead(HeadWithSunglasses):
         self.c64_screen = self.c64_animation.c64screen
         self.c64_screen.hold_typing()
         self.screen_lens = self.create_lenses()
+        self.screen_lens.interference_source = self.c64_animation
 
     def create_lenses(self):
         outlines = self.sunglasses.outlines

@@ -194,6 +194,7 @@ class DetailsStage(Stage):
         for ear in head.ears:
             ear.size = max(self.eased(time, 5.0, 1.5), 0.01)
         head.show_hair = time >= 7.0
+        head.sprouting = time >= 9.0
         hair_share = self.phase(time, 7.0, 2.0)
         head.haircut.visible_count = round(
             head.haircut.hair_count * hair_share)
@@ -207,7 +208,7 @@ class DetailsStage(Stage):
                                                  self.fill_share)
         camera.distance = (self.start_distance
                            + (close_distance - self.start_distance) * share)
-        camera.focus_height = self.head_center_height * share
+        camera.focus_point = (0.0, self.head_center_height * share, 0.0)
 
 
 class SunglassesStage(Stage):
@@ -224,15 +225,82 @@ class SunglassesStage(Stage):
         self.turn_once(show, time, 3.0, 8.0)
 
 
+class OrbitStage(Stage):
+    def __init__(self):
+        super().__init__(12.0)
+        self.orbit_radius = 1.6
+        self.orbit_duration = 8.0
+        self.self_turns = 1.0
+        self.screen_start = 8.5
+        self.screen_fade = 1.0
+
+    def enter(self, show):
+        show.pose.orbit_center_z = -self.orbit_radius
+        show.pose.turn_degrees = 0.0
+
+    def update(self, show, time):
+        travel = self.eased(time, 0.0, self.orbit_duration)
+        show.pose.orbit_degrees = 360.0 * travel
+        show.pose.turn_degrees = 360.0 * self.self_turns * travel
+        show.head.screen_lens.screen_share = self.phase(
+            time, self.screen_start, self.screen_fade)
+
+
+class ZoomStage(Stage):
+    def __init__(self):
+        super().__init__(10.0)
+        self.zoom_duration = 6.0
+        self.fill_share = 0.95
+        self.start_distance = 0.0
+        self.close_distance = 0.0
+        self.start_focus = (0.0, 0.0, 0.0)
+        self.screen_focus = (0.0, 0.0, 0.0)
+
+    def enter(self, show):
+        show.head.c64_screen.restart_typing()
+        camera = show.camera
+        camera.target_tilt = 0.0
+        self.start_distance = camera.distance
+        self.start_focus = camera.focus_point
+        self.screen_focus = show.head.screen_center()
+        self.close_distance = camera.distance_to_fill(
+            show.head.screen_height(), self.fill_share)
+
+    def update(self, show, time):
+        share = self.eased(time, 0.0, self.zoom_duration)
+        camera = show.camera
+        distance_ratio = self.close_distance / self.start_distance
+        camera.distance = self.start_distance * distance_ratio ** share
+        camera.focus_point = tuple(
+            start + (screen - start) * share
+            for start, screen in zip(self.start_focus, self.screen_focus))
+
+
 class EndingStage(Stage):
     def __init__(self):
         super().__init__(3.0)
 
-    def enter(self, show):
-        show.soundtrack.fade_out(self.duration / show.playback_speed)
-
     def update(self, show, time):
         show.darkness = self.phase(time, 0.0, self.duration)
+
+
+class ExitStage(Stage):
+    def __init__(self, playback_speed):
+        self.real_duration = 30.0
+        self.music_fade = 1.5
+        self.playback_speed = playback_speed
+        self.music_fading = False
+        super().__init__(self.real_duration * playback_speed)
+
+    def enter(self, show):
+        show.head.visible = False
+        show.darkness = 0.0
+
+    def update(self, show, time):
+        fade_start = self.duration - self.music_fade * self.playback_speed
+        if time >= fade_start and not self.music_fading:
+            self.music_fading = True
+            show.soundtrack.fade_out(self.music_fade)
 
 
 class StageTimeline:

@@ -128,7 +128,7 @@ class CurvedBar(Bar):
 class Lens:
     def __init__(self, outline):
         self.outline = outline
-        self.bulge = 0.03
+        self.bulge = 0.0
         self.rings = 6
         self.slices = 64
         self.color = (0.42, 0.37, 0.71)

@@ -99,7 +99,7 @@ class StageCamera:
         self.tilt = 20.0
         self.target_tilt = 20.0
         self.tilt_follow_rate = 1.5
-        self.focus_height = 0.0
+        self.focus_point = (0.0, 0.0, 0.0)
 
     def distance_to_fill(self, height, fill_share):
         view_height_per_distance = 2.0 * math.tan(
@@ -120,7 +120,8 @@ class StageCamera:
         glLoadIdentity()
         glTranslatef(0.0, 0.0, -self.distance)
         glRotatef(self.tilt, 1.0, 0.0, 0.0)
-        glTranslatef(0.0, -self.focus_height, 0.0)
+        focus_x, focus_y, focus_z = self.focus_point
+        glTranslatef(-focus_x, -focus_y, -focus_z)
 
 
 class Pose:
@@ -129,8 +130,13 @@ class Pose:
         self.lift = 0.0
         self.scale = 1.0
         self.upright_degrees = 0.0
+        self.orbit_degrees = 0.0
+        self.orbit_center_z = 0.0
 
     def apply(self):
+        glTranslatef(0.0, 0.0, self.orbit_center_z)
+        glRotatef(self.orbit_degrees, 0.0, 1.0, 0.0)
+        glTranslatef(0.0, 0.0, -self.orbit_center_z)
         glRotatef(self.turn_degrees, 0.0, 1.0, 0.0)
         glTranslatef(0.0, self.lift, 0.0)
         glScalef(self.scale, self.scale, self.scale)
@@ -143,9 +149,13 @@ class Pose:
         upright_z = y * math.sin(upright) + z * math.cos(upright)
         scaled = (x * self.scale, upright_y * self.scale + self.lift,
                   upright_z * self.scale)
-        turn = math.radians(self.turn_degrees)
-        turned_x = (scaled[0] * math.cos(turn)
-                    + scaled[2] * math.sin(turn))
-        turned_z = (-scaled[0] * math.sin(turn)
-                    + scaled[2] * math.cos(turn))
-        return (turned_x, scaled[1], turned_z)
+        turned_x, turned_z = self.rotate_around_up(
+            scaled[0], scaled[2], self.turn_degrees)
+        orbit_x, orbit_z = self.rotate_around_up(
+            turned_x, turned_z - self.orbit_center_z, self.orbit_degrees)
+        return (orbit_x, scaled[1], orbit_z + self.orbit_center_z)
+
+    def rotate_around_up(self, x, z, degrees):
+        angle = math.radians(degrees)
+        return (x * math.cos(angle) + z * math.sin(angle),
+                -x * math.sin(angle) + z * math.cos(angle))

@@ -7,8 +7,9 @@ from demos.old_and_new.models3d.lesson5_ball import Ball
 from demos.old_and_new.models3d.lesson8_mesh import MeshSurface
 from demos.old_and_new.models3d.lesson12_bald_head import (
     HeadFront, ellipse_coordinates)
+from demos.old_and_new.c64_animation import C64Animation
 from demos.old_and_new.models3d.lesson14_sunglasses import (
-    HeadWithSunglasses)
+    HeadWithSunglasses, Lens)
 
 
 class StageBall:
@@ -133,6 +134,102 @@ class MorphingFront(HeadFront):
         return x, z
 
 
+class SproutingHair:
+    def __init__(self, hair, growth_duration):
+        self.hair = hair
+        self.root = hair.control_points[0]
+        self.growth_duration = growth_duration
+        self.age = 0.0
+
+    def update(self, seconds):
+        self.age += seconds
+
+    def draw(self):
+        growth = min(self.age / self.growth_duration, 1.0)
+        if growth <= 0.0:
+            return
+        glPushMatrix()
+        glTranslatef(*self.root)
+        glScalef(growth, growth, growth)
+        glTranslatef(*(-self.root))
+        self.hair.draw()
+        glPopMatrix()
+
+
+class BorderColoredLens(Lens):
+    def __init__(self, outline, screen):
+        super().__init__(outline)
+        self.screen = screen
+
+    def draw(self):
+        if self.display_list is None:
+            self.display_list = glGenLists(1)
+            glNewList(self.display_list, GL_COMPILE)
+            self.emit_shape()
+            glEndList()
+        glDisable(GL_LIGHTING)
+        glColor3f(*self.screen.border_color)
+        glCallList(self.display_list)
+        glEnable(GL_LIGHTING)
+
+
+class ScreenLens(BorderColoredLens):
+    def __init__(self, outline, screen):
+        super().__init__(outline, screen)
+        self.screen_share = 0.0
+        self.screen_height_share = 0.9
+        self.screen_lift = 0.004
+        self.grid = 8
+        self.screen_list = None
+
+    def screen_point(self, column, row):
+        outline = self.outline
+        half_length = outline.half_length * self.screen_height_share
+        half_width = half_length * self.screen.aspect
+        u = column / self.grid
+        v = row / self.grid
+        x = (2.0 * u - 1.0) * half_width
+        z = (2.0 * v - 1.0) * half_length
+        reach_squared = ((x / outline.half_width) ** 2
+                         + (z / outline.half_length) ** 2)
+        y = self.bulge * (1.0 - reach_squared) + self.screen_lift
+        return (u, v), outline.center + numpy.array((x, y, z))
+
+    def emit_screen_vertex(self, column, row):
+        texture_point, position = self.screen_point(column, row)
+        glTexCoord2f(*texture_point)
+        glVertex3f(*position)
+
+    def compile_screen(self):
+        self.screen_list = glGenLists(1)
+        glNewList(self.screen_list, GL_COMPILE)
+        for row in range(self.grid):
+            glBegin(GL_TRIANGLE_STRIP)
+            for column in range(self.grid + 1):
+                self.emit_screen_vertex(column, row + 1)
+                self.emit_screen_vertex(column, row)
+            glEnd()
+        glEndList()
+
+    def draw(self):
+        super().draw()
+        if self.screen_share <= 0.0:
+            return
+        if self.screen_list is None:
+            self.compile_screen()
+        self.screen.refresh()
+        glDisable(GL_LIGHTING)
+        glEnable(GL_TEXTURE_2D)
+        glBindTexture(GL_TEXTURE_2D, self.screen.texture_id)
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        glColor4f(1.0, 1.0, 1.0, self.screen_share)
+        glCallList(self.screen_list)
+        glDisable(GL_BLEND)
+        glDisable(GL_TEXTURE_2D)
+        glEnable(GL_LIGHTING)
+
+
 class FaceGrowth:
     def __init__(self, front):
         self.front = front
@@ -170,6 +267,36 @@ class DemoHead(HeadWithSunglasses):
         for ear in self.ears:
             ear.size = 0.01
         self.haircut.visible_count = 0
+        self.sprouting = False
+        self.sprout_interval = 0.02
+        self.sprout_growth_duration = 0.1
+        self.sprout_timer = 0.0
+        self.sprouts = []
+        self.c64_animation = C64Animation()
+        self.c64_screen = self.c64_animation.c64screen
+        self.screen_lens = self.create_lenses()
+
+    def create_lenses(self):
+        outlines = self.sunglasses.outlines
+        right_index = max(range(len(outlines)),
+                          key=lambda index: outlines[index].center[0])
+        lenses = [BorderColoredLens(outline, self.c64_screen)
+                  for outline in outlines]
+        screen_lens = ScreenLens(outlines[right_index], self.c64_screen)
+        lenses[right_index] = screen_lens
+        self.sunglasses.lenses = lenses
+        return screen_lens
+
+    def screen_center(self):
+        middle = self.screen_lens.grid // 2
+        _texture_point, center = self.screen_lens.screen_point(middle,
+                                                                middle)
+        return self.pose.transform_point(center)
+
+    def screen_height(self):
+        lens = self.screen_lens
+        return (2.0 * lens.outline.half_length * lens.screen_height_share
+                * self.pose.scale)
 
     def create_front(self):
         return MorphingFront(4.0, 200)
@@ -177,6 +304,27 @@ class DemoHead(HeadWithSunglasses):
     def prepare_hair(self):
         for hair in self.haircut.hairs:
             hair.draw()
+
+    def update_sprouts(self, real_seconds):
+        if not self.sprouting:
+            return
+        self.sprout_timer += real_seconds
+        while self.sprout_timer >= self.sprout_interval:
+            self.sprout_timer -= self.sprout_interval
+            self.sprouts.append(SproutingHair(
+                self.haircut.grow_hair(), self.sprout_growth_duration))
+        for sprout in self.sprouts:
+            sprout.update(real_seconds)
+
+    def draw_hair(self):
+        super().draw_hair()
+        if not self.sprouts:
+            return
+        self.front.enable_lighting()
+        glColor3f(*self.haircut.color)
+        for sprout in self.sprouts:
+            sprout.draw()
+        glDisable(GL_LIGHTING)
 
     def set_back_depth(self, share):
         depth = self.full_back_depth * share

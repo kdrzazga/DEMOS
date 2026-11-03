@@ -10,8 +10,9 @@ from demos.old_and_new.models3d.lesson11_talking_face import (
 from demos.old_and_new.stage_view import (
     Pose, ScreenOverlay, StageCamera, WelcomeText)
 from demos.old_and_new.stages import (
-    BackStage, BallStage, DetailsStage, EndingStage, FaceStage, MeshStage,
-    OvalStage, StageTimeline, SunglassesStage, TalkStage, WelcomeStage)
+    BackStage, BallStage, DetailsStage, EndingStage, ExitStage, FaceStage,
+    MeshStage, OrbitStage, OvalStage, StageTimeline, SunglassesStage,
+    TalkStage, WelcomeStage, ZoomStage)
 
 
 class Soundtrack:
@@ -64,6 +65,9 @@ class Show:
         if self.balls_bobbing:
             for ball in self.balls:
                 ball.bob(self.time)
+        real_seconds = seconds / self.playback_speed
+        self.head.update_sprouts(real_seconds)
+        self.head.c64_screen.update(real_seconds)
         if self.talking:
             self.speech.update(seconds)
             self.head.front.shape_lips(*self.speech.lip_pose())
@@ -85,6 +89,9 @@ class Show:
 
 class OldAndNewDemo(PygameDemo):
     def __init__(self, windowed=False, triggered=False):
+        self.time = 0.0
+        self.timeline = None
+        self.show = None
         self.longest_frame = 0.1
         super().__init__(1280, 720, "Old and New", fps=60,
                          windowed=windowed, triggered=triggered)
@@ -97,7 +104,8 @@ class OldAndNewDemo(PygameDemo):
         self.timeline = StageTimeline([
             WelcomeStage(), BallStage(), MeshStage(), FaceStage(),
             TalkStage(), OvalStage(), BackStage(), DetailsStage(),
-            SunglassesStage(), EndingStage()])
+            SunglassesStage(), OrbitStage(), ZoomStage(), EndingStage(),
+            ExitStage(self.show.playback_speed)])
         self.time = 0.0
         if not self.paused:
             self.on_start()

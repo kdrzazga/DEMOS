@@ -3,6 +3,7 @@ import os
 import pygame
 
 from lib.petscii_image import PetsciiImage
+from lib.speech_lines import draw_speech
 
 
 class Asian(PetsciiImage):
@@ -266,9 +267,7 @@ class Asian(PetsciiImage):
         char_size = self.char_size if char_size is None else char_size
         font = self.font(char_size)
         _, cell_height = font.size("W")
-        for index, line in enumerate(self.speech):
-            glyph = font.render(line, False, self.speech_color)
-            surface.blit(glyph, (0, (self.speech_row + index) * cell_height))
+        draw_speech(surface, font, self.speech, self.speech_color, top=self.speech_row * cell_height)
 
     def smile(self):
         pass

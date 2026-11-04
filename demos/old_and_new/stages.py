@@ -1,4 +1,9 @@
+import os
+
+import pygame
+
 from lib import Globals
+from lib.speech_lines import read_speech
 
 
 def smooth(progress):
@@ -313,6 +318,49 @@ class ZoomStage(Stage):
 
     def exit(self, show):
         print("stage C= end -", Globals.get_duration())
+
+
+class FinalTalkStage(Stage):
+    def __init__(self, playback_speed):
+        self.playback_speed = playback_speed
+        sounds_directory = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "sounds")
+        self.first_voice = pygame.mixer.Sound(os.path.join(sounds_directory, "compare1.mp3"))
+        self.second_voice = pygame.mixer.Sound(os.path.join(sounds_directory, "compare2.mp3"))
+        self.first_speech = read_speech(os.path.join(sounds_directory, "compare1.srt"))
+        self.second_speech = read_speech(os.path.join(sounds_directory, "compare2.srt"))
+        self.second_voice_start = 7.5
+        self.talk_end = self.second_voice_start + self.second_voice.get_length()
+        self.trailing_silence = 0.5
+        self.head_shift = 0.4
+        self.head_shift_duration = 1.0
+        self.music_volume_drop = 0.5
+        self.music_volume_duration = 1.0
+        self.second_voice_started = False
+        self.talk_stop_requested = False
+        self.start_focus = (0.0, 0.0, 0.0)
+        super().__init__((self.talk_end + self.trailing_silence) * playback_speed)
+
+    def enter(self, show):
+        self.start_focus = show.camera.focus_point
+        self.first_voice.play()
+        show.subtitles.show(self.first_speech)
+        show.talking = True
+
+    def update(self, show, time):
+        real_time = time / self.playback_speed
+        shift = self.eased(real_time, 0.0, self.head_shift_duration)
+        focus_x, focus_y, focus_z = self.start_focus
+        show.camera.focus_point = (focus_x - self.head_shift * shift, focus_y, focus_z)
+        volume_drop = self.phase(real_time, 0.0, self.music_volume_duration)
+        show.soundtrack.set_volume(show.soundtrack.volume * (1.0 - self.music_volume_drop * volume_drop))
+        if real_time >= self.second_voice_start and not self.second_voice_started:
+            self.second_voice_started = True
+            self.second_voice.play()
+            show.subtitles.show(self.second_speech)
+        if real_time >= self.talk_end and not self.talk_stop_requested:
+            self.talk_stop_requested = True
+            show.stop_talking()
+            show.subtitles.hide()
 
 
 class EndingStage(Stage):

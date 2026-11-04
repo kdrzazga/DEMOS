@@ -1,5 +1,6 @@
 from OpenGL.GL import *
 
+from demos.forty_five.font import FONT_PATH
 from lib.typing_effect.typed_label import TypedLabel
 from lib.laser_line import smooth_step
 
@@ -73,7 +74,8 @@ class ChipListing:
 		self.centre_x = 0.0
 		self.centre_y = 0.0
 		self.vertical_offset = 0.0
-		self.labels = tuple(TypedLabel(text, self.text_line_height, frames_per_letter=self.text_frames_per_letter)
+		self.labels = tuple(TypedLabel(text, self.text_line_height, frames_per_letter=self.text_frames_per_letter,
+		                               font_path=FONT_PATH)
 		                    for text in (header,) + chip_names)
 		for label in self.labels:
 			label.build()

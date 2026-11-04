@@ -30,9 +30,14 @@ class TypedLabel:
 	def build(self):
 		"""Create the surface and the Typer. Needs pygame initialised."""
 		pygame.font.init()
-		width_px, height_px = pygame.font.Font(self.font_path, self.font_px).size(self.text)
-		self._surface = pygame.Surface((width_px, height_px), pygame.SRCALPHA)
-		self.aspect = width_px / height_px
+		font = pygame.font.Font(self.font_path, self.font_px)
+		width_px, line_height_px = font.size(self.text)
+		self._surface = pygame.Surface((width_px, line_height_px), pygame.SRCALPHA)
+		self.aspect = width_px / self.font_px
+		self.line_to_letter_height = line_height_px / self.font_px
+		letter_top_px = font.get_ascent() - font.metrics("M")[0][3]
+		letter_centre_px = letter_top_px + self.font_px / 2
+		self.letter_centre_below_line_centre = (letter_centre_px - line_height_px / 2) / self.font_px
 		self._new_typer()
 
 	def _new_typer(self):
@@ -64,7 +69,9 @@ class TypedLabel:
 		"""Quad centred on `centre`, spanning the unit `right` and `up` directions."""
 		if not self._texture:
 			return
-		half_width, half_height = self.height * self.aspect / 2, self.height / 2
+		half_width, half_height = self.height * self.aspect / 2, self.height * self.line_to_letter_height / 2
+		lift = self.height * self.letter_centre_below_line_centre
+		centre = tuple(c + lift * u for c, u in zip(centre, up))
 		glDisable(GL_LIGHTING)
 		glEnable(GL_BLEND)
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)

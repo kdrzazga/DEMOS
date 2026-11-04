@@ -2,6 +2,7 @@ import os
 
 from OpenGL.GL import *
 
+from demos.forty_five.font import FONT_PATH
 from lib.geometry import image_texture
 from lib.typing_effect.typed_label import TypedLabel
 from lib.laser_line import smooth_step
@@ -45,7 +46,7 @@ class FinalGoodbye:
 		self.phase = "idle"
 
 	def _label(self, text, height):
-		label = TypedLabel(text, height, frames_per_letter=self.frames_per_letter)
+		label = TypedLabel(text, height, frames_per_letter=self.frames_per_letter, font_path=FONT_PATH)
 		label.build()
 		return label
 

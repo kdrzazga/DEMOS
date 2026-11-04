@@ -1,5 +1,6 @@
 from OpenGL.GL import *
 
+from demos.forty_five.font import FONT_PATH
 from lib.typing_effect.typed_label import TypedLabel
 
 THANKS_LINE = "Thanks for watching !"
@@ -38,7 +39,7 @@ class FarewellMessage:
 		self.phase = "idle"
 
 	def _label(self, text, tint_rgb):
-		label = TypedLabel(text, self.wanted_line_height, frames_per_letter=self.frames_per_letter)
+		label = TypedLabel(text, self.wanted_line_height, frames_per_letter=self.frames_per_letter, font_path=FONT_PATH)
 		label.build()
 		label.tint_rgb = tint_rgb
 		return label

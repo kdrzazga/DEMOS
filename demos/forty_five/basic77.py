@@ -7,7 +7,7 @@ from lib.flying_logo import ease_in_cubic, ease_out_cubic
 from lib.laser_line import PictureTexture
 from lib.picture_surface import PictureSurface
 from lib.speech_bubble import SpeechBubble
-from lib.typing_effect.typer import FONT_PATH
+from demos.forty_five.font import FONT_PATH
 
 COMMODORE_HISTORY_DIRECTORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "history", "c=")
 BILL_GATES_IMAGE_PATH = os.path.join(COMMODORE_HISTORY_DIRECTORY, "bill.png")

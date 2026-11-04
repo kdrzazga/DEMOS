@@ -9,7 +9,7 @@ from lib.laser_line import PictureTexture, smooth_step
 from lib.morphing_caption import MorphingCaption
 from lib.picture_surface import PictureSurface
 from lib.speech_bubble import SpeechBubble
-from lib.typing_effect.typer import FONT_PATH
+from demos.forty_five.font import FONT_PATH
 
 HISTORY_DIRECTORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "history")
 JABBA_IMAGE_PATH = os.path.join(HISTORY_DIRECTORY, "c=", "jabba.png")
@@ -62,7 +62,8 @@ class MosAcquisition:
 		                               swing_amplitude_degrees=self.jabba_swing_amplitude_degrees,
 		                               swing_period_seconds=self.jabba_swing_period_seconds)
 		self.caption = MorphingCaption(JABBA_TO_JACK_CAPTION_SEGMENTS,
-		                               self.caption_height_in_screen_heights * screen_plane.visible_height)
+		                               self.caption_height_in_screen_heights * screen_plane.visible_height,
+		                               font_path=FONT_PATH)
 		self.mos_logo = self._build_mos_logo()
 		self.world_units_per_jack_pixel = self.portrait.picture_height / self.jack_pixel_size[1]
 		self.big_jack_picture = PictureTexture.load(JACK_TRAMIEL_BIG_IMAGE_PATH)

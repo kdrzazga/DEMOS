@@ -104,7 +104,7 @@ DEMOS = {
     "oldnew": old_and_new_demo,
 }
 
-DEFAULT_DEMO = "oldnew"
+DEFAULT_DEMO = "45"
 
 
 def close_boot_splash():

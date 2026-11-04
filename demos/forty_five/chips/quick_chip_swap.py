@@ -3,6 +3,7 @@ import os
 import pygame
 from OpenGL.GL import *
 
+from demos.forty_five.font import FONT_PATH
 from lib.typing_effect.typed_label import TypedLabel
 
 FORTY_FIVE_DIRECTORY = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -18,7 +19,8 @@ class QuickChipSwap:
 		self.caption_height = 0.8
 		self.caption_frames_per_letter = 4
 		self.swap_sound = self._load_sound(sound_path)
-		self.caption_label = TypedLabel(caption, self.caption_height, frames_per_letter=self.caption_frames_per_letter)
+		self.caption_label = TypedLabel(caption, self.caption_height, frames_per_letter=self.caption_frames_per_letter,
+		                                font_path=FONT_PATH)
 		self.caption_label.build()
 		self.newcomer = None
 		self.predecessor = None

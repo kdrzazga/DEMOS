@@ -3,6 +3,7 @@ import os
 import pygame
 from OpenGL.GL import *
 
+from demos.forty_five.font import FONT_PATH
 from lib.typing_effect.typed_label import TypedLabel
 
 FORTY_FIVE_DIRECTORY = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -26,7 +27,8 @@ class ChipReplacement:
 		self.text_frames_per_letter = 4
 		self.text_top_line_y = -2.4
 		self.replacement_sound = self._load_sound(sound_path)
-		self.text_labels = tuple(TypedLabel(text, self.text_line_height, frames_per_letter=self.text_frames_per_letter)
+		self.text_labels = tuple(TypedLabel(text, self.text_line_height, frames_per_letter=self.text_frames_per_letter,
+		                                    font_path=FONT_PATH)
 		                         for text in text_lines)
 		for label in self.text_labels:
 			label.build()

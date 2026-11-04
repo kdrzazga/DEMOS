@@ -5,6 +5,7 @@ from OpenGL.GL import *
 
 from lib.pygame_demo import PygameDemo
 from demos.old_and_new.actors import DemoHead, SkinMesh, StageBall
+from demos.old_and_new.left_lens import LeftLens, LeftLensStage
 from demos.old_and_new.models3d.lesson11_talking_face import (
     LipShapes, Speech)
 from demos.old_and_new.stage_view import (
@@ -19,7 +20,8 @@ class Soundtrack:
     def __init__(self):
         self.path = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "resources",
-            "ElectricElwizz - We Rise Through Fire (Electro Freestyle).mp3")
+            #"ElectricElwizz - We Rise Through Fire (Electro Freestyle).mp3")
+            "Cleo.mp3") #Atrox 'Cleopatraz Castle'
         self.volume = 1.0
 
     def start(self):
@@ -41,6 +43,7 @@ class Show:
         self.pose = Pose()
         self.head = DemoHead(self.pose)
         self.head.prepare_hair()
+        self.left_lens = LeftLens(self.head)
         self.mesh = SkinMesh(self.head.front.skin_color,
                              self.head.front.line_color)
         self.balls = [StageBall((-3.0, 1.3, 0.0), 0.45),
@@ -74,6 +77,7 @@ class Show:
             self.head.front.build()
 
     def draw(self):
+        self.left_lens.capture_tunnel()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         self.camera.apply()
         glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, self.no_shine)
@@ -81,6 +85,8 @@ class Show:
             ball.draw()
         self.mesh.draw(self.pose)
         self.head.draw()
+        self.left_lens.draw_escaping_ball()
+        self.head.c64_animation.draw_unsync()
         self.overlay.begin()
         self.welcome.draw(self.overlay)
         self.overlay.darken(self.darkness)
@@ -106,7 +112,7 @@ class OldAndNewDemo(PygameDemo):
             TalkStage(), OvalStage(), BackStage(), SecondBallStage(),
             DetailsStage(), SunglassesStage(), OrbitStage(),
             ZoomStage(self.show.head.c64_animation, self.show.playback_speed),
-            EndingStage(), ExitStage(self.show.playback_speed)])
+            LeftLensStage(), EndingStage(), ExitStage(self.show.playback_speed)])
         self.time = 0.0
         if not self.paused:
             self.on_start()

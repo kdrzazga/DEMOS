@@ -4,6 +4,7 @@ import os
 from OpenGL.GL import *
 
 from demos.forty_five.picture_description import PictureDescription
+from demos.forty_five.font import FONT_PATH
 from lib.caption_sequence import CaptionSequence
 from lib.flying_logo import FlyingLogo, ease_in_cubic
 from lib.laser_line import LaserLine, LaserSweepPath, PictureTexture, PictureTransition, smooth_step
@@ -115,7 +116,8 @@ class MosTeam:
 			self.flying_logo = FlyingLogo(os.path.join(params.picture_directory, params.logo_file_name),
 			                              params.aspect_ratio, params.field_of_view_degrees, self.camera_distance,
 			                              flight_seconds=params.logo_flight_seconds,
-			                              settled_caption_lines=params.logo_caption_lines)
+			                              settled_caption_lines=params.logo_caption_lines,
+			                              caption_font_path=FONT_PATH)
 		self.restart()
 
 	@property

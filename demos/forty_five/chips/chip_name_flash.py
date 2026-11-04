@@ -1,7 +1,7 @@
 from OpenGL.GL import *
 
 from lib.pointed_name_label import OutlinedTextTexture, ScreenSpaceProjector
-from lib.typing_effect.typer import FONT_PATH
+from demos.forty_five.font import FONT_PATH
 
 
 class ChipNameFlash:

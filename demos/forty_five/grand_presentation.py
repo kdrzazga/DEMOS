@@ -4,7 +4,7 @@ from OpenGL.GL import *
 from lib.geometry import upload_texture
 from lib.typing_effect.typed_label import TypedLabel
 from lib.laser_line import smooth_step
-from lib.typing_effect.typer import FONT_PATH
+from demos.forty_five.font import FONT_PATH
 
 ANNOUNCEMENT_LINES = (
 	"Ladies and gentlemen!",
@@ -147,7 +147,8 @@ class GrandPresentation:
 		self.frames_per_letter = 4
 		self.pause_seconds_between_lines = 1.0
 		self.line_margin_from_bottom = 0.8
-		self.announcement_labels = tuple(TypedLabel(line, self.line_height, frames_per_letter=self.frames_per_letter)
+		self.announcement_labels = tuple(TypedLabel(line, self.line_height, frames_per_letter=self.frames_per_letter,
+		                                            font_path=FONT_PATH)
 		                                 for line in ANNOUNCEMENT_LINES)
 		for label in self.announcement_labels:
 			label.build()

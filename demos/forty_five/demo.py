@@ -37,7 +37,7 @@ from lib.caption_sequence import CaptionSequence
 from lib.laser_line import smooth_step
 from lib.picture_surface import ScreenPlane
 from lib.pygame_demo import PygameDemo
-from lib.typing_effect.typer import FONT_PATH
+from demos.forty_five.font import FONT_PATH
 from demos.forty_five.acquisition76 import MosAcquisition
 from demos.forty_five.basic77 import BasicLicense
 from demos.forty_five.c64c.commodore64 import Commodore64
@@ -127,7 +127,7 @@ class C64Demo(PygameDemo):
 		self.computer.build()
 		self.animation = CrashAnimationText(self.computer, aspect, self.fov, self.caption, fps=self.fps,
 		                                    caption_hold_seconds=0.0)
-		self.presents_label = TypedLabel(self.presents, self.presents_height)
+		self.presents_label = TypedLabel(self.presents, self.presents_height, font_path=FONT_PATH)
 		self.presents_label.build()
 
 		self.mos_team = MosTeamFactory.create_default_mos_team(aspect, self.fov)

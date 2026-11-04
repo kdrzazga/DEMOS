@@ -1,6 +1,7 @@
 from OpenGL.GL import *
 
 from demos.forty_five.anims.socket_move import SocketMove
+from demos.forty_five.font import FONT_PATH
 from lib.typing_effect.typed_label import TypedLabel
 
 
@@ -36,7 +37,7 @@ class ChipAssembly:
 	def begin(self, steps):
 		self.steps = tuple(steps)
 		self.caption_labels = tuple(TypedLabel(step.caption, self.caption_height,
-		                                       frames_per_letter=self.caption_frames_per_letter)
+		                                       frames_per_letter=self.caption_frames_per_letter, font_path=FONT_PATH)
 		                            for step in self.steps)
 		for label in self.caption_labels:
 			label.build()

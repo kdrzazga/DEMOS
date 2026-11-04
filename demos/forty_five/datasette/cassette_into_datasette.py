@@ -36,6 +36,7 @@ import pygame
 from OpenGL.GL import *
 from OpenGL.GLU import gluPerspective
 
+from demos.forty_five.font import FONT_PATH
 from lib.geometry import upload_texture
 
 
@@ -123,8 +124,7 @@ class CassetteIntoDatasette:
 
 	def __init__(self, datasette, cassette, aspect, fov, start_roll_position=20.0, play_sound=True,
 	             sound_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "PressPlayOnTape.mp3"),
-	             byte_font_path=os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
-		             os.path.abspath(__file__))))), "lib", "resources", "C64_Pro_Mono-STYLE.ttf"),
+	             byte_font_path=FONT_PATH,
 	             play_counter_units=5.0, seed=64):
 		self.datasette = datasette
 		self.cassette = cassette

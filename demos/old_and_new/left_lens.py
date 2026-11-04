@@ -8,6 +8,7 @@ from OpenGL.GL import *
 from lib import Globals
 
 os.environ["PATH"] += os.pathsep
+from lib import Globals
 from lib.amiga_ball import AmigaBall
 from lib.tunnel import OpenGlTunnel, SurfaceTunnelEffect
 from demos.old_and_new.actors import BorderColoredLens
@@ -50,18 +51,23 @@ class AmigaBallTunnel(OpenGlTunnel):
     def __init__(self):
         super().__init__()
         self.ball = AmigaBall(radius=0.8)
-        self.ball_delay = 1.0
+        self.ball_delay = 4.0
         self.ball_position = (0.0, 0.0, -6.0)
         self.ball_travel = 10.0
         self.ball_trip_duration = 2.0
         self.ball_trips = 3
+        self.ball_inside = True
 
     def update(self, seconds):
         super().update(seconds)
         self.ball.update(seconds)
 
+    def ball_height_share(self):
+        ball_depth = -self.ball_position[2]
+        return self.ball.radius / (ball_depth * math.tan(math.radians(self.field_of_view / 2.0)))
+
     def draw_inside(self):
-        if self.time < self.ball_delay:
+        if not self.ball_inside or self.time < self.ball_delay:
             return
         glEnable(GL_DEPTH_TEST)
         glPushMatrix()
@@ -139,6 +145,10 @@ class LensPicture:
         self.snapshot_running = self.tunnel.is_filled
 
     @property
+    def opengl_tunnel(self):
+        return self.tunnel_snapshot.tunnel
+
+    @property
     def shown_texture_id(self):
         return self.tunnel_snapshot.texture_id if self.snapshot_running else self.texture_id
 
@@ -170,6 +180,24 @@ class LeftLens(BorderColoredLens):
         self.picture = LensPicture(2048, 832)
         self.picture_lift = 0.004
         self.picture_list = None
+        self.ball_escaping = False
+        self.escaping_ball_position = (0.0, 0.0, 0.0)
+        self.escaping_ball_radius = 0.0
+
+    def draw_escaping_ball(self):
+        if not self.ball_escaping:
+            return
+        ball = self.picture.opengl_tunnel.ball
+        scale = self.escaping_ball_radius / ball.radius
+        glPushAttrib(GL_ENABLE_BIT | GL_CURRENT_BIT)
+        glDisable(GL_LIGHTING)
+        glEnable(GL_DEPTH_TEST)
+        glPushMatrix()
+        glTranslatef(*self.escaping_ball_position)
+        glScalef(scale, scale, scale)
+        ball.render()
+        glPopMatrix()
+        glPopAttrib()
 
     def capture_tunnel(self):
         if self.picture.visible:
@@ -237,11 +265,22 @@ class LeftLensStage(Stage):
         self.tunnel_hold = 26.0
         super().__init__(self.blackout_duration + self.zoom_duration + self.tunnel_hold)
         self.fill_share = 1.2
+        self.zoom_out_start = 10.0
+        self.zoom_out_duration = 3.0
+        self.escape_start = 12.0
+        self.escape_duration = 2.0
+        self.dive_start = 14.5
+        self.dive_duration = 3.0
+        self.final_travel = 4.0
+        self.tunnel_end = self.dive_start + self.dive_duration + self.final_travel
+        self.escape_miss_to_left = 0.2
+        self.escape_overshoot = 1.3
         self.start_distance = 0.0
         self.close_distance = 0.0
         self.start_focus = (0.0, 0.0, 0.0)
         self.lens_focus = (0.0, 0.0, 0.0)
         self.last_time = 0.0
+        self.second_entry_announced = False
 
     def enter(self, show):
         lens = show.left_lens
@@ -262,7 +301,36 @@ class LeftLensStage(Stage):
         if time >= self.blackout_duration:
             picture.update_tunnel((time - self.last_time) / show.playback_speed)
         self.last_time = time
-        self.zoom(show.camera, self.eased(time, self.blackout_duration, self.zoom_duration))
+        tunnel_time = picture.opengl_tunnel.time
+        if picture.snapshot_running:
+            self.duration = time + (self.tunnel_end - tunnel_time) * show.playback_speed
+        zoom_in = self.eased(time, self.blackout_duration, self.zoom_duration)
+        zoom_out = self.eased(tunnel_time, self.zoom_out_start, self.zoom_out_duration)
+        dive = self.eased(tunnel_time, self.dive_start, self.dive_duration)
+        if tunnel_time >= self.dive_start and not self.second_entry_announced:
+            self.second_entry_announced = True
+            print('Second entry to the tunnel ' + str(Globals.get_duration()))
+        self.zoom(show.camera, zoom_in * (1.0 - zoom_out + dive))
+        self.move_escaping_ball(show.left_lens, tunnel_time)
+
+    def move_escaping_ball(self, lens, tunnel_time):
+        tunnel = lens.picture.opengl_tunnel
+        if tunnel_time < self.escape_start:
+            return
+        tunnel.ball_inside = False
+        progress = self.phase(tunnel_time, self.escape_start, self.escape_duration)
+        lens.ball_escaping = progress < 1.0
+        radius = tunnel.ball_height_share() * lens.world_height() / 2.0
+        start_x, start_y, start_z = self.lens_focus
+        start = (start_x, start_y, start_z + radius)
+        focus_x, focus_y, focus_z = self.start_focus
+        passing_point = (focus_x - self.escape_miss_to_left * self.start_distance,
+                         focus_y,
+                         focus_z + self.start_distance)
+        travel = self.escape_overshoot * progress
+        lens.escaping_ball_radius = radius
+        lens.escaping_ball_position = tuple(begin + (passing - begin) * travel
+                                            for begin, passing in zip(start, passing_point))
 
     def zoom(self, camera, share):
         distance_ratio = self.close_distance / self.start_distance

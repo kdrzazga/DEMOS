@@ -20,7 +20,8 @@ class Soundtrack:
     def __init__(self):
         self.path = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "resources",
-            "ElectricElwizz - We Rise Through Fire (Electro Freestyle).mp3")
+            #"ElectricElwizz - We Rise Through Fire (Electro Freestyle).mp3")
+            "Cleo.mp3") #Atrox 'Cleopatraz Castle'
         self.volume = 1.0
 
     def start(self):
@@ -84,6 +85,7 @@ class Show:
             ball.draw()
         self.mesh.draw(self.pose)
         self.head.draw()
+        self.left_lens.draw_escaping_ball()
         self.head.c64_animation.draw_unsync()
         self.overlay.begin()
         self.welcome.draw(self.overlay)

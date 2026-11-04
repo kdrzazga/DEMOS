@@ -186,6 +186,9 @@ class DetailsStage(Stage):
         self.head_center_height = 0.25
         self.fill_share = 0.92
         self.start_distance = 0.0
+        self.turn_start = 9.5
+        self.turn_duration = 7.0
+        self.talk_stop_requested = False
 
     def enter(self, show):
         show.pose.turn_degrees = 0.0
@@ -217,7 +220,10 @@ class DetailsStage(Stage):
             head.haircut.hair_count * hair_share)
         self.zoom(show, self.eased(time, self.zoom_start,
                                    self.zoom_duration))
-        self.turn_once(show, time, 9.5, 7.0)
+        self.turn_once(show, time, self.turn_start, self.turn_duration)
+        if time >= self.turn_start + self.turn_duration and not self.talk_stop_requested:
+            self.talk_stop_requested = True
+            show.stop_talking()
 
     def zoom(self, show, share):
         camera = show.camera

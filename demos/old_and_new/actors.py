@@ -293,6 +293,18 @@ class DemoHead(HeadWithSunglasses):
         self.sprout_growth_duration = 0.1
         self.sprout_timer = 0.0
         self.sprouts = []
+        self.twin_shift = 0.04
+        self.twin_zone_alignment = 0.76
+        crown_direction = numpy.array((0.0, 0.0, -1.0))
+        back_direction = numpy.array((0.0, -1.0, 0.0))
+        head_left = numpy.array((-1.0, 0.0, 0.0))
+        head_right = numpy.array((1.0, 0.0, 0.0))
+        self.twin_zones = ((crown_direction, head_left, back_direction),
+                           (back_direction, head_left, crown_direction),
+                           (head_left, back_direction, crown_direction),
+                           (head_right, -back_direction, crown_direction))
+        self.hair_twin_offsets = []
+        self.sprout_twin_offsets = []
         self.c64_animation = C64Animation()
         self.c64_screen = self.c64_animation.c64screen
         self.c64_screen.hold_typing()
@@ -327,6 +339,28 @@ class DemoHead(HeadWithSunglasses):
     def prepare_hair(self):
         for hair in self.haircut.hairs:
             hair.draw()
+        self.hair_twin_offsets = [self.twin_offsets(hair) for hair in self.haircut.hairs]
+
+    def twin_offsets(self, hair):
+        root, rise, _tip = hair.control_points
+        normal = (rise - root) / numpy.linalg.norm(rise - root)
+        zone = next((zone for zone in self.twin_zones
+                     if numpy.dot(normal, zone[0]) >= self.twin_zone_alignment), None)
+        if zone is None:
+            return ()
+        _direction, left, above = zone
+        return (self.shift_along_surface(left, normal), self.shift_along_surface(above, normal))
+
+    def shift_along_surface(self, direction, normal):
+        along_surface = direction - normal * numpy.dot(direction, normal)
+        return along_surface / numpy.linalg.norm(along_surface) * self.twin_shift
+
+    def draw_twins(self, draw_hair, offsets):
+        for offset in offsets:
+            glPushMatrix()
+            glTranslatef(*offset)
+            draw_hair()
+            glPopMatrix()
 
     def update_sprouts(self, real_seconds):
         if not self.sprouting:
@@ -334,20 +368,28 @@ class DemoHead(HeadWithSunglasses):
         self.sprout_timer += real_seconds
         while self.sprout_timer >= self.sprout_interval:
             self.sprout_timer -= self.sprout_interval
-            self.sprouts.append(SproutingHair(
-                self.haircut.grow_hair(), self.sprout_growth_duration))
+            sprout = SproutingHair(self.haircut.grow_hair(), self.sprout_growth_duration)
+            self.sprouts.append(sprout)
+            self.sprout_twin_offsets.append(self.twin_offsets(sprout.hair))
         for sprout in self.sprouts:
             sprout.update(real_seconds)
 
     def draw_hair(self):
         super().draw_hair()
-        if not self.sprouts:
-            return
         self.front.enable_lighting()
         glColor3f(*self.haircut.color)
-        for sprout in self.sprouts:
+        visible_count = self.haircut.visible_count
+        for hair, offsets in zip(self.haircut.hairs[:visible_count], self.hair_twin_offsets[:visible_count]):
+            self.draw_twins(hair.draw, offsets)
+        for sprout, offsets in zip(self.sprouts, self.sprout_twin_offsets):
             sprout.draw()
+            self.draw_twins(sprout.draw, offsets)
         glDisable(GL_LIGHTING)
+
+    def hide_wires(self):
+        self.front.show_wires = False
+        self.back.show_wires = False
+        self.back.invalidate()
 
     def set_back_depth(self, share):
         depth = self.full_back_depth * share

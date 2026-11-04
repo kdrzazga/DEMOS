@@ -194,6 +194,7 @@ class DetailsStage(Stage):
         self.turn_start = 9.5
         self.turn_duration = 7.0
         self.talk_stop_requested = False
+        self.wires_hidden = False
 
     def enter(self, show):
         show.pose.turn_degrees = 0.0
@@ -226,6 +227,9 @@ class DetailsStage(Stage):
         self.zoom(show, self.eased(time, self.zoom_start,
                                    self.zoom_duration))
         self.turn_once(show, time, self.turn_start, self.turn_duration)
+        if time >= self.turn_start and not self.wires_hidden:
+            self.wires_hidden = True
+            head.hide_wires()
         if time >= self.turn_start + self.turn_duration and not self.talk_stop_requested:
             self.talk_stop_requested = True
             show.stop_talking()

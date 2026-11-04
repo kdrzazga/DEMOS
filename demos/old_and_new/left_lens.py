@@ -5,11 +5,9 @@ import random
 import pygame
 from OpenGL.GL import *
 
-from lib import Globals
-
 os.environ["PATH"] += os.pathsep
 from lib import Globals
-from lib.amiga_ball import AmigaBall
+from lib.amiga.amiga_ball import AmigaBall
 from lib.tunnel import OpenGlTunnel, SurfaceTunnelEffect
 from demos.old_and_new.actors import BorderColoredLens
 from demos.old_and_new.stages import Stage

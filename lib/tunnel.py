@@ -224,6 +224,7 @@ class OpenGlTunnel:
         glBindTexture(GL_TEXTURE_2D, self.floor_texture)
         glCallList(self.floor_list)
         glBindTexture(GL_TEXTURE_2D, 0)
+        self.draw_inside()
 
         glMatrixMode(GL_TEXTURE)
         glPopMatrix()
@@ -232,6 +233,9 @@ class OpenGlTunnel:
         glMatrixMode(GL_MODELVIEW)
         glPopMatrix()
         glPopAttrib()
+
+    def draw_inside(self):
+        pass
 
     def look(self):
         camera_x = 0.35 * math.sin(self.time * 0.9)

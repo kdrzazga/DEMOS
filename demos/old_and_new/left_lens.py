@@ -5,7 +5,10 @@ import random
 import pygame
 from OpenGL.GL import *
 
+from lib import Globals
+
 os.environ["PATH"] += os.pathsep
+from lib.amiga_ball import AmigaBall
 from lib.tunnel import OpenGlTunnel, SurfaceTunnelEffect
 from demos.old_and_new.actors import BorderColoredLens
 from demos.old_and_new.stages import Stage
@@ -43,11 +46,42 @@ class FillingBlackBars:
             surface.fill(self.bar_color, (0, top, self.width, thickness))
 
 
+class AmigaBallTunnel(OpenGlTunnel):
+    def __init__(self):
+        super().__init__()
+        self.ball = AmigaBall(radius=0.8)
+        self.ball_delay = 1.0
+        self.ball_position = (0.0, 0.0, -6.0)
+        self.ball_travel = 10.0
+        self.ball_trip_duration = 2.0
+        self.ball_trips = 3
+
+    def update(self, seconds):
+        super().update(seconds)
+        self.ball.update(seconds)
+
+    def draw_inside(self):
+        if self.time < self.ball_delay:
+            return
+        glEnable(GL_DEPTH_TEST)
+        glPushMatrix()
+        x, y, z = self.ball_position
+        glTranslatef(x, y, z - self.ball_distance())
+        self.ball.render()
+        glPopMatrix()
+
+    def ball_distance(self):
+        moving_time = self.time - self.ball_delay
+        if moving_time >= self.ball_trips * self.ball_trip_duration:
+            return 0.0
+        return self.ball_travel * (1.0 - math.cos(2.0 * math.pi * moving_time / self.ball_trip_duration)) / 2.0
+
+
 class TunnelSnapshot:
     def __init__(self, width, height):
         self.width = width
         self.height = height
-        self.tunnel = OpenGlTunnel()
+        self.tunnel = AmigaBallTunnel()
         self.texture_id = glGenTextures(1)
         glBindTexture(GL_TEXTURE_2D, self.texture_id)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
@@ -93,6 +127,7 @@ class LensPicture:
 
     def start_tunnel(self):
         self.tunnel = SurfaceTunnelEffect(self.tunnel_enlarge_delay, self.width, self.height, self.tunnel_color)
+        print("Tunnel in left lens " + str(Globals.get_duration()))
 
     def update_tunnel(self, seconds):
         if self.snapshot_running:

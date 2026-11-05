@@ -29,6 +29,7 @@ class RobertYannesIntroduction:
 		self.sid_sound = self._load_sound(SID_SOUND_PATH)
 		self.speech_bubble = SpeechBubble(None, size=self.speech_bubble_font_size, lines=ROBERT_YANNES_SPEECH_LINES,
 		                                  font_path=FONT_PATH)
+		self.speech_bubble.upside_down = True
 		self.sid_chip = None
 		self.gallery_neighbour = None
 		self.elapsed_seconds = 0.0

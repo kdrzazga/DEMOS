@@ -503,6 +503,6 @@ class RobertYannesParams(AlCharpentierParams):
 		self.transition_styles = ("laser_sweep",)
 		self.screen_fill_fraction = 0.25
 		self.picture_centre_fraction_from_left = 1.0 / 3.0
-		self.picture_shift_left_in_picture_widths = 3
+		self.picture_shift_left_in_picture_widths = 1.5 #3
 		self.picture_shift_down_in_picture_heights = 0.1
 		self.picture_description_lines = ("Robert", "Yannes")

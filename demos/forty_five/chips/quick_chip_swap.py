@@ -20,7 +20,7 @@ class QuickChipSwap:
 		self.predecessor_name = predecessor_name
 		self.predecessor_name_flash = None
 		self.swap_seconds = 3.0
-		self.caption_height = 0.8
+		self.caption_height = 0.5
 		self.caption_frames_per_letter = 4
 		self.swap_sound = self._load_sound(sound_path)
 		self.caption_label = TypedLabel(caption, self.caption_height, frames_per_letter=self.caption_frames_per_letter,
@@ -49,7 +49,7 @@ class QuickChipSwap:
 		self.sound_seconds = 0.0
 		self.caption_label.restart()
 		self.swap_sound.play()
-		self.predecessor_name_flash = ChipNameFlash(predecessor, self.predecessor_name)
+		self.predecessor_name_flash = ChipNameFlash.before_gallery_removal(predecessor,self.predecessor_name)
 		self.predecessor_name_flash.build()
 		self.predecessor_name_flash.start()
 		self.phase = "naming_predecessor"

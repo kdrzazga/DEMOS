@@ -9,7 +9,7 @@ from demos.forty_five.font import FONT_PATH
 
 FORTY_FIVE_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 SID_SOUND_PATH = os.path.join(FORTY_FIVE_DIRECTORY, "resources", "history", "c=", "SID.mp3")
-ROBERT_YANNES_SPEECH_LINES = ("I'd worked with synthetizes", "and I wanted a chip that was", "a music synthetizer.")
+ROBERT_YANNES_SPEECH_LINES = ("I'd worked with synthesizers", "and I wanted a chip that was", "a music synthesizer.")
 
 
 class RobertYannesIntroduction:
@@ -22,7 +22,9 @@ class RobertYannesIntroduction:
 		self.sid_travel_second = 3.0
 		self.sid_travel_seconds = 2.0
 		self.speech_start_second = 4.0
-		self.speech_bubble_font_size = 13
+		self.speech_bubble_font_size = 19.5
+		self.speech_bubble_text_width_share = 0.75
+		self.speech_bubble_max_height = 5.8
 		self.speech_bubble_anchor_fraction_from_picture_bottom = 0.5
 		self.photo_exit_seconds = 1.5
 		self.show = MosTeamFactory.create_robert_yannes_show(aspect_ratio, field_of_view_degrees)
@@ -30,6 +32,9 @@ class RobertYannesIntroduction:
 		self.speech_bubble = SpeechBubble(None, size=self.speech_bubble_font_size, lines=ROBERT_YANNES_SPEECH_LINES,
 		                                  font_path=FONT_PATH)
 		self.speech_bubble.upside_down = True
+		self.speech_bubble.text_width_share = self.speech_bubble_text_width_share
+		self.speech_bubble.max_world_height = self.speech_bubble_max_height
+		self.speech_bubble.resize_to_text()
 		self.sid_chip = None
 		self.gallery_neighbour = None
 		self.elapsed_seconds = 0.0

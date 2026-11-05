@@ -25,7 +25,8 @@ class SpeechBubble:
 		self.text_color = (20, 20, 20)
 		self.text_center = (0.53, 0.45)
 		self.line_spacing = 1.15
-		self.width, self.height = self._bubble_size()
+		self.max_world_height = None
+		self.resize_to_text()
 		self.sound = None
 		self.channel = None
 		self.elapsed = 0.0
@@ -46,12 +47,18 @@ class SpeechBubble:
 		pygame.font.init()
 		return pygame.font.Font(self.font_path, int(self.font_size * self.font_scale * scale))
 
+	def resize_to_text(self):
+		self.width, self.height = self._bubble_size()
+
 	def _bubble_size(self):
 		font = self._font(1)
 		text_width = max(font.size(line)[0] for line in self.lines)
 		text_height = font.get_linesize() * self.line_spacing * len(self.lines)
 		width = text_width / self.text_width_share
-		height = max(width * self._picture_aspect(), text_height / self.text_height_share)
+		height_fitting_text = text_height / self.text_height_share
+		height = max(width * self._picture_aspect(), height_fitting_text)
+		if self.max_world_height is not None:
+			height = max(min(height, self.max_world_height / self.units_per_pixel), height_fitting_text)
 		return width, height
 
 	def _picture_aspect(self):

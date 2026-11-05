@@ -146,7 +146,7 @@ class C64Demo(PygameDemo):
 		self.pia_via_name_flashes = (ChipNameFlash(self.pia_6520, "PIA"), ChipNameFlash(self.via_6522, "VIA"))
 		for name_flash in self.pia_via_name_flashes:
 			name_flash.build()
-		self.pia_removal_name_flash = ChipNameFlash(self.pia_6520, "PIA")
+		self.pia_removal_name_flash = ChipNameFlash.before_gallery_removal(self.pia_6520, "PIA")
 		self.pia_removal_name_flash.build()
 		self.basic_rom_901226 = BasicRom901226Animation(aspect, self.fov, self.mos_team.camera_distance,
 		                                                self.mos_team.picture_width,

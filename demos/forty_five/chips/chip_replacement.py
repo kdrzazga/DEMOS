@@ -56,7 +56,7 @@ class ChipReplacement:
 	def begin(self, newcomer, predecessor):
 		self.newcomer = newcomer
 		self.predecessor = predecessor
-		self.predecessor_name_flash = ChipNameFlash(predecessor, self.predecessor_name)
+		self.predecessor_name_flash = ChipNameFlash.before_gallery_removal(predecessor,self.predecessor_name)
 		self.predecessor_name_flash.build()
 		for label in self.text_labels:
 			label.restart()

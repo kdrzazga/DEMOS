@@ -170,10 +170,11 @@ class FinalGoodbye:
 		self.brought_by_label.draw((brought_by_x, centre_y, self._depth), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0))
 
 	def _draw_logo(self):
-		opacity = self._phase_progress(self.logo_fade_seconds) if self.phase == "logo_fade" else 1.0
+		opacity = 1.0 - self._phase_progress(self.screen_fade_seconds) if self.phase == "screen_fade" else 1.0
 		half_height = self.logo_height_in_screen_heights * self.screen_plane.visible_height / 2
 		half_width = half_height * self.logo_aspect
 		centre_y = (0.5 - self.logo_centre_fraction_from_top) * self.screen_plane.visible_height
+		glDisable(GL_LIGHTING)
 		glEnable(GL_BLEND)
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 		glEnable(GL_TEXTURE_2D)

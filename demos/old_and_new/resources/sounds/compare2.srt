@@ -1,0 +1,7 @@
+Neither of these retro
+animations is fully 3D.
+Both display exactly
+29 frames of rotating head.
+Both in resolution
+320 by 200 and 16 colors.
+

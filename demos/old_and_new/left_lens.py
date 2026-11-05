@@ -4,15 +4,16 @@ import random
 
 import pygame
 from OpenGL.GL import *
-
-from lib import Globals
+from OpenGL.GLU import gluLookAt
 
 os.environ["PATH"] += os.pathsep
 from lib import Globals
-from lib.amiga_ball import AmigaBall
+from lib.amiga.amiga_ball import AmigaBall
+from lib.amiga.amos import Amos
+from lib.animated_sprite import PygameAnimatedSprite
 from lib.tunnel import OpenGlTunnel, SurfaceTunnelEffect
 from demos.old_and_new.actors import BorderColoredLens
-from demos.old_and_new.stages import Stage
+from demos.old_and_new.stages import Stage, smooth
 
 
 class FillingBlackBars:
@@ -57,16 +58,225 @@ class AmigaBallTunnel(OpenGlTunnel):
         self.ball_trip_duration = 2.0
         self.ball_trips = 3
         self.ball_inside = True
+        self.cruise_speed = self.speed
+        self.boot_screen_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__)))), "lib", "resources", "amiga-500-bootscreen.jpg")
+        self.boot_screen_texture = None
+        self.boot_screen_aspect = 1.0
+        self.boot_screen_half_height = 0.6
+        self.boot_screen_start = 0.0
+        self.boot_screen_approach_duration = 1.5
+        self.boot_screen_zoom_duration = 1.5
+        self.boot_screen_spin_duration = 1.5
+        self.boot_screen_exit_duration = 1.0
+        self.boot_screen_duration = (self.boot_screen_approach_duration + self.boot_screen_zoom_duration
+                                     + self.boot_screen_spin_duration + self.boot_screen_exit_duration)
+        self.boot_screen_far_depth = -30.0
+        self.boot_screen_hover_depth = -5.0
+        self.boot_screen_behind_camera_depth = 1.0
+        self.boot_screen_zoom_amount = 0.5
+        self.amos = None
+        self.amos_texture = None
+        self.amos_arrival = math.inf
+        self.amos_brake_duration = 1.5
+        self.amos_stop_depth = -5.0
+        self.amos_close_depth = -3.1
+        self.amos_sway_settle_duration = 2.5
+        self.amos_wall_fade_duration = 2.5
+        self.amos_zoom_duration = 2.0
+        self.amos_typing_pause = 1.0
+        self.amos_code_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__)))), "lib", "resources", "amos-code.txt")
+        self.amos_typing = False
+        self.amos_typed_announced = False
+        self.amos_run_pause = 1.0
+        self.amos_clear_pause = 1.0
+        self.amos_typed_time = None
+        self.amos_run_requested = False
+        self.amos_run_reached_time = None
+        self.amos_cleared_time = None
+        self.amos_mouse_route = ["Run Other", "Edit Other", "Insert", "Fold/Unfold", "Line Insert",
+                                 "Search Menu", "Blocks Menu", "Indent", "Test"]
 
     def update(self, seconds):
+        self.speed = self.cruise_speed * min(max((self.amos_arrival - self.time) / self.amos_brake_duration, 0.0), 1.0)
         super().update(seconds)
         self.ball.update(seconds)
+        self.direct_amos()
+        if self.amos is not None:
+            self.amos.update(seconds)
+
+    def since_amos_arrival(self):
+        return self.time - self.amos_arrival
+
+    def amos_typing_start(self):
+        return self.amos_sway_settle_duration + self.amos_zoom_duration + self.amos_typing_pause
+
+    def direct_amos(self):
+        if self.amos is None or self.since_amos_arrival() < self.amos_typing_start():
+            return
+        if not self.amos_typing:
+            self.amos_typing = True
+            self.amos.type_code(self.amos_code_path)
+        if not self.amos.is_typing() and not self.amos_typed_announced:
+            self.amos_typed_announced = True
+            self.amos_typed_time = self.time
+            print('AMOS program typed in ' + str(Globals.get_duration()))
+        mouse_cursor = self.amos.mouse_cursor
+        if self.amos_mouse_route and not mouse_cursor.is_moving():
+            button = self.amos_menu_button(self.amos_mouse_route.pop(0))
+            mouse_cursor.move_to(*button.rect.center)
+        self.click_run()
+
+    def click_run(self):
+        mouse_cursor = self.amos.mouse_cursor
+        if self.amos_typed_time is None:
+            return
+        if not self.amos_run_requested:
+            if self.time >= self.amos_typed_time + self.amos_run_pause:
+                self.amos_run_requested = True
+                self.amos_mouse_route.clear()
+                mouse_cursor.move_to(*self.amos_menu_button("Run").rect.center)
+            return
+        if self.amos_run_reached_time is None:
+            if not mouse_cursor.is_moving():
+                self.amos_run_reached_time = self.time
+            return
+        if self.amos_cleared_time is None and self.time >= self.amos_run_reached_time + self.amos_clear_pause:
+            self.amos_cleared_time = self.time
+
+    @property
+    def amos_cleared(self):
+        return self.amos_cleared_time is not None
+
+    def amos_menu_button(self, label):
+        return next(button for button in self.amos.screen.top_menu.buttons if button.label == label)
+
+    def wall_brightness(self):
+        fade_out = smooth(self.share_of(self.since_amos_arrival(), 0.0, self.amos_wall_fade_duration))
+        return super().wall_brightness() * (1.0 - fade_out)
+
+    def sway_share(self):
+        return 1.0 - smooth(self.share_of(self.since_amos_arrival(), 0.0, self.amos_sway_settle_duration))
+
+    def amos_zoom_share(self):
+        return smooth(self.share_of(self.since_amos_arrival(), self.amos_sway_settle_duration,
+                                    self.amos_zoom_duration))
+
+    def look(self):
+        sway = self.sway_share()
+        camera_x = 0.35 * math.sin(self.time * 0.9) * sway
+        camera_y = 0.2 * math.sin(self.time * 1.3) * sway
+        camera_z = (self.amos_stop_depth - self.amos_close_depth) * self.amos_zoom_share()
+        up_x = 0.12 * math.sin(self.time * 0.7) * sway
+        up_length = math.hypot(up_x, 1.0)
+        gluLookAt(camera_x, camera_y, camera_z, camera_x, camera_y, camera_z - 1.0,
+                  up_x / up_length, 1.0 / up_length, 0.0)
 
     def ball_height_share(self):
         ball_depth = -self.ball_position[2]
         return self.ball.radius / (ball_depth * math.tan(math.radians(self.field_of_view / 2.0)))
 
     def draw_inside(self):
+        self.draw_ball()
+        glMatrixMode(GL_TEXTURE)
+        glPushMatrix()
+        glLoadIdentity()
+        glMatrixMode(GL_MODELVIEW)
+        glDisable(GL_DEPTH_TEST)
+        self.draw_amos()
+        self.draw_boot_screen()
+        glMatrixMode(GL_TEXTURE)
+        glPopMatrix()
+        glMatrixMode(GL_MODELVIEW)
+
+    def draw_boot_screen(self):
+        elapsed = self.time - self.boot_screen_start
+        if elapsed < 0.0 or elapsed > self.boot_screen_duration:
+            return
+        if self.boot_screen_texture is None:
+            boot_screen = pygame.image.load(self.boot_screen_path)
+            self.boot_screen_aspect = boot_screen.get_width() / boot_screen.get_height()
+            self.boot_screen_texture = self.picture_texture(boot_screen)
+        zoom_start = self.boot_screen_approach_duration
+        spin_start = zoom_start + self.boot_screen_zoom_duration
+        exit_start = spin_start + self.boot_screen_spin_duration
+        approach = smooth(self.share_of(elapsed, 0.0, self.boot_screen_approach_duration))
+        zoom = self.share_of(elapsed, zoom_start, self.boot_screen_zoom_duration)
+        spin = smooth(self.share_of(elapsed, spin_start, self.boot_screen_spin_duration))
+        leaving = self.share_of(elapsed, exit_start, self.boot_screen_exit_duration)
+        depth = (self.boot_screen_far_depth
+                 + (self.boot_screen_hover_depth - self.boot_screen_far_depth) * approach
+                 + (self.boot_screen_behind_camera_depth - self.boot_screen_hover_depth) * leaving * leaving)
+        scale = 1.0 + self.boot_screen_zoom_amount * math.sin(2.0 * math.pi * zoom)
+        half_height = self.boot_screen_half_height * scale
+        glPushMatrix()
+        glTranslatef(0.0, 0.0, depth)
+        glRotatef(360.0 * spin, 0.0, 0.0, 1.0)
+        self.draw_picture(self.boot_screen_texture, half_height * self.boot_screen_aspect, half_height)
+        glPopMatrix()
+
+    def draw_amos(self):
+        remaining = self.amos_remaining_distance()
+        if remaining > self.length + self.amos_stop_depth:
+            return
+        if self.amos is None:
+            self.amos = Amos()
+            self.amos_texture = self.picture_texture(self.amos.surface)
+        self.upload_picture(self.amos_texture, self.amos.surface)
+        glPushMatrix()
+        glTranslatef(0.0, 0.0, self.amos_stop_depth - remaining)
+        self.draw_picture(self.amos_texture, self.half_width, self.half_height)
+        glPopMatrix()
+
+    def amos_remaining_distance(self):
+        until_arrival = max(self.amos_arrival - self.time, 0.0)
+        if until_arrival <= self.amos_brake_duration:
+            return self.cruise_speed * until_arrival * until_arrival / (2.0 * self.amos_brake_duration)
+        return self.cruise_speed * (until_arrival - self.amos_brake_duration / 2.0)
+
+    def share_of(self, elapsed, start, duration):
+        return min(max((elapsed - start) / duration, 0.0), 1.0)
+
+    def picture_texture(self, surface):
+        texture = glGenTextures(1)
+        glBindTexture(GL_TEXTURE_2D, texture)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
+        width, height = surface.get_size()
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                     pygame.image.tobytes(surface, "RGBA", False))
+        glBindTexture(GL_TEXTURE_2D, 0)
+        return texture
+
+    def upload_picture(self, texture, surface):
+        width, height = surface.get_size()
+        glBindTexture(GL_TEXTURE_2D, texture)
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE,
+                        pygame.image.tobytes(surface, "RGBA", False))
+        glBindTexture(GL_TEXTURE_2D, 0)
+
+    def draw_picture(self, texture, half_width, half_height):
+        glEnable(GL_TEXTURE_2D)
+        glColor4f(1.0, 1.0, 1.0, 1.0)
+        glBindTexture(GL_TEXTURE_2D, texture)
+        glBegin(GL_QUADS)
+        glTexCoord2f(0.0, 1.0)
+        glVertex3f(-half_width, -half_height, 0.0)
+        glTexCoord2f(1.0, 1.0)
+        glVertex3f(half_width, -half_height, 0.0)
+        glTexCoord2f(1.0, 0.0)
+        glVertex3f(half_width, half_height, 0.0)
+        glTexCoord2f(0.0, 0.0)
+        glVertex3f(-half_width, half_height, 0.0)
+        glEnd()
+        glBindTexture(GL_TEXTURE_2D, 0)
+
+    def draw_ball(self):
         if not self.ball_inside or self.time < self.ball_delay:
             return
         glEnable(GL_DEPTH_TEST)
@@ -121,6 +331,13 @@ class LensPicture:
         self.tunnel_brightness = 0.0
         self.tunnel_snapshot = TunnelSnapshot(1024, 416)
         self.snapshot_running = False
+        self.iff_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "iffgfx.png")
+        self.iff_frame_size = (320, 200)
+        self.iff_frame_count = 29
+        self.iff_frame_delay = 0.1
+        self.iff_rect = pygame.Rect(0, 0, width, height)
+        self.iff_sprite = None
+        self.showing_iff = False
         self.visible = False
         self.texture_id = glGenTextures(1)
         glBindTexture(GL_TEXTURE_2D, self.texture_id)
@@ -135,34 +352,57 @@ class LensPicture:
         self.tunnel = SurfaceTunnelEffect(self.tunnel_enlarge_delay, self.width, self.height, self.tunnel_color)
         print("Tunnel in left lens " + str(Globals.get_duration()))
 
+    def update_iff(self, seconds):
+        if self.showing_iff:
+            self.iff_sprite.update(seconds)
+
     def update_tunnel(self, seconds):
         if self.snapshot_running:
             self.tunnel_snapshot.update(seconds)
+            if self.opengl_tunnel.amos_cleared:
+                self.show_iff()
             return
         if self.tunnel is None:
             self.start_tunnel()
         self.tunnel.update()
         self.snapshot_running = self.tunnel.is_filled
 
+    def show_iff(self):
+        if self.iff_sprite is not None:
+            return
+        frame_width, frame_height = self.iff_frame_size
+        self.iff_sprite = PygameAnimatedSprite(self.iff_path, self.iff_rect.centerx, self.iff_rect.centery,
+                                               frame_width, frame_height, self.iff_frame_count, self.iff_frame_delay)
+        self.showing_iff = True
+
     @property
     def opengl_tunnel(self):
         return self.tunnel_snapshot.tunnel
 
     @property
+    def showing_tunnel(self):
+        return self.snapshot_running and not self.showing_iff
+
+    @property
     def shown_texture_id(self):
-        return self.tunnel_snapshot.texture_id if self.snapshot_running else self.texture_id
+        return self.tunnel_snapshot.texture_id if self.showing_tunnel else self.texture_id
 
     def capture(self):
-        if self.snapshot_running:
+        if self.showing_tunnel:
             self.tunnel_snapshot.capture()
 
     def refresh(self):
-        if self.snapshot_running:
+        if self.showing_tunnel:
             return
-        self.surface.fill((0, 0, 0, 0))
-        self.bars.draw(self.surface)
-        if self.tunnel is not None and self.tunnel_brightness > 0.0:
-            self.tunnel.draw_on(self.surface, self.tunnel_brightness)
+        if self.showing_iff:
+            self.surface.fill((0, 0, 0, 255))
+            frame = pygame.transform.scale(self.iff_sprite.current_texture, self.iff_rect.size)
+            self.surface.blit(frame, self.iff_rect)
+        else:
+            self.surface.fill((0, 0, 0, 0))
+            self.bars.draw(self.surface)
+            if self.tunnel is not None and self.tunnel_brightness > 0.0:
+                self.tunnel.draw_on(self.surface, self.tunnel_brightness)
         pixels = pygame.image.tobytes(self.surface, "RGBA", False)
         glBindTexture(GL_TEXTURE_2D, self.texture_id)
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
@@ -178,11 +418,26 @@ class LeftLens(BorderColoredLens):
         lenses[lens_index] = self
         self.pose = head.pose
         self.picture = LensPicture(2048, 832)
+        self.match_iff_to_screen_lens(head)
         self.picture_lift = 0.004
         self.picture_list = None
         self.ball_escaping = False
         self.escaping_ball_position = (0.0, 0.0, 0.0)
         self.escaping_ball_radius = 0.0
+
+    def match_iff_to_screen_lens(self, head):
+        animation = head.c64_animation
+        screen = head.c64_screen
+        frame_width = screen.frame.columns * screen.frame.cell_width
+        frame_height = screen.frame.rows * screen.frame.cell_height
+        height_share = head.screen_lens.screen_height_share * frame_height / screen.height
+        width_share = (self.outline.half_length * height_share * frame_width / frame_height) / self.outline.half_width
+        picture = self.picture
+        picture.iff_frame_size = (frame_width, frame_height)
+        picture.iff_frame_count = animation.picture_frame_count
+        picture.iff_frame_delay = 1.0 / animation.picture_frames_per_second
+        picture.iff_rect = pygame.Rect(0, 0, round(picture.width * width_share), round(picture.height * height_share))
+        picture.iff_rect.center = (picture.width // 2, picture.height // 2)
 
     def draw_escaping_ball(self):
         if not self.ball_escaping:
@@ -198,6 +453,9 @@ class LeftLens(BorderColoredLens):
         ball.render()
         glPopMatrix()
         glPopAttrib()
+
+    def update(self, real_seconds):
+        self.picture.update_iff(real_seconds)
 
     def capture_tunnel(self):
         if self.picture.visible:
@@ -242,7 +500,7 @@ class LeftLens(BorderColoredLens):
         glColor4f(1.0, 1.0, 1.0, 1.0)
         glMatrixMode(GL_TEXTURE)
         glPushMatrix()
-        if self.picture.snapshot_running:
+        if self.picture.showing_tunnel:
             glTranslatef(0.0, 1.0, 0.0)
             glScalef(1.0, -1.0, 1.0)
         glMatrixMode(GL_MODELVIEW)
@@ -271,8 +529,12 @@ class LeftLensStage(Stage):
         self.escape_duration = 2.0
         self.dive_start = 14.5
         self.dive_duration = 3.0
-        self.final_travel = 4.0
-        self.tunnel_end = self.dive_start + self.dive_duration + self.final_travel
+        self.boot_screen_delay = 3.0
+        self.travel_to_amos = 4.0
+        self.waiting_for_amos_margin = 5.0
+        self.iff_spin_before_zoom_back = 2.0
+        self.zoom_back_duration = 3.0
+        self.final_hold = 2.0
         self.escape_miss_to_left = 0.2
         self.escape_overshoot = 1.3
         self.start_distance = 0.0
@@ -291,6 +553,9 @@ class LeftLensStage(Stage):
         self.start_focus = camera.focus_point
         self.lens_focus = lens.world_center()
         self.close_distance = camera.distance_to_fill(lens.world_height(), self.fill_share)
+        tunnel = lens.picture.opengl_tunnel
+        tunnel.boot_screen_start = self.dive_start + self.boot_screen_delay
+        tunnel.amos_arrival = tunnel.boot_screen_start + tunnel.boot_screen_duration + self.travel_to_amos
 
     def update(self, show, time):
         picture = show.left_lens.picture
@@ -301,16 +566,24 @@ class LeftLensStage(Stage):
         if time >= self.blackout_duration:
             picture.update_tunnel((time - self.last_time) / show.playback_speed)
         self.last_time = time
-        tunnel_time = picture.opengl_tunnel.time
+        tunnel = picture.opengl_tunnel
+        tunnel_time = tunnel.time
+        zoom_back = 0.0
         if picture.snapshot_running:
-            self.duration = time + (self.tunnel_end - tunnel_time) * show.playback_speed
+            if tunnel.amos_cleared:
+                zoom_back_start = tunnel.amos_cleared_time + self.iff_spin_before_zoom_back
+                zoom_back = self.eased(tunnel_time, zoom_back_start, self.zoom_back_duration)
+                stage_end = zoom_back_start + self.zoom_back_duration + self.final_hold
+                self.duration = time + (stage_end - tunnel_time) * show.playback_speed
+            else:
+                self.duration = time + self.waiting_for_amos_margin * show.playback_speed
         zoom_in = self.eased(time, self.blackout_duration, self.zoom_duration)
         zoom_out = self.eased(tunnel_time, self.zoom_out_start, self.zoom_out_duration)
         dive = self.eased(tunnel_time, self.dive_start, self.dive_duration)
         if tunnel_time >= self.dive_start and not self.second_entry_announced:
             self.second_entry_announced = True
             print('Second entry to the tunnel ' + str(Globals.get_duration()))
-        self.zoom(show.camera, zoom_in * (1.0 - zoom_out + dive))
+        self.zoom(show.camera, zoom_in * (1.0 - zoom_out + dive - zoom_back))
         self.move_escaping_ball(show.left_lens, tunnel_time)
 
     def move_escaping_ball(self, lens, tunnel_time):

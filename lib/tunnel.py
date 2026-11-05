@@ -181,6 +181,7 @@ class OpenGlTunnel:
         self.fade_in_duration = 0.5
         self.segment_count = 40
         self.time = 0.0
+        self.travelled = 0.0
         self.wall_texture = None
         self.floor_texture = None
         self.walls_list = None
@@ -188,9 +189,11 @@ class OpenGlTunnel:
 
     def restart(self):
         self.time = 0.0
+        self.travelled = 0.0
 
     def update(self, seconds):
         self.time += seconds
+        self.travelled += seconds * self.speed
 
     def draw(self, viewport_width, viewport_height):
         if self.walls_list is None:
@@ -207,7 +210,7 @@ class OpenGlTunnel:
         glMatrixMode(GL_TEXTURE)
         glPushMatrix()
         glLoadIdentity()
-        glTranslatef(0.0, self.time * self.speed / self.tile_size, 0.0)
+        glTranslatef(0.0, self.travelled / self.tile_size, 0.0)
         glMatrixMode(GL_MODELVIEW)
 
         glDisable(GL_DEPTH_TEST)
@@ -217,7 +220,7 @@ class OpenGlTunnel:
         glEnable(GL_TEXTURE_2D)
         glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE)
         self.enable_fog()
-        brightness = min(1.0, self.time / self.fade_in_duration)
+        brightness = self.wall_brightness()
         glColor4f(brightness, brightness, brightness, 1.0)
         glBindTexture(GL_TEXTURE_2D, self.wall_texture)
         glCallList(self.walls_list)
@@ -233,6 +236,9 @@ class OpenGlTunnel:
         glMatrixMode(GL_MODELVIEW)
         glPopMatrix()
         glPopAttrib()
+
+    def wall_brightness(self):
+        return min(1.0, self.time / self.fade_in_duration)
 
     def draw_inside(self):
         pass

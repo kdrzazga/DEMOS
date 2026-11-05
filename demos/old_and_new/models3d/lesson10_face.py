@@ -25,6 +25,7 @@ class FaceSurface(MeshSurface):
         self.head_half_length = 1.55
         self.dome_height = 0.55
         self.wire_spacing = 5
+        self.show_wires = True
         self.line_color = (0.45, 0.3, 0.25)
         self.skin_color = (0.92, 0.74, 0.62)
         self.light_position = (2.0, 5.0, 3.0, 0.0)
@@ -140,7 +141,8 @@ class FaceSurface(MeshSurface):
         glEnableClientState(GL_VERTEX_ARRAY)
         glVertexPointer(3, GL_FLOAT, 0, self.positions)
         self.draw_skin()
-        self.draw_wires()
+        if self.show_wires:
+            self.draw_wires()
         glDisableClientState(GL_VERTEX_ARRAY)
 
 

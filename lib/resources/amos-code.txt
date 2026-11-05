@@ -1,4 +1,4 @@
-Screen Open 0,320,200,64,Lowres
+Screen Open 0,320,200,16,Lowres
 Flash Off : Curs Off : Hide : Cls 0
 Double Buffer : Autoback 0
 

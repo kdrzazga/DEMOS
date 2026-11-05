@@ -4,6 +4,9 @@ import pygame
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
+from lib.globals import Constants
+from lib.speech_lines import speech_surface
+
 
 class ScreenTexture:
     def __init__(self, surface):
@@ -42,6 +45,9 @@ class ScreenOverlay:
     def draw_centered(self, texture, alpha, vertical_share):
         left = (self.screen_width - texture.width) / 2.0
         top = self.screen_height * vertical_share - texture.height / 2.0
+        self.draw_at(texture, alpha, left, top)
+
+    def draw_at(self, texture, alpha, left, top):
         right = left + texture.width
         bottom = top + texture.height
         glEnable(GL_TEXTURE_2D)
@@ -69,6 +75,31 @@ class ScreenOverlay:
         glVertex2f(self.screen_width, self.screen_height)
         glVertex2f(0.0, self.screen_height)
         glEnd()
+
+
+class SpeechSubtitles:
+    def __init__(self):
+        self.font = pygame.font.Font(Constants.FONT_PATH, 30)
+        self.color = (255, 255, 255)
+        self.left_share = 0.03
+        self.vertical_share = 0.82
+        self.texture = None
+
+    def show(self, lines):
+        self.hide()
+        self.texture = ScreenTexture(speech_surface(self.font, lines, self.color))
+
+    def hide(self):
+        if self.texture is not None:
+            glDeleteTextures([self.texture.texture_id])
+            self.texture = None
+
+    def draw(self, overlay):
+        if self.texture is None:
+            return
+        left = overlay.screen_width * self.left_share
+        top = overlay.screen_height * self.vertical_share - self.texture.height / 2.0
+        overlay.draw_at(self.texture, 1.0, left, top)
 
 
 class WelcomeText:

@@ -11,6 +11,7 @@ class SpeechBubble:
 		self.bubble_pic = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "speech-bubble.png")
 		self.font_path = font_path
 		self.mirrored = mirrored
+		self.upside_down = False
 		self.mp3_file = mp3_file
 		self.silent_seconds = silent_seconds
 		self.font_size = size
@@ -24,7 +25,8 @@ class SpeechBubble:
 		self.text_color = (20, 20, 20)
 		self.text_center = (0.53, 0.45)
 		self.line_spacing = 1.15
-		self.width, self.height = self._bubble_size()
+		self.max_world_height = None
+		self.resize_to_text()
 		self.sound = None
 		self.channel = None
 		self.elapsed = 0.0
@@ -45,12 +47,18 @@ class SpeechBubble:
 		pygame.font.init()
 		return pygame.font.Font(self.font_path, int(self.font_size * self.font_scale * scale))
 
+	def resize_to_text(self):
+		self.width, self.height = self._bubble_size()
+
 	def _bubble_size(self):
 		font = self._font(1)
 		text_width = max(font.size(line)[0] for line in self.lines)
 		text_height = font.get_linesize() * self.line_spacing * len(self.lines)
 		width = text_width / self.text_width_share
-		height = max(width * self._picture_aspect(), text_height / self.text_height_share)
+		height_fitting_text = text_height / self.text_height_share
+		height = max(width * self._picture_aspect(), height_fitting_text)
+		if self.max_world_height is not None:
+			height = max(min(height, self.max_world_height / self.units_per_pixel), height_fitting_text)
 		return width, height
 
 	def _picture_aspect(self):
@@ -108,12 +116,12 @@ class SpeechBubble:
 		width, height = int(self.width * scale), int(self.height * scale)
 		if self.picture is None:
 			self.picture = pygame.transform.smoothscale(pygame.image.load(self.bubble_pic).convert_alpha(), (width, height))
-			if self.mirrored:
-				self.picture = pygame.transform.flip(self.picture, True, False)
+			self.picture = pygame.transform.flip(self.picture, self.mirrored, self.upside_down)
 			self.font = self._font(scale)
 		surface = self.picture.copy()
 		line_height = self.font.get_linesize() * self.line_spacing
-		top = height * self.text_center[1] - line_height * len(self.lines) / 2.0
+		text_center_y = 1.0 - self.text_center[1] if self.upside_down else self.text_center[1]
+		top = height * text_center_y - line_height * len(self.lines) / 2.0
 		text_center_x = 1.0 - self.text_center[0] if self.mirrored else self.text_center[0]
 		for index, line in enumerate(self.lines):
 			left = width * text_center_x - self.font.size(line)[0] / 2.0
@@ -160,7 +168,9 @@ class SpeechBubble:
 		glRotatef(pitch, 1.0, 0.0, 0.0)
 		offset_x, offset_y, offset_z = self.offset
 		growth_direction = -1.0 if self.mirrored else 1.0
-		glTranslatef(growth_direction * (offset_x + half_width), offset_y + half_height, offset_z)
+		vertical_growth_direction = -1.0 if self.upside_down else 1.0
+		glTranslatef(growth_direction * (offset_x + half_width), vertical_growth_direction * (offset_y + half_height),
+		             offset_z)
 		glColor4f(1.0, 1.0, 1.0, 1.0)
 		glBegin(GL_QUADS)
 		glTexCoord2f(0.0, 0.0)

@@ -18,7 +18,7 @@ class ThanksGraffitiTestApp:
         self.window_size = (1280, 720)
         self.frames_per_second = 60
         self.camera_distance = 7.2
-        self.surface_height = 3.4
+        self.surface_height = 2.9
         self.hold_seconds = 4.0
         self.wave_stagger_seconds = 0.15
         pygame.init()

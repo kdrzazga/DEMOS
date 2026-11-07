@@ -1,14 +1,17 @@
+import math
 import os
 
 import pygame
 from OpenGL.GL import *
+from OpenGL.GLU import gluPerspective
 
 from demos.retro_glasses.stage_view import ScreenTexture
+from demos.retro_glasses.thanks_graffiti import ThanksForWatchingGraffiti
+from lib.graffitti.swaying_surface import SwayingSurface
 from lib.typing_effect.typed_label import TypedLabel
 
 LOGO_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
                          "lib", "resources", "K&Alogo.png")
-THANKS_PICTURE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "exit.png")
 
 
 class ScreenArea:
@@ -23,26 +26,68 @@ class ScreenArea:
         return (self.left + self.right) / 2, (self.top + self.bottom) / 2
 
 
-class ThanksPicture:
-    def __init__(self, area):
+class ThanksGraffitiBanner:
+    def __init__(self, area, screen_width, screen_height):
         self.area = area
+        self.screen_width = screen_width
+        self.screen_height = screen_height
         self.alpha = 0.0
-        self.texture = ScreenTexture(self._fitted_picture())
+        self.seconds = 0.0
+        self.field_of_view = 30.0
+        self.camera_distance = 6.0
+        self.area_fill_share = 0.9
+        self.graffiti = ThanksForWatchingGraffiti()
+        self.surface = SwayingSurface(*self._surface_size())
+        self.surface.yaw_amplitude_degrees = 8.0
+        self.surface.pitch_amplitude_degrees = 4.0
 
-    def _fitted_picture(self):
-        picture = pygame.image.load(THANKS_PICTURE_PATH)
-        area_width = self.area.right - self.area.left
-        area_height = self.area.bottom - self.area.top
-        fit_scale = min(area_width / picture.get_width(), area_height / picture.get_height())
-        fitted_size = (round(picture.get_width() * fit_scale), round(picture.get_height() * fit_scale))
-        return pygame.transform.smoothscale(picture, fitted_size)
+    @property
+    def area_width(self):
+        return self.area.right - self.area.left
 
-    def draw(self, overlay):
+    @property
+    def area_height(self):
+        return self.area.bottom - self.area.top
+
+    @property
+    def duration_seconds(self):
+        return self.graffiti.duration_seconds
+
+    def _surface_size(self):
+        visible_height = 2.0 * self.camera_distance * math.tan(math.radians(self.field_of_view / 2.0))
+        area_aspect_ratio = self.area_width / self.area_height
+        surface_width = min(visible_height * self.area_fill_share * self.graffiti.aspect_ratio,
+                            visible_height * self.area_fill_share * area_aspect_ratio)
+        return surface_width, surface_width / self.graffiti.aspect_ratio
+
+    def update(self, seconds):
+        self.seconds = seconds
+
+    def draw(self):
         if self.alpha <= 0.0:
             return
-        center_x, center_y = self.area.center
-        overlay.draw_at(self.texture, self.alpha, center_x - self.texture.width / 2,
-                        center_y - self.texture.height / 2)
+        self.graffiti.render(self.seconds)
+        self.surface.update(self.seconds)
+        self.surface.colors[:, :3] *= self.alpha
+        self.surface.colors[:, 3] = self.alpha
+        glPushAttrib(GL_ALL_ATTRIB_BITS)
+        glViewport(0, round(self.screen_height - self.area.bottom), self.screen_width, round(self.area_height))
+        glMatrixMode(GL_PROJECTION)
+        glPushMatrix()
+        glLoadIdentity()
+        gluPerspective(self.field_of_view, self.screen_width / self.area_height, 0.1, 100.0)
+        glMatrixMode(GL_MODELVIEW)
+        glPushMatrix()
+        glLoadIdentity()
+        glTranslatef(0.0, 0.0, -self.camera_distance)
+        glDisable(GL_DEPTH_TEST)
+        glDisable(GL_LIGHTING)
+        self.surface.render(self.graffiti.texture)
+        glPopMatrix()
+        glMatrixMode(GL_PROJECTION)
+        glPopMatrix()
+        glMatrixMode(GL_MODELVIEW)
+        glPopAttrib()
 
 
 class Credits:
@@ -57,7 +102,7 @@ class Credits:
         self.logo_plate_padding = 18
         self.logo_plate_color = (0.0, 0.0, 0.0, 1.0)
         self.thanks_area = ScreenArea(screen_width, screen_height, 0.1, 0.06, 0.9, 0.48)
-        self.thanks_picture = ThanksPicture(self.thanks_area)
+        self.thanks_banner = ThanksGraffitiBanner(self.thanks_area, screen_width, screen_height)
         self.captions = [TypedLabel(line, screen_height * self.caption_height_share, frames_per_letter=1, font_px=36)
                          for line in self.caption_lines]
         for caption in self.captions:
@@ -88,7 +133,7 @@ class Credits:
     def draw(self, overlay):
         if not self.visible:
             return
-        self.thanks_picture.draw(overlay)
+        self.thanks_banner.draw()
         self._draw_logo(overlay)
         glPushAttrib(GL_ALL_ATTRIB_BITS)
         for caption, center_share in zip(self.captions, self.caption_center_shares):

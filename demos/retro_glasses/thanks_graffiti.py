@@ -8,7 +8,9 @@ from lib.graffitti.graffiti_piece import GraffitiPiece
 from lib.graffitti.keyframes import Keyframes
 from lib.graffitti.spray_texture import SprayOrderMap, SprayTexture
 
-THANKS_SHEET_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "ty.png")
+RESOURCES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources")
+THANKS_SHEET_PATH = os.path.join(RESOURCES, "ty.png")
+THANKS_BACKGROUND_PATH = os.path.join(RESOURCES, "exit-bkg.png")
 
 
 class ThanksSheet:
@@ -62,7 +64,7 @@ class ThanksForWatchingGraffiti:
 
     def __init__(self, sheet=None, canvas_pixel_width=2048):
         self.sheet = sheet or ThanksSheet()
-        self.margin = 60
+        self.lettering_area_shares = (0.84, 0.72)
         self.element_offsets = {
             "snake": (0, 198),
             "thank": (0, 0),
@@ -84,11 +86,20 @@ class ThanksForWatchingGraffiti:
 
         placed_rects = {name: self._placed_rect(name) for name in self.drawing_order}
         all_rects = list(placed_rects.values())
-        content_rect = all_rects[0].unionall(all_rects[1:]).inflate(2 * self.margin, 2 * self.margin)
-        self.canvas = GraffitiCanvas(content_rect.width, content_rect.height, canvas_pixel_width)
-        self.elements = {name: self._element_piece(name, rect.move(-content_rect.left, -content_rect.top))
+        lettering_rect = all_rects[0].unionall(all_rects[1:])
+        background_glyph = GraffitiGlyph("BACKGROUND", pygame.image.load(THANKS_BACKGROUND_PATH).copy(), (0, 0))
+        background_width, background_height = background_glyph.size
+        area_width_share, area_height_share = self.lettering_area_shares
+        self.lettering_scale = min(background_width * area_width_share / lettering_rect.width,
+                                   background_height * area_height_share / lettering_rect.height)
+        self.canvas = GraffitiCanvas(background_width, background_height, canvas_pixel_width)
+        self.background = GraffitiPiece(SprayTexture(background_glyph, self._next_seed()),
+                                        Keyframes((background_width / 2, background_height / 2)))
+        self.background.progress.jump(0.0, 1.0)
+        background_center = (background_width / 2, background_height / 2)
+        self.elements = {name: self._element_piece(name, self._canvas_center(rect, lettering_rect, background_center))
                          for name, rect in placed_rects.items()}
-        self.canvas.add(*self.elements.values())
+        self.canvas.add(self.background, *self.elements.values())
         self.finale_start_seconds = self._schedule() + self.finale_pause_seconds
         self.duration_seconds = self._schedule_finale_blinks()
 
@@ -112,7 +123,7 @@ class ThanksForWatchingGraffiti:
         return start_seconds + (len(self.drawing_order) - 1) * stagger_seconds + self._blink_duration(speed)
 
     def reset_outline_blinks(self):
-        for piece in self.canvas.pieces:
+        for piece in self.elements.values():
             piece.outline_blink.clear()
         self._schedule_finished_element_blinks()
         self._schedule_finale_blinks()
@@ -130,12 +141,17 @@ class ThanksForWatchingGraffiti:
         sheet_x, sheet_y = glyph.cell_offset
         return pygame.Rect(sheet_x + offset_x, sheet_y + offset_y, *glyph.size)
 
-    def _element_piece(self, name, canvas_rect):
+    def _canvas_center(self, placed_rect, lettering_rect, background_center):
+        background_center_x, background_center_y = background_center
+        return (background_center_x + (placed_rect.centerx - lettering_rect.centerx) * self.lettering_scale,
+                background_center_y + (placed_rect.centery - lettering_rect.centery) * self.lettering_scale)
+
+    def _element_piece(self, name, canvas_center):
         seed = self._next_seed()
         order_map = SprayOrderMap(seed)
         order_map.row_sweep_weight, order_map.column_sweep_weight = self.left_to_right_sweep
         spray_texture = SprayTexture(self.sheet[name], seed, order_map)
-        return GraffitiPiece(spray_texture, Keyframes(canvas_rect.center))
+        return GraffitiPiece(spray_texture, Keyframes(canvas_center), self.lettering_scale)
 
     def _spray_windows(self):
         start = self.first_element_delay_seconds

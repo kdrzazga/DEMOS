@@ -146,7 +146,7 @@ class RetroGlasses(PygameDemo):
             DetailsStage(), SunglassesStage(), OrbitStage(),
             ZoomStage(self.show.head.c64_animation, self.show.playback_speed),
             LeftLensStage(), FinalTalkStage(self.show.playback_speed),
-            CreditsStage(self.show.credits.caption_letter_count, self.show.playback_speed)])
+            CreditsStage(self.show.credits, self.show.playback_speed)])
         self.time = 0.0
 
     def step(self):

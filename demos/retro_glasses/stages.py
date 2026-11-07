@@ -403,7 +403,7 @@ class FinalTalkStage(Stage):
 
 
 class CreditsStage(Stage):
-    def __init__(self, caption_letter_count, playback_speed):
+    def __init__(self, credits, playback_speed):
         self.playback_speed = playback_speed
         self.head_drop_duration = 1.2
         self.head_drop_distance = 9.0
@@ -411,16 +411,18 @@ class CreditsStage(Stage):
         self.thanks_fade_duration = 0.8
         self.typing_start = 1.4
         self.letters_per_second = 14.0
-        self.typing_duration = caption_letter_count / self.letters_per_second
+        self.typing_duration = credits.caption_letter_count / self.letters_per_second
         self.logo_start = self.typing_start + self.typing_duration + 0.3
         self.logo_fade_duration = 0.4
         self.hold_duration = 4.0
+        self.graffiti_hold_duration = 1.0
         self.music_fade = 1.5
         self.music_fading = False
         self.music_quiet_volume_share = 0.2
         self.music_start_volume = 1.0
         self.head_start_lift = 0.0
-        real_duration = self.logo_start + self.logo_fade_duration + self.hold_duration
+        real_duration = max(self.logo_start + self.logo_fade_duration + self.hold_duration,
+                            self.thanks_fade_start + credits.thanks_banner.duration_seconds + self.graffiti_hold_duration)
         super().__init__(real_duration * playback_speed)
 
     def enter(self, show):
@@ -442,7 +444,8 @@ class CreditsStage(Stage):
         show.head.visible = drop < 1.0
         show.credits.type_letters(int((real_time - self.typing_start) * self.letters_per_second))
         show.credits.logo_alpha = self.phase(real_time, self.logo_start, self.logo_fade_duration)
-        show.credits.thanks_picture.alpha = self.phase(real_time, self.thanks_fade_start, self.thanks_fade_duration)
+        show.credits.thanks_banner.alpha = self.phase(real_time, self.thanks_fade_start, self.thanks_fade_duration)
+        show.credits.thanks_banner.update(max(0.0, real_time - self.thanks_fade_start))
         if real_time >= real_duration - self.music_fade and not self.music_fading:
             self.music_fading = True
             show.soundtrack.fade_out(self.music_fade)

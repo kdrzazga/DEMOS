@@ -34,6 +34,9 @@ class Soundtrack:
         pygame.mixer.music.set_volume(self.volume)
         pygame.mixer.music.play(loops=0, start=self.start_seconds)
 
+    def current_volume(self):
+        return pygame.mixer.music.get_volume()
+
     def set_volume(self, volume):
         pygame.mixer.music.set_volume(volume)
 

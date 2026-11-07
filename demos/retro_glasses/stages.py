@@ -417,6 +417,8 @@ class CreditsStage(Stage):
         self.hold_duration = 4.0
         self.music_fade = 1.5
         self.music_fading = False
+        self.music_quiet_volume_share = 0.2
+        self.music_start_volume = 1.0
         self.head_start_lift = 0.0
         real_duration = self.logo_start + self.logo_fade_duration + self.hold_duration
         super().__init__(real_duration * playback_speed)
@@ -426,16 +428,21 @@ class CreditsStage(Stage):
         show.darkness = 0.0
         show.credits.visible = True
         self.head_start_lift = show.pose.lift
+        self.music_start_volume = show.soundtrack.current_volume()
 
     def update(self, show, time):
         real_time = time / self.playback_speed
-        drop = self.phase(real_time, 0.0, self.head_drop_duration)
+        real_duration = self.duration / self.playback_speed
+        if not self.music_fading:
+            quieting = self.phase(real_time, 0.0, real_duration - self.music_fade)
+            quiet_volume = show.soundtrack.volume * self.music_quiet_volume_share
+            show.soundtrack.set_volume(self.music_start_volume + (quiet_volume - self.music_start_volume) * quieting)
+        drop =self.phase(real_time, 0.0, self.head_drop_duration)
         show.pose.lift = self.head_start_lift - self.head_drop_distance * drop * drop
         show.head.visible = drop < 1.0
         show.credits.type_letters(int((real_time - self.typing_start) * self.letters_per_second))
         show.credits.logo_alpha = self.phase(real_time, self.logo_start, self.logo_fade_duration)
         show.credits.thanks_picture.alpha = self.phase(real_time, self.thanks_fade_start, self.thanks_fade_duration)
-        real_duration = self.duration / self.playback_speed
         if real_time >= real_duration - self.music_fade and not self.music_fading:
             self.music_fading = True
             show.soundtrack.fade_out(self.music_fade)

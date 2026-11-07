@@ -1,3 +1,4 @@
+import math
 import os
 
 import pygame
@@ -335,8 +336,10 @@ class FinalTalkStage(Stage):
         self.second_voice_start = 7.5
         self.talk_end = self.second_voice_start + self.second_voice.get_length()
         self.trailing_silence = 0.5
-        self.head_shift = 0.4
         self.head_shift_duration = 1.0
+        self.head_width_with_ears_and_hair = 1.35
+        self.screen_edge_margin = 0.03
+        self.target_focus_x = 0.0
         self.music_volume_drop = 0.5
         self.music_volume_duration = 1.0
         self.second_voice_started = False
@@ -346,6 +349,8 @@ class FinalTalkStage(Stage):
 
     def enter(self, show):
         self.start_focus = show.camera.focus_point
+        self.target_focus_x = self.focus_x_with_head_at_left_edge(show)
+        show.pulse_backdrop.start()
         self.first_voice.play()
         show.subtitles.show(self.first_speech)
         show.talking = True
@@ -354,7 +359,7 @@ class FinalTalkStage(Stage):
         real_time = time / self.playback_speed
         shift = self.eased(real_time, 0.0, self.head_shift_duration)
         focus_x, focus_y, focus_z = self.start_focus
-        show.camera.focus_point = (focus_x - self.head_shift * shift, focus_y, focus_z)
+        show.camera.focus_point = (focus_x + (self.target_focus_x - focus_x) * shift, focus_y, focus_z)
         volume_drop = self.phase(real_time, 0.0, self.music_volume_duration)
         show.soundtrack.set_volume(show.soundtrack.volume * (1.0 - self.music_volume_drop * volume_drop))
         if real_time >= self.second_voice_start and not self.second_voice_started:
@@ -365,6 +370,15 @@ class FinalTalkStage(Stage):
             self.talk_stop_requested = True
             show.stop_talking()
             show.subtitles.hide()
+
+    def focus_x_with_head_at_left_edge(self, show):
+        camera = show.camera
+        aspect = camera.screen_width / camera.screen_height
+        half_view_width = camera.distance * math.tan(math.radians(camera.field_of_view / 2.0)) * aspect
+        head_half_width = (show.head.front.head_half_width * show.pose.scale
+                           * self.head_width_with_ears_and_hair)
+        head_center_on_view = -half_view_width * (1.0 - 2.0 * self.screen_edge_margin) + head_half_width
+        return -head_center_on_view
 
 
 class EndingStage(Stage):
@@ -385,6 +399,7 @@ class ExitStage(Stage):
 
     def enter(self, show):
         show.head.visible = False
+        show.pulse_backdrop.stop()
         show.darkness = 0.0
 
     def update(self, show, time):

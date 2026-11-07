@@ -81,7 +81,7 @@ class SpeechSubtitles:
     def __init__(self):
         self.font = pygame.font.Font(Constants.FONT_PATH, 30)
         self.color = (255, 255, 255)
-        self.left_share = 0.03
+        self.edge_margin_share = 0.03
         self.vertical_share = 0.82
         self.texture = None
 
@@ -97,7 +97,8 @@ class SpeechSubtitles:
     def draw(self, overlay):
         if self.texture is None:
             return
-        left = overlay.screen_width * self.left_share
+        margin = overlay.screen_width * self.edge_margin_share
+        left = max(overlay.screen_width - margin - self.texture.width, margin)
         top = overlay.screen_height * self.vertical_share - self.texture.height / 2.0
         overlay.draw_at(self.texture, 1.0, left, top)
 

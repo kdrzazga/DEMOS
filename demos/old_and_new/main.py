@@ -6,6 +6,7 @@ from OpenGL.GL import *
 from lib.pygame_demo import PygameDemo
 from demos.old_and_new.actors import DemoHead, SkinMesh, StageBall
 from demos.old_and_new.left_lens import LeftLens, LeftLensStage
+from demos.old_and_new.pulse_backdrop import PulseBackdrop
 from demos.old_and_new.models3d.lesson11_talking_face import (
     LipShapes, Speech)
 from demos.old_and_new.stage_view import (
@@ -45,6 +46,7 @@ class Show:
         self.overlay = ScreenOverlay(screen_width, screen_height)
         self.welcome = WelcomeText()
         self.subtitles = SpeechSubtitles()
+        self.pulse_backdrop = PulseBackdrop(screen_width, screen_height)
         self.pose = Pose()
         self.head = DemoHead(self.pose)
         self.head.prepare_hair()
@@ -78,6 +80,7 @@ class Show:
         self.head.update_sprouts(real_seconds)
         self.head.c64_screen.update(real_seconds)
         self.left_lens.update(real_seconds)
+        self.pulse_backdrop.update(real_seconds)
         if self.talking:
             self.speech.update(seconds)
             if self.speech_ending and self.speech.current_slot()[1] is None:
@@ -93,8 +96,9 @@ class Show:
 
     def draw(self):
         self.left_lens.capture_tunnel()
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        self.pulse_backdrop.clear_screen()
         self.camera.apply()
+        self.pulse_backdrop.draw()
         glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, self.no_shine)
         for ball in self.balls:
             ball.draw()

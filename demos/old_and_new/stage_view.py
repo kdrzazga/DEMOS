@@ -109,9 +109,9 @@ class WelcomeText:
         self.title_color = (255, 236, 200)
         self.subtitle_color = (190, 200, 230)
         self.title = ScreenTexture(self.title_font.render(
-            "WELCOME", True, self.title_color))
+            "OLD and NEW", True, self.title_color))
         self.subtitle = ScreenTexture(self.subtitle_font.render(
-            "from a single pixel to a head", True, self.subtitle_color))
+            "Retro computers VS Open GL", True, self.subtitle_color))
         self.alpha = 0.0
 
     def draw(self, overlay):

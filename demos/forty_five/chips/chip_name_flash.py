@@ -15,10 +15,18 @@ class ChipNameFlash:
 		self.font_pixel_size = 56
 		self.design_screen_height = 800.0
 		self.gap_above_chip_pixels = 12.0
+		self.drawn_on_chip = False
 		self.text_rgb = (255, 255, 255)
 		self.envelope_rgb = (0, 0, 0)
 		self.elapsed_seconds = None
 		self._text_texture = None
+
+	@classmethod
+	def before_gallery_removal(cls, chip_animation, name):
+		name_flash = cls(chip_animation, name)
+		name_flash.font_pixel_size = 28
+		name_flash.drawn_on_chip = True
+		return name_flash
 
 	def build(self):
 		screen_scale = glGetIntegerv(GL_VIEWPORT)[3] / self.design_screen_height
@@ -35,8 +43,12 @@ class ChipNameFlash:
 		return self.flash_seconds + self.pause_seconds_between_flashes
 
 	@property
+	def duration_seconds(self):
+		return self._seconds_from_flash_to_flash * self.flash_count
+
+	@property
 	def finished(self):
-		return self.started and self.elapsed_seconds >= self._seconds_from_flash_to_flash * self.flash_count
+		return self.started and self.elapsed_seconds >= self.duration_seconds
 
 	def reset(self):
 		self.elapsed_seconds = None
@@ -61,10 +73,15 @@ class ChipNameFlash:
 		_, chip_height_fraction = self.chip_animation.screen_size_fractions(pose)
 		centre_x = pose.fraction_from_left * projector.viewport_width
 		chip_top_y = (pose.fraction_from_top - chip_height_fraction / 2) * projector.viewport_height
+		chip_bottom_y = (pose.fraction_from_top + chip_height_fraction / 2) * projector.viewport_height
 		gap_pixels = self.gap_above_chip_pixels * projector.viewport_height / self.design_screen_height
+		text_top_y = chip_top_y - gap_pixels - self._text_texture.pixel_height
+		if self.drawn_on_chip:
+			text_top_y = (chip_top_y + chip_bottom_y - self._text_texture.pixel_height) / 2
+		elif text_top_y < 0.0:
+			text_top_y = chip_bottom_y + gap_pixels
 		projector.begin_pixel_overlay()
-		self._text_texture.draw_with_top_left_at(centre_x - self._text_texture.pixel_width / 2,
-		                                         chip_top_y - gap_pixels - self._text_texture.pixel_height, 1.0)
+		self._text_texture.draw_with_top_left_at(centre_x - self._text_texture.pixel_width / 2, text_top_y, 1.0)
 		projector.end_pixel_overlay()
 
 	def destroy(self):

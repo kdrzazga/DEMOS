@@ -12,7 +12,7 @@ LIB_RESOURCES_DIRECTORY = os.path.join(os.path.dirname(os.path.dirname(os.path.d
 KOMODA_AMIGA_PLUS_LOGO_PATH = os.path.join(LIB_RESOURCES_DIRECTORY, "K&Alogo.png")
 DEMO_WORD = "Demo"
 BROUGHT_BY_WORDS = "brought to you by"
-CREDITS_LINE = "Code: KD, Music: AmigaManson."
+CREDITS_LINE = "Pls visit: https://ka-plus.pl/en/"
 
 
 class FinalGoodbye:
@@ -170,19 +170,21 @@ class FinalGoodbye:
 		self.brought_by_label.draw((brought_by_x, centre_y, self._depth), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0))
 
 	def _draw_logo(self):
-		opacity = self._phase_progress(self.logo_fade_seconds) if self.phase == "logo_fade" else 1.0
+		opacity = 1.0 - self._phase_progress(self.screen_fade_seconds) if self.phase == "screen_fade" else 1.0
 		half_height = self.logo_height_in_screen_heights * self.screen_plane.visible_height / 2
 		half_width = half_height * self.logo_aspect
 		centre_y = (0.5 - self.logo_centre_fraction_from_top) * self.screen_plane.visible_height
+		glDisable(GL_LIGHTING)
 		glEnable(GL_BLEND)
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 		glEnable(GL_TEXTURE_2D)
 		glBindTexture(GL_TEXTURE_2D, self.logo_texture)
 		glColor4f(1.0, 1.0, 1.0, opacity)
 		glBegin(GL_QUADS)
+		shift_left = -2.5
 		for (s, t), (across, along) in (((0, 0), (-1, -1)), ((1, 0), (1, -1)), ((1, 1), (1, 1)), ((0, 1), (-1, 1))):
 			glTexCoord2f(s, t)
-			glVertex3f(across * half_width*1.1, centre_y + along * half_height, self._depth)
+			glVertex3f(across * half_width*1.1 - shift_left, centre_y + along * half_height, self._depth)
 		glEnd()
 		glDisable(GL_TEXTURE_2D)
 

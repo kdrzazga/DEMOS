@@ -1,4 +1,10 @@
+import math
+import os
+
+import pygame
+
 from lib import Globals
+from lib.speech_lines import read_speech
 
 
 def smooth(progress):
@@ -28,10 +34,28 @@ class Stage:
         pass
 
 
+class GraffitiIntroStage(Stage):
+    def __init__(self, graffiti_intro, playback_speed):
+        super().__init__(graffiti_intro.duration_seconds * playback_speed)
+        self.playback_speed = playback_speed
+
+    def enter(self, show):
+        show.graffiti_intro.active = True
+
+    def update(self, show, time):
+        show.graffiti_intro.update(time / self.playback_speed)
+
+    def exit(self, show):
+        show.graffiti_intro.active = False
+
+
 class WelcomeStage(Stage):
     def __init__(self):
         super().__init__(4.5)
         self.fade_duration = 0.8
+
+    def enter(self, show):
+        show.soundtrack.start()
 
     def update(self, show, time):
         fade_in = self.phase(time, 0.0, self.fade_duration)
@@ -186,6 +210,10 @@ class DetailsStage(Stage):
         self.head_center_height = 0.25
         self.fill_share = 0.92
         self.start_distance = 0.0
+        self.turn_start = 9.5
+        self.turn_duration = 7.0
+        self.talk_stop_requested = False
+        self.wires_hidden = False
 
     def enter(self, show):
         show.pose.turn_degrees = 0.0
@@ -217,7 +245,16 @@ class DetailsStage(Stage):
             head.haircut.hair_count * hair_share)
         self.zoom(show, self.eased(time, self.zoom_start,
                                    self.zoom_duration))
-        self.turn_once(show, time, 9.5, 7.0)
+        self.turn_once(show, time, self.turn_start, self.turn_duration)
+        if time >= self.turn_start and not self.wires_hidden:
+            self.wires_hidden = True
+            head.hide_wires()
+        if time >= self.turn_start + self.turn_duration and not self.talk_stop_requested:
+            self.talk_stop_requested = True
+            show.stop_talking()
+
+    def exit(self, show):
+        show.head.sprouting = False
 
     def zoom(self, show, share):
         camera = show.camera
@@ -309,29 +346,94 @@ class ZoomStage(Stage):
         print("stage C= end -", Globals.get_duration())
 
 
-class EndingStage(Stage):
-    def __init__(self):
-        super().__init__(3.0)
-
-    def update(self, show, time):
-        show.darkness = self.phase(time, 0.0, self.duration)
-
-
-class ExitStage(Stage):
+class FinalTalkStage(Stage):
     def __init__(self, playback_speed):
-        self.real_duration = 30.0
-        self.music_fade = 1.5
         self.playback_speed = playback_speed
-        self.music_fading = False
-        super().__init__(self.real_duration * playback_speed)
+        sounds_directory = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "sounds")
+        self.first_voice = pygame.mixer.Sound(os.path.join(sounds_directory, "compare1.mp3"))
+        self.second_voice = pygame.mixer.Sound(os.path.join(sounds_directory, "compare2.mp3"))
+        self.first_speech = read_speech(os.path.join(sounds_directory, "compare1.srt"))
+        self.second_speech = read_speech(os.path.join(sounds_directory, "compare2.srt"))
+        self.second_voice_start = 7.5
+        self.talk_end = self.second_voice_start + self.second_voice.get_length()
+        self.trailing_silence = 0.5
+        self.head_shift_duration = 1.0
+        self.head_width_with_ears_and_hair = 1.35
+        self.screen_edge_margin = 0.03
+        self.target_focus_x = 0.0
+        self.music_volume_drop = 0.5
+        self.music_volume_duration = 1.0
+        self.second_voice_started = False
+        self.talk_stop_requested = False
+        self.start_focus = (0.0, 0.0, 0.0)
+        super().__init__((self.talk_end + self.trailing_silence) * playback_speed)
 
     def enter(self, show):
-        show.head.visible = False
-        show.darkness = 0.0
+        self.start_focus = show.camera.focus_point
+        self.target_focus_x = self.focus_x_with_head_at_left_edge(show)
+        show.pulse_backdrop.start()
+        self.first_voice.play()
+        show.subtitles.show(self.first_speech)
+        show.talking = True
 
     def update(self, show, time):
-        fade_start = self.duration - self.music_fade * self.playback_speed
-        if time >= fade_start and not self.music_fading:
+        real_time = time / self.playback_speed
+        shift = self.eased(real_time, 0.0, self.head_shift_duration)
+        focus_x, focus_y, focus_z = self.start_focus
+        show.camera.focus_point = (focus_x + (self.target_focus_x - focus_x) * shift, focus_y, focus_z)
+        volume_drop = self.phase(real_time, 0.0, self.music_volume_duration)
+        show.soundtrack.set_volume(show.soundtrack.volume * (1.0 - self.music_volume_drop * volume_drop))
+        if real_time >= self.second_voice_start and not self.second_voice_started:
+            self.second_voice_started = True
+            self.second_voice.play()
+            show.subtitles.show(self.second_speech)
+        if real_time >= self.talk_end and not self.talk_stop_requested:
+            self.talk_stop_requested = True
+            show.stop_talking()
+            show.subtitles.hide()
+
+    def focus_x_with_head_at_left_edge(self, show):
+        camera = show.camera
+        aspect = camera.screen_width / camera.screen_height
+        half_view_width = camera.distance * math.tan(math.radians(camera.field_of_view / 2.0)) * aspect
+        head_half_width = (show.head.front.head_half_width * show.pose.scale
+                           * self.head_width_with_ears_and_hair)
+        head_center_on_view = -half_view_width * (1.0 - 2.0 * self.screen_edge_margin) + head_half_width
+        return -head_center_on_view
+
+
+class CreditsStage(Stage):
+    def __init__(self, caption_text, playback_speed):
+        self.playback_speed = playback_speed
+        self.head_drop_duration = 1.2
+        self.head_drop_distance = 9.0
+        self.typing_start = 1.4
+        self.letters_per_second = 14.0
+        self.typing_duration = len(caption_text) / self.letters_per_second
+        self.logo_start = self.typing_start + self.typing_duration + 0.3
+        self.logo_fade_duration = 0.4
+        self.hold_duration = 4.0
+        self.music_fade = 1.5
+        self.music_fading = False
+        self.head_start_lift = 0.0
+        real_duration = self.logo_start + self.logo_fade_duration + self.hold_duration
+        super().__init__(real_duration * playback_speed)
+
+    def enter(self, show):
+        print('Final stage ' + str(Globals.get_duration()))
+        show.darkness = 0.0
+        show.credits.visible = True
+        self.head_start_lift = show.pose.lift
+
+    def update(self, show, time):
+        real_time = time / self.playback_speed
+        drop = self.phase(real_time, 0.0, self.head_drop_duration)
+        show.pose.lift = self.head_start_lift - self.head_drop_distance * drop * drop
+        show.head.visible = drop < 1.0
+        show.credits.type_letters(int((real_time - self.typing_start) * self.letters_per_second))
+        show.credits.logo_alpha = self.phase(real_time, self.logo_start, self.logo_fade_duration)
+        real_duration = self.duration / self.playback_speed
+        if real_time >= real_duration - self.music_fade and not self.music_fading:
             self.music_fading = True
             show.soundtrack.fade_out(self.music_fade)
 

@@ -46,6 +46,7 @@ class BackOfHead(MeshSurface):
         self.line_color = front.line_color
         self.skin_color = front.skin_color
         self.back_depth = 1.9
+        self.show_wires = True
         self.display_list = None
 
     def bulge(self, x, z):
@@ -101,9 +102,10 @@ class BackOfHead(MeshSurface):
         self.draw_skin(positions)
         glDisable(GL_POLYGON_OFFSET_FILL)
         glDisable(GL_LIGHTING)
-        glLineWidth(1.0)
-        self.draw_rows(positions, every_line)
-        self.draw_columns(positions, every_line)
+        if self.show_wires:
+            glLineWidth(1.0)
+            self.draw_rows(positions, every_line)
+            self.draw_columns(positions, every_line)
         glEndList()
 
     def invalidate(self):

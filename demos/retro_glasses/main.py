@@ -4,14 +4,18 @@ import pygame
 from OpenGL.GL import *
 
 from lib.pygame_demo import PygameDemo
-from demos.old_and_new.actors import DemoHead, SkinMesh, StageBall
-from demos.old_and_new.left_lens import LeftLens, LeftLensStage
-from demos.old_and_new.models3d.lesson11_talking_face import (
+from lib import Globals
+from demos.retro_glasses.actors import DemoHead, SkinMesh, StageBall
+from demos.retro_glasses.credits import Credits
+from demos.retro_glasses.graffiti_intro import GraffitiIntro
+from demos.retro_glasses.left_lens import LeftLens, LeftLensStage
+from demos.retro_glasses.pulse_backdrop import PulseBackdrop
+from demos.retro_glasses.models3d.lesson11_talking_face import (
     LipShapes, Speech)
-from demos.old_and_new.stage_view import (
-    Pose, ScreenOverlay, StageCamera, WelcomeText)
-from demos.old_and_new.stages import (
-    BackStage, BallStage, DetailsStage, EndingStage, ExitStage, FaceStage,
+from demos.retro_glasses.stage_view import (
+    Pose, ScreenOverlay, SpeechSubtitles, StageCamera, WelcomeText)
+from demos.retro_glasses.stages import (
+    BackStage, BallStage, CreditsStage, DetailsStage, FaceStage, FinalTalkStage, GraffitiIntroStage,
     MeshStage, OrbitStage, OvalStage, SecondBallStage, StageTimeline,
     SunglassesStage, TalkStage, WelcomeStage, ZoomStage)
 
@@ -19,15 +23,19 @@ from demos.old_and_new.stages import (
 class Soundtrack:
     def __init__(self):
         self.path = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "resources",
+            os.path.dirname(os.path.abspath(__file__)), "resources", "sounds",
             #"ElectricElwizz - We Rise Through Fire (Electro Freestyle).mp3")
             "Cleo.mp3") #Atrox 'Cleopatraz Castle'
         self.volume = 1.0
+        self.start_seconds = 52.0
 
     def start(self):
         pygame.mixer.music.load(self.path)
         pygame.mixer.music.set_volume(self.volume)
-        pygame.mixer.music.play(loops=0)
+        pygame.mixer.music.play(loops=0, start=self.start_seconds)
+
+    def set_volume(self, volume):
+        pygame.mixer.music.set_volume(volume)
 
     def fade_out(self, seconds):
         pygame.mixer.music.fadeout(int(seconds * 1000))
@@ -40,6 +48,10 @@ class Show:
         self.camera = StageCamera(screen_width, screen_height)
         self.overlay = ScreenOverlay(screen_width, screen_height)
         self.welcome = WelcomeText()
+        self.subtitles = SpeechSubtitles()
+        self.pulse_backdrop = PulseBackdrop(screen_width, screen_height)
+        self.graffiti_intro = GraffitiIntro(screen_width, screen_height)
+        self.credits = Credits(screen_width, screen_height)
         self.pose = Pose()
         self.head = DemoHead(self.pose)
         self.head.prepare_hair()
@@ -57,6 +69,7 @@ class Show:
             ("happier", ["a", "y", "er"])]
         self.speech = Speech(LipShapes(), self.words)
         self.talking = False
+        self.speech_ending = False
         self.balls_bobbing = True
         self.darkness = 0.0
         self.no_shine = (0.0, 0.0, 0.0, 1.0)
@@ -71,15 +84,29 @@ class Show:
         real_seconds = seconds / self.playback_speed
         self.head.update_sprouts(real_seconds)
         self.head.c64_screen.update(real_seconds)
+        self.left_lens.update(real_seconds)
+        self.pulse_backdrop.update(real_seconds)
         if self.talking:
             self.speech.update(seconds)
-            self.head.front.shape_lips(*self.speech.lip_pose())
+            if self.speech_ending and self.speech.current_slot()[1] is None:
+                self.talking = False
+                self.speech_ending = False
+                self.head.front.shape_lips(*self.speech.lip_shapes.rest.pose)
+            else:
+                self.head.front.shape_lips(*self.speech.lip_pose())
             self.head.front.build()
 
+    def stop_talking(self):
+        self.speech_ending = True
+
     def draw(self):
+        if self.graffiti_intro.active:
+            self.graffiti_intro.draw()
+            return
         self.left_lens.capture_tunnel()
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        self.pulse_backdrop.clear_screen()
         self.camera.apply()
+        self.pulse_backdrop.draw()
         glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, self.no_shine)
         for ball in self.balls:
             ball.draw()
@@ -89,11 +116,13 @@ class Show:
         self.head.c64_animation.draw_unsync()
         self.overlay.begin()
         self.welcome.draw(self.overlay)
+        self.subtitles.draw(self.overlay)
+        self.credits.draw(self.overlay)
         self.overlay.darken(self.darkness)
         self.overlay.end()
 
 
-class OldAndNewDemo(PygameDemo):
+class RetroGlasses(PygameDemo):
     def __init__(self, windowed=False, triggered=False):
         self.time = 0.0
         self.timeline = None
@@ -108,17 +137,14 @@ class OldAndNewDemo(PygameDemo):
         glEnable(GL_DEPTH_TEST)
         self.show = Show(screen_width, screen_height)
         self.timeline = StageTimeline([
+            GraffitiIntroStage(self.show.graffiti_intro, self.show.playback_speed),
             WelcomeStage(), BallStage(), MeshStage(), FaceStage(),
             TalkStage(), OvalStage(), BackStage(), SecondBallStage(),
             DetailsStage(), SunglassesStage(), OrbitStage(),
             ZoomStage(self.show.head.c64_animation, self.show.playback_speed),
-            LeftLensStage(), EndingStage(), ExitStage(self.show.playback_speed)])
+            LeftLensStage(), FinalTalkStage(self.show.playback_speed),
+            CreditsStage(self.show.credits.caption_text, self.show.playback_speed)])
         self.time = 0.0
-        if not self.paused:
-            self.on_start()
-
-    def on_start(self):
-        self.show.soundtrack.start()
 
     def step(self):
         real_seconds = min(self.clock.get_time() / 1000.0,
@@ -129,8 +155,9 @@ class OldAndNewDemo(PygameDemo):
         self.show.update(seconds)
         self.show.draw()
         if self.timeline.finished(self.time):
+            print('Demo duration: ' + str(Globals.get_duration()))
             self.running = False
 
 
 if __name__ == "__main__":
-    OldAndNewDemo(windowed=True).run()
+    RetroGlasses(windowed=True).run()

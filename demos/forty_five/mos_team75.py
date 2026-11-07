@@ -54,6 +54,7 @@ class MosTeamParams:
 		self.screen_fill_fraction = 0.8
 		self.picture_shift_down_in_picture_heights = 0.0
 		self.picture_centre_fraction_from_left = 0.5
+		self.picture_shift_left_in_picture_widths = 0.0
 		self.drive_in_seconds = 2.0
 		self.drive_in_entry_yaw_degrees = -35.0
 		self.drive_in_offscreen_margin_in_picture_widths = 0.15
@@ -162,11 +163,15 @@ class MosTeam:
 		return 2 * self.camera_distance * vertical_half_angle_tangent * self.params.aspect_ratio
 
 	def _picture_centre_x(self):
-		return (self.params.picture_centre_fraction_from_left - 0.5) * self._visible_width()
+		return (self._picture_centre_fraction_from_left() - 0.5) * self._visible_width()
+
+	def _picture_centre_fraction_from_left(self):
+		shift_left = self.params.picture_shift_left_in_picture_widths * self.picture_screen_width_fraction
+		return self.params.picture_centre_fraction_from_left - shift_left
 
 	@property
 	def picture_right_edge_screen_fraction(self):
-		return self.params.picture_centre_fraction_from_left + self.picture_screen_width_fraction / 2
+		return self._picture_centre_fraction_from_left() + self.picture_screen_width_fraction / 2
 
 	def restart(self):
 		if self.flying_logo is not None:
@@ -498,5 +503,6 @@ class RobertYannesParams(AlCharpentierParams):
 		self.transition_styles = ("laser_sweep",)
 		self.screen_fill_fraction = 0.25
 		self.picture_centre_fraction_from_left = 1.0 / 3.0
+		self.picture_shift_left_in_picture_widths = 1.5 #3
 		self.picture_shift_down_in_picture_heights = 0.1
 		self.picture_description_lines = ("Robert", "Yannes")

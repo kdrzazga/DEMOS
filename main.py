@@ -45,7 +45,7 @@ from demos.pixeloveole3.main import PixeloveOle3
 from demos.petscii.files.petsciidemo import PetsciiDemo
 from demos.WinterDemo26.main import WinterDemo
 from demos.jack.main import JackDemo
-from demos.old_and_new.main import RetroGlasses
+from demos.retro_glasses.main import RetroGlasses
 
 
 def kna_demo(windowed, triggered, house_style):

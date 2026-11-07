@@ -3,12 +3,12 @@ import math
 import numpy
 from OpenGL.GL import *
 
-from demos.old_and_new.models3d.lesson5_ball import Ball
-from demos.old_and_new.models3d.lesson8_mesh import MeshSurface
-from demos.old_and_new.models3d.lesson12_bald_head import (
+from demos.retro_glasses.models3d.lesson5_ball import Ball
+from demos.retro_glasses.models3d.lesson8_mesh import MeshSurface
+from demos.retro_glasses.models3d.lesson12_bald_head import (
     HeadFront, ellipse_coordinates)
-from demos.old_and_new.c64_animation import C64Animation
-from demos.old_and_new.models3d.lesson14_sunglasses import (
+from demos.retro_glasses.c64_animation import C64Animation
+from demos.retro_glasses.models3d.lesson14_sunglasses import (
     HeadWithSunglasses, Lens)
 
 

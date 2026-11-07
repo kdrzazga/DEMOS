@@ -5,16 +5,16 @@ from OpenGL.GL import *
 
 from lib.pygame_demo import PygameDemo
 from lib import Globals
-from demos.old_and_new.actors import DemoHead, SkinMesh, StageBall
-from demos.old_and_new.credits import Credits
-from demos.old_and_new.graffiti_intro import GraffitiIntro
-from demos.old_and_new.left_lens import LeftLens, LeftLensStage
-from demos.old_and_new.pulse_backdrop import PulseBackdrop
-from demos.old_and_new.models3d.lesson11_talking_face import (
+from demos.retro_glasses.actors import DemoHead, SkinMesh, StageBall
+from demos.retro_glasses.credits import Credits
+from demos.retro_glasses.graffiti_intro import GraffitiIntro
+from demos.retro_glasses.left_lens import LeftLens, LeftLensStage
+from demos.retro_glasses.pulse_backdrop import PulseBackdrop
+from demos.retro_glasses.models3d.lesson11_talking_face import (
     LipShapes, Speech)
-from demos.old_and_new.stage_view import (
+from demos.retro_glasses.stage_view import (
     Pose, ScreenOverlay, SpeechSubtitles, StageCamera, WelcomeText)
-from demos.old_and_new.stages import (
+from demos.retro_glasses.stages import (
     BackStage, BallStage, CreditsStage, DetailsStage, FaceStage, FinalTalkStage, GraffitiIntroStage,
     MeshStage, OrbitStage, OvalStage, SecondBallStage, StageTimeline,
     SunglassesStage, TalkStage, WelcomeStage, ZoomStage)

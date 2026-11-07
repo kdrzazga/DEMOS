@@ -3,7 +3,7 @@ import os
 import pygame
 from OpenGL.GL import *
 
-from demos.old_and_new.stage_view import ScreenTexture
+from demos.retro_glasses.stage_view import ScreenTexture
 from lib.typing_effect.typed_label import TypedLabel
 
 LOGO_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),

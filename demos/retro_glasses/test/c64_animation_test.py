@@ -6,7 +6,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 import pygame
 from OpenGL.GL import *
 
-from demos.old_and_new.c64_animation import C64Animation
+from demos.retro_glasses.c64_animation import C64Animation
 
 
 class C64AnimationViewer:

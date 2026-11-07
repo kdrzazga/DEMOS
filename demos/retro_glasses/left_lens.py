@@ -12,8 +12,8 @@ from lib.amiga.amiga_ball import AmigaBall
 from lib.amiga.amos import Amos
 from lib.animated_sprite import PygameAnimatedSprite
 from lib.tunnel import OpenGlTunnel, SurfaceTunnelEffect
-from demos.old_and_new.actors import BorderColoredLens
-from demos.old_and_new.stages import Stage, smooth
+from demos.retro_glasses.actors import BorderColoredLens
+from demos.retro_glasses.stages import Stage, smooth
 
 
 class FillingBlackBars:

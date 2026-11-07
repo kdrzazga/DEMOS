@@ -1,7 +1,7 @@
 import numpy as np
 import pygame
 
-from lib.graffitti.graffiti_sheet import GraffitiGlyph
+from lib.graffitti.graffiti_glyph import GraffitiGlyph
 
 
 def mask_from_array(array):

@@ -26,6 +26,8 @@ class SprayOrderMap:
 		self.fill_share = 0.72
 		self.outline_start = 0.66
 		self.outline_brightness_limit = 70
+		self.row_sweep_weight = 0.8
+		self.column_sweep_weight = 0.2
 
 	def build(self, surface):
 		width, height = surface.get_size()
@@ -34,7 +36,8 @@ class SprayOrderMap:
 		rows, columns = np.mgrid[0:height, 0:width].astype(np.float32)
 		row_fraction = rows / max(1, height - 1)
 		column_fraction = columns / max(1, width - 1)
-		sweep = row_fraction * 0.8 + column_fraction * 0.2 + 0.05 * np.sin(column_fraction * 17.0 + row_fraction * 5.0)
+		sweep = (row_fraction * self.row_sweep_weight + column_fraction * self.column_sweep_weight
+		         + 0.05 * np.sin(column_fraction * 17.0 + row_fraction * 5.0))
 		order = (sweep * self.sweep_weight
 		         + self._blotches(width, height) * self.blotch_weight
 		         + self.random.random((height, width), dtype=np.float32) * self.speckle_weight)
@@ -55,11 +58,11 @@ class SprayOrderMap:
 
 class SprayTexture:
 
-	def __init__(self, glyph, seed):
+	def __init__(self, glyph, seed, order_map=None):
 		self.glyph = glyph
 		self.width, self.height = glyph.size
 		self.art_texture = self._upload_art(glyph.surface)
-		self.order_texture = self._upload_order_and_outline(SprayOrderMap(seed).build(glyph.surface),
+		self.order_texture = self._upload_order_and_outline((order_map or SprayOrderMap(seed)).build(glyph.surface),
 		                                                    OutlineStrengthMap().build(glyph.surface))
 
 	@staticmethod

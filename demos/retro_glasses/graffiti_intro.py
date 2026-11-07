@@ -3,7 +3,7 @@ import math
 from OpenGL.GL import *
 from OpenGL.GLU import gluPerspective
 
-from lib.graffitti.komoda_amiga_graffiti import KomodaAmigaGraffiti
+from lib.graffitti.kna.komoda_amiga_graffiti import KomodaAmigaGraffiti
 from lib.graffitti.swaying_surface import SwayingSurface
 from lib.typing_effect.typed_label import TypedLabel
 

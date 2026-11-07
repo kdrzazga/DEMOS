@@ -1,9 +1,10 @@
 from lib.graffitti.caption_row import CaptionRow
-from lib.graffitti.eye_painter import EyePainter, EyesSheet
+from lib.graffitti.kna.eye_painter import EyePainter, EyesSheet
 from lib.graffitti.graffiti_canvas import GraffitiCanvas
-from lib.graffitti.graffiti_eye import GraffitiEye
+from lib.graffitti.kna.graffiti_eye import GraffitiEye
 from lib.graffitti.graffiti_piece import GraffitiPiece
-from lib.graffitti.graffiti_sheet import GraffitiGlyph, GraffitiSheet
+from lib.graffitti.graffiti_glyph import GraffitiGlyph
+from lib.graffitti.kna.graffiti_sheet import GraffitiSheet
 from lib.graffitti.keyframes import Keyframes
 from lib.graffitti.spray_texture import SprayTexture
 

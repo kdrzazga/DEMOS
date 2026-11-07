@@ -22,6 +22,11 @@ class KomodaAmigaGraffiti:
 		self.letter_spray_seconds = 1.1
 		self.letter_interval_seconds = 0.8
 		self.seed = 7
+		self.finale_pause_seconds = 0.4
+		self.finale_wave_stagger_seconds = 0.08
+		self.finale_quick_blink_count = 2
+		self.finale_quick_blink_speed = 2.5
+		self.finale_quick_blink_gap_seconds = 0.1
 		self.amiga_letter_names = ("A2", "M2", "I", "G", "A3", "PLUS")
 
 		eyes_sheet = EyesSheet()
@@ -70,7 +75,14 @@ class KomodaAmigaGraffiti:
 
 		self.canvas.add(*self.left_eye.pieces, *self.right_eye.pieces, self.mouth, self.ampersand,
 		                *self.komoda_pieces.values(), *self.amiga_pieces)
-		self.duration_seconds = self._schedule()
+		self.letters = {
+			"K": self.komoda_pieces["K"], "O1": self.left_eye, "M1": self.komoda_pieces["M1"],
+			"O2": self.right_eye, "D": self.komoda_pieces["D"], "A1": self.komoda_pieces["A1"],
+			"&": self.ampersand,
+			**dict(zip(self.amiga_letter_names, self.amiga_pieces)),
+		}
+		self.finale_start_seconds = self._schedule() + self.finale_pause_seconds
+		self.duration_seconds = self._schedule_finale_blinks()
 
 	@property
 	def texture(self):
@@ -82,6 +94,29 @@ class KomodaAmigaGraffiti:
 
 	def render(self, seconds):
 		self.canvas.render(seconds)
+
+	def blink_outline(self, letter_name, start_seconds, speed=1.0):
+		self.letters[letter_name].blink_outline(start_seconds, speed)
+
+	def blink_all_outlines(self, start_seconds, stagger_seconds=0.0, speed=1.0):
+		for index, letter in enumerate(self.letters.values()):
+			letter.blink_outline(start_seconds + index * stagger_seconds, speed)
+		return start_seconds + (len(self.letters) - 1) * stagger_seconds + self._blink_duration(speed)
+
+	def reset_outline_blinks(self):
+		for piece in self.canvas.pieces:
+			piece.outline_blink.clear()
+		self._schedule_finale_blinks()
+
+	def _blink_duration(self, speed):
+		return self.ampersand.outline_blink.duration_seconds(speed)
+
+	def _schedule_finale_blinks(self):
+		blink_end = self.blink_all_outlines(self.finale_start_seconds, self.finale_wave_stagger_seconds)
+		for _ in range(self.finale_quick_blink_count):
+			blink_end = self.blink_all_outlines(blink_end + self.finale_quick_blink_gap_seconds,
+			                                    speed=self.finale_quick_blink_speed)
+		return blink_end
 
 	def _next_seed(self):
 		self.seed += 1

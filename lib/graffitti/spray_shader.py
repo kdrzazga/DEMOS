@@ -16,14 +16,18 @@ uniform sampler2D paint_order;
 uniform float progress;
 uniform float opacity;
 uniform float feather;
+uniform float outline_brightness;
 varying vec2 texture_point;
 void main() {
 	vec4 color = texture2D(art, texture_point);
-	float order = texture2D(paint_order, texture_point).r;
+	vec4 order_and_outline = texture2D(paint_order, texture_point);
+	float order = order_and_outline.r;
+	float outline_strength = order_and_outline.a;
+	vec3 outlined = color.rgb + (vec3(1.0) - color.rgb) * outline_strength * outline_brightness;
 	float paint_front = progress * (1.0 + feather);
 	float coverage = clamp((paint_front - order) / feather, 0.0, 1.0);
 	float wet_glow = coverage * (1.0 - coverage) * 0.6;
-	vec3 sprayed = mix(color.rgb, vec3(1.0), wet_glow * step(0.001, progress) * (1.0 - step(1.0, progress)));
+	vec3 sprayed = mix(outlined, vec3(1.0), wet_glow * step(0.001, progress) * (1.0 - step(1.0, progress)));
 	gl_FragColor = vec4(sprayed, color.a * coverage * opacity);
 }
 """
@@ -38,6 +42,7 @@ class SprayShader:
 		self.progress_location = glGetUniformLocation(self.program, "progress")
 		self.opacity_location = glGetUniformLocation(self.program, "opacity")
 		self.feather_location = glGetUniformLocation(self.program, "feather")
+		self.outline_brightness_location = glGetUniformLocation(self.program, "outline_brightness")
 		glUseProgram(self.program)
 		glUniform1i(glGetUniformLocation(self.program, "art"), 0)
 		glUniform1i(glGetUniformLocation(self.program, "paint_order"), 1)
@@ -66,9 +71,10 @@ class SprayShader:
 		glUseProgram(self.program)
 		glUniform1f(self.feather_location, self.feather)
 
-	def apply(self, progress, opacity):
+	def apply(self, progress, opacity, outline_brightness):
 		glUniform1f(self.progress_location, progress)
 		glUniform1f(self.opacity_location, opacity)
+		glUniform1f(self.outline_brightness_location, outline_brightness)
 
 	@staticmethod
 	def release():

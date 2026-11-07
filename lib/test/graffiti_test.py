@@ -20,9 +20,11 @@ class GraffitiTestApp:
 		self.camera_distance = 7.2
 		self.surface_height = 5.6
 		self.hold_seconds = 4.0
+		self.wave_stagger_seconds = 0.08
 		pygame.init()
 		pygame.display.set_mode(self.window_size, DOUBLEBUF | OPENGL)
-		pygame.display.set_caption("Graffiti - KOMODA & AMIGA   [SPACE restart, P pause, G show finished, ESC quit]")
+		pygame.display.set_caption(
+			"Graffiti - KOMODA & AMIGA   [SPACE restart, P pause, G finished, B blink, W blink wave, ESC quit]")
 		self.graffiti = KomodaAmigaGraffiti()
 		self.surface = SwayingSurface(self.surface_height * self.graffiti.aspect_ratio, self.surface_height)
 		self.clock = pygame.time.Clock()
@@ -49,20 +51,28 @@ class GraffitiTestApp:
 					return False
 				if event.key == pygame.K_SPACE:
 					self.showing_finished = False
-					self.elapsed_seconds = 0.0
+					self._restart_graffiti()
 				if event.key == pygame.K_p:
 					self.paused = not self.paused
 				if event.key == pygame.K_g:
 					self.showing_finished = True
+					self.elapsed_seconds = max(self.elapsed_seconds, self.graffiti.duration_seconds)
+				if event.key == pygame.K_b:
+					self.graffiti.blink_all_outlines(self.elapsed_seconds)
+				if event.key == pygame.K_w:
+					self.graffiti.blink_all_outlines(self.elapsed_seconds, self.wave_stagger_seconds)
 		return True
 
+	def _restart_graffiti(self):
+		self.elapsed_seconds = 0.0
+		self.graffiti.reset_outline_blinks()
+
 	def _advance_graffiti(self, frame_seconds):
-		if self.showing_finished:
-			self.elapsed_seconds = self.graffiti.duration_seconds
-			return
 		self.elapsed_seconds += frame_seconds
+		if self.showing_finished:
+			return
 		if self.elapsed_seconds > self.graffiti.duration_seconds + self.hold_seconds:
-			self.elapsed_seconds = 0.0
+			self._restart_graffiti()
 
 	def run(self):
 		running = True

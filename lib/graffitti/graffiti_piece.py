@@ -1,6 +1,7 @@
 from OpenGL.GL import *
 
 from lib.graffitti.keyframes import Keyframes, linear
+from lib.graffitti.outline_blink import OutlineBlink
 
 
 class GraffitiPiece:
@@ -11,6 +12,11 @@ class GraffitiPiece:
 		self.scale = Keyframes(scale)
 		self.progress = Keyframes(0.0)
 		self.opacity = Keyframes(1.0)
+		self.outline_blink = OutlineBlink()
+
+	def blink_outline(self, start_seconds, speed=1.0):
+		self.outline_blink.trigger(start_seconds, speed)
+		return self
 
 	def spray(self, start_seconds, duration_seconds):
 		self.progress.animate(start_seconds, duration_seconds, 1.0, linear)
@@ -36,7 +42,7 @@ class GraffitiPiece:
 		left, right = center_x - half_width, center_x + half_width
 		top, bottom = center_y - half_height, center_y + half_height
 		self.spray_texture.bind()
-		shader.apply(progress, opacity)
+		shader.apply(progress, opacity, self.outline_blink.brightness(seconds))
 		glBegin(GL_QUADS)
 		glTexCoord2f(0.0, 0.0)
 		glVertex2f(left, top)

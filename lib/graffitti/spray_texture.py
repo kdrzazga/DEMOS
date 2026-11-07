@@ -3,6 +3,18 @@ import pygame
 from OpenGL.GL import *
 
 
+class OutlineStrengthMap:
+
+	def __init__(self):
+		self.brightness_limit = 160.0
+
+	def build(self, surface):
+		alpha = pygame.surfarray.array_alpha(surface).T
+		brightest_channel = pygame.surfarray.array3d(surface).transpose(1, 0, 2).max(axis=2).astype(np.float32)
+		strength = np.clip(1.0 - brightest_channel / self.brightness_limit, 0.0, 1.0) * (alpha > 0)
+		return (strength * 255.0).astype(np.uint8)
+
+
 class SprayOrderMap:
 
 	def __init__(self, seed):
@@ -47,7 +59,8 @@ class SprayTexture:
 		self.glyph = glyph
 		self.width, self.height = glyph.size
 		self.art_texture = self._upload_art(glyph.surface)
-		self.order_texture = self._upload_order(SprayOrderMap(seed).build(glyph.surface))
+		self.order_texture = self._upload_order_and_outline(SprayOrderMap(seed).build(glyph.surface),
+		                                                    OutlineStrengthMap().build(glyph.surface))
 
 	@staticmethod
 	def _new_texture():
@@ -65,11 +78,12 @@ class SprayTexture:
 		             pygame.image.tobytes(surface, "RGBA"))
 		return texture
 
-	def _upload_order(self, order):
+	def _upload_order_and_outline(self, order, outline_strength):
 		texture = self._new_texture()
+		order_and_outline = np.ascontiguousarray(np.stack([order, outline_strength], axis=2))
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, self.width, self.height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE,
-		             np.ascontiguousarray(order).tobytes())
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, self.width, self.height, 0, GL_LUMINANCE_ALPHA,
+		             GL_UNSIGNED_BYTE, order_and_outline.tobytes())
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 4)
 		return texture
 

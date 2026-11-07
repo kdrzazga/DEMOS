@@ -25,6 +25,11 @@ class GraffitiEye:
 		self.pupil.spray(start_seconds + duration_seconds, duration_seconds * 0.35)
 		return self
 
+	def blink_outline(self, start_seconds, speed=1.0):
+		self.outline.blink_outline(start_seconds, speed)
+		self.letter_fill.blink_outline(start_seconds, speed)
+		return self
+
 	def look_towards(self, start_seconds, duration_seconds, direction_x, direction_y):
 		travel_x, travel_y = self.painter.pupil_travel
 		self.look.animate(start_seconds, duration_seconds, (direction_x * travel_x, direction_y * travel_y))

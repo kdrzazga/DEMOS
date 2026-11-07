@@ -122,7 +122,7 @@ class Show:
         self.overlay.end()
 
 
-class OldAndNewDemo(PygameDemo):
+class RetroGlasses(PygameDemo):
     def __init__(self, windowed=False, triggered=False):
         self.time = 0.0
         self.timeline = None
@@ -160,4 +160,4 @@ class OldAndNewDemo(PygameDemo):
 
 
 if __name__ == "__main__":
-    OldAndNewDemo(windowed=True).run()
+    RetroGlasses(windowed=True).run()

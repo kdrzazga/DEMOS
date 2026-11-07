@@ -2,7 +2,7 @@ import os
 import sys
 
 LIB_DIRECTORY = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-sys.path.insert(0, os.path.join(LIB_DIRECTORY, "root-effect"))
+sys.path.insert(0, os.path.join(LIB_DIRECTORY, "root_effect"))
 
 import pygame
 from pygame.locals import DOUBLEBUF, OPENGL

@@ -235,6 +235,9 @@ class DetailsStage(Stage):
             self.talk_stop_requested = True
             show.stop_talking()
 
+    def exit(self, show):
+        show.head.sprouting = False
+
     def zoom(self, show, share):
         camera = show.camera
         close_distance = camera.distance_to_fill(self.head_height,

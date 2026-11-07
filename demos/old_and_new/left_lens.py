@@ -337,6 +337,7 @@ class LensPicture:
         self.iff_frame_delay = 0.1
         self.iff_rect = pygame.Rect(0, 0, width, height)
         self.iff_sprite = None
+        self.iff_textures = []
         self.showing_iff = False
         self.visible = False
         self.texture_id = glGenTextures(1)
@@ -373,7 +374,27 @@ class LensPicture:
         frame_width, frame_height = self.iff_frame_size
         self.iff_sprite = PygameAnimatedSprite(self.iff_path, self.iff_rect.centerx, self.iff_rect.centery,
                                                frame_width, frame_height, self.iff_frame_count, self.iff_frame_delay)
+        self.iff_textures = [self.iff_frame_texture(frame) for frame in self.iff_sprite.frames]
         self.showing_iff = True
+
+    def iff_frame_texture(self, frame):
+        width, height = frame.get_size()
+        texture = glGenTextures(1)
+        glBindTexture(GL_TEXTURE_2D, texture)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER)
+        glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, (0.0, 0.0, 0.0, 1.0))
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                     pygame.image.tobytes(frame.copy(), "RGBA", False))
+        glBindTexture(GL_TEXTURE_2D, 0)
+        return texture
+
+    def map_iff_frame_onto_lens(self):
+        glScalef(self.width / self.iff_rect.width, self.height / self.iff_rect.height, 1.0)
+        glTranslatef(-self.iff_rect.x / self.width, -self.iff_rect.y / self.height, 0.0)
 
     @property
     def opengl_tunnel(self):
@@ -385,24 +406,23 @@ class LensPicture:
 
     @property
     def shown_texture_id(self):
-        return self.tunnel_snapshot.texture_id if self.showing_tunnel else self.texture_id
+        if self.showing_tunnel:
+            return self.tunnel_snapshot.texture_id
+        if self.showing_iff:
+            return self.iff_textures[self.iff_sprite.current_frame]
+        return self.texture_id
 
     def capture(self):
         if self.showing_tunnel:
             self.tunnel_snapshot.capture()
 
     def refresh(self):
-        if self.showing_tunnel:
+        if self.showing_tunnel or self.showing_iff:
             return
-        if self.showing_iff:
-            self.surface.fill((0, 0, 0, 255))
-            frame = pygame.transform.scale(self.iff_sprite.current_texture, self.iff_rect.size)
-            self.surface.blit(frame, self.iff_rect)
-        else:
-            self.surface.fill((0, 0, 0, 0))
-            self.bars.draw(self.surface)
-            if self.tunnel is not None and self.tunnel_brightness > 0.0:
-                self.tunnel.draw_on(self.surface, self.tunnel_brightness)
+        self.surface.fill((0, 0, 0, 0))
+        self.bars.draw(self.surface)
+        if self.tunnel is not None and self.tunnel_brightness > 0.0:
+            self.tunnel.draw_on(self.surface, self.tunnel_brightness)
         pixels = pygame.image.tobytes(self.surface, "RGBA", False)
         glBindTexture(GL_TEXTURE_2D, self.texture_id)
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
@@ -503,6 +523,8 @@ class LeftLens(BorderColoredLens):
         if self.picture.showing_tunnel:
             glTranslatef(0.0, 1.0, 0.0)
             glScalef(1.0, -1.0, 1.0)
+        elif self.picture.showing_iff:
+            self.picture.map_iff_frame_onto_lens()
         glMatrixMode(GL_MODELVIEW)
         glCallList(self.picture_list)
         glMatrixMode(GL_TEXTURE)

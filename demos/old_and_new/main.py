@@ -4,7 +4,9 @@ import pygame
 from OpenGL.GL import *
 
 from lib.pygame_demo import PygameDemo
+from lib import Globals
 from demos.old_and_new.actors import DemoHead, SkinMesh, StageBall
+from demos.old_and_new.credits import Credits
 from demos.old_and_new.graffiti_intro import GraffitiIntro
 from demos.old_and_new.left_lens import LeftLens, LeftLensStage
 from demos.old_and_new.pulse_backdrop import PulseBackdrop
@@ -13,7 +15,7 @@ from demos.old_and_new.models3d.lesson11_talking_face import (
 from demos.old_and_new.stage_view import (
     Pose, ScreenOverlay, SpeechSubtitles, StageCamera, WelcomeText)
 from demos.old_and_new.stages import (
-    BackStage, BallStage, DetailsStage, EndingStage, ExitStage, FaceStage, FinalTalkStage, GraffitiIntroStage,
+    BackStage, BallStage, CreditsStage, DetailsStage, FaceStage, FinalTalkStage, GraffitiIntroStage,
     MeshStage, OrbitStage, OvalStage, SecondBallStage, StageTimeline,
     SunglassesStage, TalkStage, WelcomeStage, ZoomStage)
 
@@ -49,6 +51,7 @@ class Show:
         self.subtitles = SpeechSubtitles()
         self.pulse_backdrop = PulseBackdrop(screen_width, screen_height)
         self.graffiti_intro = GraffitiIntro(screen_width, screen_height)
+        self.credits = Credits(screen_width, screen_height)
         self.pose = Pose()
         self.head = DemoHead(self.pose)
         self.head.prepare_hair()
@@ -114,6 +117,7 @@ class Show:
         self.overlay.begin()
         self.welcome.draw(self.overlay)
         self.subtitles.draw(self.overlay)
+        self.credits.draw(self.overlay)
         self.overlay.darken(self.darkness)
         self.overlay.end()
 
@@ -138,7 +142,8 @@ class OldAndNewDemo(PygameDemo):
             TalkStage(), OvalStage(), BackStage(), SecondBallStage(),
             DetailsStage(), SunglassesStage(), OrbitStage(),
             ZoomStage(self.show.head.c64_animation, self.show.playback_speed),
-            LeftLensStage(), FinalTalkStage(self.show.playback_speed), EndingStage(), ExitStage(self.show.playback_speed)])
+            LeftLensStage(), FinalTalkStage(self.show.playback_speed),
+            CreditsStage(self.show.credits.caption_text, self.show.playback_speed)])
         self.time = 0.0
 
     def step(self):
@@ -150,6 +155,7 @@ class OldAndNewDemo(PygameDemo):
         self.show.update(seconds)
         self.show.draw()
         if self.timeline.finished(self.time):
+            print('Demo duration: ' + str(Globals.get_duration()))
             self.running = False
 
 

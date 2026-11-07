@@ -402,30 +402,38 @@ class FinalTalkStage(Stage):
         return -head_center_on_view
 
 
-class EndingStage(Stage):
-    def __init__(self):
-        super().__init__(3.0)
-
-    def update(self, show, time):
-        show.darkness = self.phase(time, 0.0, self.duration)
-
-
-class ExitStage(Stage):
-    def __init__(self, playback_speed):
-        self.real_duration = 30.0
-        self.music_fade = 1.5
+class CreditsStage(Stage):
+    def __init__(self, caption_text, playback_speed):
         self.playback_speed = playback_speed
+        self.head_drop_duration = 1.2
+        self.head_drop_distance = 9.0
+        self.typing_start = 1.4
+        self.letters_per_second = 14.0
+        self.typing_duration = len(caption_text) / self.letters_per_second
+        self.logo_start = self.typing_start + self.typing_duration + 0.3
+        self.logo_fade_duration = 0.4
+        self.hold_duration = 4.0
+        self.music_fade = 1.5
         self.music_fading = False
-        super().__init__(self.real_duration * playback_speed)
+        self.head_start_lift = 0.0
+        real_duration = self.logo_start + self.logo_fade_duration + self.hold_duration
+        super().__init__(real_duration * playback_speed)
 
     def enter(self, show):
-        show.head.visible = False
-        show.pulse_backdrop.stop()
+        print('Final stage ' + str(Globals.get_duration()))
         show.darkness = 0.0
+        show.credits.visible = True
+        self.head_start_lift = show.pose.lift
 
     def update(self, show, time):
-        fade_start = self.duration - self.music_fade * self.playback_speed
-        if time >= fade_start and not self.music_fading:
+        real_time = time / self.playback_speed
+        drop = self.phase(real_time, 0.0, self.head_drop_duration)
+        show.pose.lift = self.head_start_lift - self.head_drop_distance * drop * drop
+        show.head.visible = drop < 1.0
+        show.credits.type_letters(int((real_time - self.typing_start) * self.letters_per_second))
+        show.credits.logo_alpha = self.phase(real_time, self.logo_start, self.logo_fade_duration)
+        real_duration = self.duration / self.playback_speed
+        if real_time >= real_duration - self.music_fade and not self.music_fading:
             self.music_fading = True
             show.soundtrack.fade_out(self.music_fade)
 

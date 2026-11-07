@@ -6,12 +6,21 @@ from OpenGL.GL import *
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
                                 "lib", "root_effect"))
 
-from pulse_show import PulseShow, PulsingPalette
+from pulse_show import PulseShow, PulsingPalette, smooth_step
 from sine_roots3d import RootTile, circular_fade, create_alpha_texture
 from sine_roots3d_connected import ConnectedSineRoots3D
 
 
 class PulseShowWithoutOpening(PulseShow):
+    def __init__(self, roots):
+        super().__init__(roots)
+        self.settled_lean_degrees = roots.highest_tilt_degrees
+
+    def lean_degrees(self):
+        settling = smooth_step((self.elapsed_seconds - self.lean_settles_at_seconds) / self.settle_duration_seconds)
+        swinging_lean = super().lean_degrees()
+        return swinging_lean + (self.settled_lean_degrees - self.default_lean_degrees) * settling
+
     def start(self):
         self.elapsed_seconds = 0.0
         self.palette = PulsingPalette()

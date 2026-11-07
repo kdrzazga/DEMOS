@@ -5,6 +5,7 @@ from OpenGL.GL import *
 
 from lib.pygame_demo import PygameDemo
 from demos.old_and_new.actors import DemoHead, SkinMesh, StageBall
+from demos.old_and_new.graffiti_intro import GraffitiIntro
 from demos.old_and_new.left_lens import LeftLens, LeftLensStage
 from demos.old_and_new.pulse_backdrop import PulseBackdrop
 from demos.old_and_new.models3d.lesson11_talking_face import (
@@ -12,7 +13,7 @@ from demos.old_and_new.models3d.lesson11_talking_face import (
 from demos.old_and_new.stage_view import (
     Pose, ScreenOverlay, SpeechSubtitles, StageCamera, WelcomeText)
 from demos.old_and_new.stages import (
-    BackStage, BallStage, DetailsStage, EndingStage, ExitStage, FaceStage, FinalTalkStage,
+    BackStage, BallStage, DetailsStage, EndingStage, ExitStage, FaceStage, FinalTalkStage, GraffitiIntroStage,
     MeshStage, OrbitStage, OvalStage, SecondBallStage, StageTimeline,
     SunglassesStage, TalkStage, WelcomeStage, ZoomStage)
 
@@ -47,6 +48,7 @@ class Show:
         self.welcome = WelcomeText()
         self.subtitles = SpeechSubtitles()
         self.pulse_backdrop = PulseBackdrop(screen_width, screen_height)
+        self.graffiti_intro = GraffitiIntro(screen_width, screen_height)
         self.pose = Pose()
         self.head = DemoHead(self.pose)
         self.head.prepare_hair()
@@ -95,6 +97,9 @@ class Show:
         self.speech_ending = True
 
     def draw(self):
+        if self.graffiti_intro.active:
+            self.graffiti_intro.draw()
+            return
         self.left_lens.capture_tunnel()
         self.pulse_backdrop.clear_screen()
         self.camera.apply()
@@ -128,17 +133,13 @@ class OldAndNewDemo(PygameDemo):
         glEnable(GL_DEPTH_TEST)
         self.show = Show(screen_width, screen_height)
         self.timeline = StageTimeline([
+            GraffitiIntroStage(self.show.graffiti_intro, self.show.playback_speed),
             WelcomeStage(), BallStage(), MeshStage(), FaceStage(),
             TalkStage(), OvalStage(), BackStage(), SecondBallStage(),
             DetailsStage(), SunglassesStage(), OrbitStage(),
             ZoomStage(self.show.head.c64_animation, self.show.playback_speed),
             LeftLensStage(), FinalTalkStage(self.show.playback_speed), EndingStage(), ExitStage(self.show.playback_speed)])
         self.time = 0.0
-        if not self.paused:
-            self.on_start()
-
-    def on_start(self):
-        self.show.soundtrack.start()
 
     def step(self):
         real_seconds = min(self.clock.get_time() / 1000.0,

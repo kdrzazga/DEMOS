@@ -21,6 +21,7 @@ class KomodaAmigaGraffiti:
 		self.mouth_drop = 260
 		self.letter_spray_seconds = 1.1
 		self.letter_interval_seconds = 0.8
+		self.painting_speed = 2.0
 		self.seed = 7
 		self.finale_pause_seconds = 0.4
 		self.finale_wave_stagger_seconds = 0.08
@@ -132,33 +133,38 @@ class KomodaAmigaGraffiti:
 	def _letter_piece(self, name, center):
 		return GraffitiPiece(SprayTexture(self.sheet[name], self._next_seed()), Keyframes(center))
 
+	def _paced(self, seconds):
+		return seconds / self.painting_speed
+
 	def _schedule(self):
 		self.left_eye.position.jump(0.0, self.komoda_centers[1])
 		self.right_eye.position.jump(0.0, self.komoda_centers[3])
-		self.left_eye.spray(0.3, 1.4)
-		self.right_eye.spray(0.9, 1.4)
-		self.mouth.spray(2.6, 1.6)
+		self.left_eye.spray(self._paced(0.3), self._paced(1.4))
+		self.right_eye.spray(self._paced(0.9), self._paced(1.4))
+		self.mouth.spray(self._paced(2.6), self._paced(1.6))
 
 		for eye in (self.left_eye, self.right_eye):
-			eye.look_towards(4.4, 0.35, -1.0, 0.2)
-			eye.look_towards(5.2, 0.45, 1.0, 0.2)
-			eye.look_towards(6.0, 0.35, 0.0, -0.6)
-			eye.look_towards(6.8, 0.3, 0.0, 0.0)
+			eye.look_towards(self._paced(4.4), self._paced(0.35), -1.0, 0.2)
+			eye.look_towards(self._paced(5.2), self._paced(0.45), 1.0, 0.2)
+			eye.look_towards(self._paced(6.0), self._paced(0.35), 0.0, -0.6)
+			eye.look_towards(self._paced(6.8), self._paced(0.3), 0.0, 0.0)
 
-		self.mouth.unspray(7.2, 1.2)
+		self.mouth.unspray(self._paced(7.2), self._paced(1.2))
 
-		self.left_eye.become_letter_o(8.6, 1.2)
-		self.right_eye.become_letter_o(8.6, 1.2)
+		self.left_eye.become_letter_o(self._paced(8.6), self._paced(1.2))
+		self.right_eye.become_letter_o(self._paced(8.6), self._paced(1.2))
 
 		letter_start = 9.8
 		for index, name in enumerate(("K", "M1", "D", "A1")):
-			self.komoda_pieces[name].spray(letter_start + index * self.letter_interval_seconds,
-			                               self.letter_spray_seconds)
+			self.komoda_pieces[name].spray(self._paced(letter_start + index * self.letter_interval_seconds),
+			                               self._paced(self.letter_spray_seconds))
 
 		ampersand_start = letter_start + 4 * self.letter_interval_seconds + 0.8
-		self.ampersand.spray(ampersand_start, 1.2)
+		self.ampersand.spray(self._paced(ampersand_start), self._paced(1.2))
 
 		amiga_start = ampersand_start + 1.6
 		for index, piece in enumerate(self.amiga_pieces):
-			piece.spray(amiga_start + index * self.letter_interval_seconds, self.letter_spray_seconds)
-		return amiga_start + (len(self.amiga_pieces) - 1) * self.letter_interval_seconds + self.letter_spray_seconds
+			piece.spray(self._paced(amiga_start + index * self.letter_interval_seconds),
+			            self._paced(self.letter_spray_seconds))
+		return self._paced(amiga_start + (len(self.amiga_pieces) - 1) * self.letter_interval_seconds
+		                   + self.letter_spray_seconds)

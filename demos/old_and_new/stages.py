@@ -34,10 +34,28 @@ class Stage:
         pass
 
 
+class GraffitiIntroStage(Stage):
+    def __init__(self, graffiti_intro, playback_speed):
+        super().__init__(graffiti_intro.duration_seconds * playback_speed)
+        self.playback_speed = playback_speed
+
+    def enter(self, show):
+        show.graffiti_intro.active = True
+
+    def update(self, show, time):
+        show.graffiti_intro.update(time / self.playback_speed)
+
+    def exit(self, show):
+        show.graffiti_intro.active = False
+
+
 class WelcomeStage(Stage):
     def __init__(self):
         super().__init__(4.5)
         self.fade_duration = 0.8
+
+    def enter(self, show):
+        show.soundtrack.start()
 
     def update(self, show, time):
         fade_in = self.phase(time, 0.0, self.fade_duration)

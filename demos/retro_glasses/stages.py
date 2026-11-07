@@ -403,13 +403,15 @@ class FinalTalkStage(Stage):
 
 
 class CreditsStage(Stage):
-    def __init__(self, caption_text, playback_speed):
+    def __init__(self, caption_letter_count, playback_speed):
         self.playback_speed = playback_speed
         self.head_drop_duration = 1.2
         self.head_drop_distance = 9.0
+        self.thanks_fade_start = 0.4
+        self.thanks_fade_duration = 0.8
         self.typing_start = 1.4
         self.letters_per_second = 14.0
-        self.typing_duration = len(caption_text) / self.letters_per_second
+        self.typing_duration = caption_letter_count / self.letters_per_second
         self.logo_start = self.typing_start + self.typing_duration + 0.3
         self.logo_fade_duration = 0.4
         self.hold_duration = 4.0
@@ -432,6 +434,7 @@ class CreditsStage(Stage):
         show.head.visible = drop < 1.0
         show.credits.type_letters(int((real_time - self.typing_start) * self.letters_per_second))
         show.credits.logo_alpha = self.phase(real_time, self.logo_start, self.logo_fade_duration)
+        show.credits.thanks_picture.alpha = self.phase(real_time, self.thanks_fade_start, self.thanks_fade_duration)
         real_duration = self.duration / self.playback_speed
         if real_time >= real_duration - self.music_fade and not self.music_fading:
             self.music_fading = True

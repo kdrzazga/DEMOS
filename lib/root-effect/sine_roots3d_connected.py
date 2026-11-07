@@ -69,7 +69,6 @@ class ConnectedSineRoots3D(SineRoots3D):
         super().__init__(seed)
         self.neighbours_per_patch = 2
         self.longest_connection = 9.0
-        self.connection_color = (0.09, 0.08, 0.08)
         self.are_connections_visible = True
         self.connections_appear_at_seconds = 5.0
         self.blink_period_seconds = 7.0
@@ -80,10 +79,6 @@ class ConnectedSineRoots3D(SineRoots3D):
     def restart(self):
         super().restart()
         self.elapsed_seconds = 0.0
-
-    def set_root_color(self, color):
-        super().set_root_color(color)
-        self.connection_color = tuple(channel / 255 for channel in color)
 
     def is_connection_time(self):
         seconds_since_appearing = self.elapsed_seconds - self.connections_appear_at_seconds
@@ -102,7 +97,7 @@ class ConnectedSineRoots3D(SineRoots3D):
         return self.connections[key]
 
     def connected_pairs(self):
-        patches = self.field.patches
+        patches = self.field.visible_patches()
         pairs = {}
         for patch in patches:
             nearby = []
@@ -129,7 +124,7 @@ class ConnectedSineRoots3D(SineRoots3D):
         glDisable(GL_TEXTURE_2D)
         for first, second in self.connected_pairs():
             connection = self.connection_between(first, second)
-            connection.draw((first.x, first.z), (second.x, second.z), self.connection_color)
+            connection.draw((first.x, first.z), (second.x, second.z), self.root_color)
         glPopAttrib()
         glColor4f(1.0, 1.0, 1.0, 1.0)
 

@@ -269,14 +269,19 @@ class SunglassesStage(Stage):
     def __init__(self):
         super().__init__(12.0)
         self.start_lift = 1.5
+        self.arrival_duration = 2.5
 
     def enter(self, show):
         show.head.show_sunglasses = True
 
     def update(self, show, time):
-        arrival = self.eased(time, 0.0, 2.5)
+        arrival = self.eased(time, 0.0, self.arrival_duration)
+        show.nerd_alert.blink_at((time - self.arrival_duration) / show.playback_speed)
         show.head.sunglasses.lift = self.start_lift * (1.0 - arrival)
         self.turn_once(show, time, 3.0, 8.0)
+
+    def exit(self, show):
+        show.nerd_alert.visible = False
 
 
 class OrbitStage(Stage):

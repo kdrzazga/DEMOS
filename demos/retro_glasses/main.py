@@ -7,6 +7,7 @@ from lib.pygame_demo import PygameDemo
 from lib import Globals
 from demos.retro_glasses.actors import DemoHead, SkinMesh, StageBall
 from demos.retro_glasses.credits import Credits
+from demos.retro_glasses.nerd_alert import NerdAlert
 from demos.retro_glasses.graffiti_intro import GraffitiIntro
 from demos.retro_glasses.left_lens import LeftLens, LeftLensStage
 from demos.retro_glasses.pulse_backdrop import PulseBackdrop
@@ -55,6 +56,7 @@ class Show:
         self.pulse_backdrop = PulseBackdrop(screen_width, screen_height)
         self.graffiti_intro = GraffitiIntro(screen_width, screen_height)
         self.credits = Credits(screen_width, screen_height)
+        self.nerd_alert = NerdAlert(screen_height)
         self.pose = Pose()
         self.head = DemoHead(self.pose)
         self.head.prepare_hair()
@@ -120,6 +122,7 @@ class Show:
         self.overlay.begin()
         self.welcome.draw(self.overlay)
         self.subtitles.draw(self.overlay)
+        self.nerd_alert.draw(self.overlay)
         self.credits.draw(self.overlay)
         self.overlay.darken(self.darkness)
         self.overlay.end()

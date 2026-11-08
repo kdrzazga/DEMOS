@@ -66,11 +66,11 @@ class ThanksForWatchingGraffiti:
         self.sheet = sheet or ThanksSheet()
         self.lettering_area_shares = (0.84, 0.72)
         self.element_offsets = {
-            "snake": (0, 198),
-            "thank": (0, 0),
-            "for": (-50, 0),
-            "watching": (85, 20),
-            "t": (42, -190),
+            "thank": (-32, 0),
+            "snake": (-36, 181),
+            "for": (-62, -5),
+            "watching": (552, -225),
+            "t": (509, -435),
         }
         self.drawing_order = ("snake", "t", "thank", "for", "watching")
         self.spray_seconds = {"snake": 1.2, "t": 1.2, "thank": 1.4, "for": 1.0, "watching": 1.6}

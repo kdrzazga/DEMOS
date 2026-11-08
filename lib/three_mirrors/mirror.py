@@ -12,6 +12,7 @@ from OpenGL.GL import (
     glEnable,
     glEnd,
     glLineWidth,
+    glNormal3f,
     glVertex3f,
 )
 
@@ -92,6 +93,7 @@ class Mirror:
 
     def draw_shape(self):
         glBegin(GL_QUADS)
+        glNormal3f(*self.normal)
         for point in self.corners():
             glVertex3f(*point)
         glEnd()

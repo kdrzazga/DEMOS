@@ -64,6 +64,9 @@ class CornerScene:
         for actor in self.actors:
             actor.update(seconds)
 
+    def illuminate(self):
+        glDisable(GL_LIGHTING)
+
     def draw(self):
         for actor in self.actors:
             actor.draw()

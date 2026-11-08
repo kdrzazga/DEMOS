@@ -8,7 +8,7 @@ from pygame.locals import DOUBLEBUF, OPENGL
 from OpenGL.GL import *
 from OpenGL.GLU import gluPerspective
 
-from demos.retro_glasses.thanks_graffiti import ThanksForWatchingGraffiti
+from demos.retro_glasses.graffiti.thanks_for_watching_graffiti import ThanksForWatchingGraffiti
 from lib.graffitti.swaying_surface import SwayingSurface
 
 

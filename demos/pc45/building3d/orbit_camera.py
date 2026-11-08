@@ -3,7 +3,9 @@ import math
 from OpenGL.GL import GL_MODELVIEW, glLoadIdentity, glMatrixMode
 from OpenGL.GLU import gluLookAt
 
-from .linear_algebra import Vector3, clamp_value
+from lib.vector3 import Vector3
+
+from .linear_algebra import clamp_value
 
 
 class OrbitCamera:

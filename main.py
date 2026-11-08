@@ -104,7 +104,7 @@ DEMOS = {
     "retro-glasses": retro_glasses,
 }
 
-DEFAULT_DEMO = "45"
+DEFAULT_DEMO = "pc45"
 
 
 def close_boot_splash():

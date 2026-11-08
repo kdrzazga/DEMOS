@@ -1,4 +1,4 @@
-from ..linear_algebra import Vector3
+from lib.vector3 import Vector3
 
 
 class StaircaseShaft:
@@ -13,9 +13,9 @@ class StaircaseShaft:
             tangential_width, radial_depth, total_height, window_row_count)
 
     def positioned_point(self, radial_offset, lateral_offset, height):
-        horizontal = self.anchor_point.added_to(
-            self.outward_normal.scaled_by(radial_offset)).added_to(
-            self.tangent_direction.scaled_by(lateral_offset))
+        horizontal = (self.anchor_point
+                      + self.outward_normal * radial_offset
+                      + self.tangent_direction * lateral_offset)
         return Vector3(horizontal.x, height, horizontal.z)
 
     def build_body_faces(self, tangential_width, radial_depth, total_height):

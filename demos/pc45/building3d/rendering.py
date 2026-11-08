@@ -8,10 +8,10 @@ class LitSurfaceRenderer:
         self.diffuse_intensity = diffuse_intensity
 
     def compute_surface_brightness(self, corner_points):
-        first_edge = corner_points[1].subtracted_by(corner_points[0])
-        second_edge = corner_points[3].subtracted_by(corner_points[0])
-        surface_normal = first_edge.cross_product_with(second_edge).normalized()
-        light_alignment = abs(surface_normal.dot_product_with(self.light_direction))
+        first_edge = corner_points[1] - corner_points[0]
+        second_edge = corner_points[3] - corner_points[0]
+        surface_normal = first_edge.cross(second_edge).normalized()
+        light_alignment = abs(surface_normal.dot(self.light_direction))
         return self.ambient_intensity + self.diffuse_intensity * light_alignment
 
     def render_shaded_quad(self, corner_points, base_color):

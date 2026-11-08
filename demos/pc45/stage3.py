@@ -9,17 +9,17 @@ try:
 except ModuleNotFoundError:
     from demos.pc45.base_stage import BaseStage
 
+from lib.vector3 import Vector3
+
 try:
     from building3d.scene import Scene
     from building3d.orbit_camera import OrbitCamera
     from building3d.rendering import LitSurfaceRenderer
-    from building3d.linear_algebra import Vector3
     from building3d.building.building_builder import BuildingBuilder
 except ModuleNotFoundError:
     from demos.pc45.building3d.scene import Scene
     from demos.pc45.building3d.orbit_camera import OrbitCamera
     from demos.pc45.building3d.rendering import LitSurfaceRenderer
-    from demos.pc45.building3d.linear_algebra import Vector3
     from demos.pc45.building3d.building.building_builder import BuildingBuilder
 
 try:

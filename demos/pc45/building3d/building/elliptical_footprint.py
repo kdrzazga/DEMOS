@@ -1,6 +1,6 @@
 import math
 
-from ..linear_algebra import Vector3
+from lib.vector3 import Vector3
 
 
 class EllipticalFootprint:

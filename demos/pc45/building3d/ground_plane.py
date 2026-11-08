@@ -1,6 +1,6 @@
 from .building.color_gradient import ColorGradient
 from .building.patch_color_field import PatchColorField
-from .linear_algebra import Vector3
+from lib.vector3 import Vector3
 
 
 class GroundPlane:

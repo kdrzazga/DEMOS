@@ -51,7 +51,7 @@ class IbmLogoRelief:
     def estimate_world_width(self, footprint, angle_a, angle_b, height):
         point_a = footprint.perimeter_point(angle_a, height)
         point_b = footprint.perimeter_point(angle_b, height)
-        return point_a.subtracted_by(point_b).magnitude()
+        return (point_a - point_b).length()
 
     def find_horizontal_runs(self, row_pattern):
         runs = []

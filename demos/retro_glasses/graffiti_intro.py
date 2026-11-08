@@ -1,7 +1,9 @@
+import math
+
 from OpenGL.GL import *
 from OpenGL.GLU import gluPerspective
 
-from lib.graffitti.komoda_amiga_graffiti import KomodaAmigaGraffiti
+from lib.graffitti.kna.komoda_amiga_graffiti import KomodaAmigaGraffiti
 from lib.graffitti.swaying_surface import SwayingSurface
 from lib.typing_effect.typed_label import TypedLabel
 
@@ -19,6 +21,7 @@ class GraffitiIntro:
         self.caption_gap = 0.3
         self.letters_per_second = 14.0
         self.hold_after_caption_seconds = 2.0
+        self.raise_screen_share = 1.0 / 8.0
         self.graffiti = KomodaAmigaGraffiti()
         self.surface = SwayingSurface(self.surface_height * self.graffiti.aspect_ratio, self.surface_height)
         self.caption = TypedLabel(self.caption_text, self.caption_height, frames_per_letter=1)
@@ -37,6 +40,11 @@ class GraffitiIntro:
     @property
     def duration_seconds(self):
         return self.typing_start_seconds + self.typing_seconds + self.hold_after_caption_seconds
+
+    @property
+    def raise_distance(self):
+        visible_height = 2.0 * self.camera_distance * math.tan(math.radians(self.field_of_view / 2.0))
+        return visible_height * self.raise_screen_share
 
     def update(self, seconds):
         self.seconds = seconds
@@ -58,7 +66,7 @@ class GraffitiIntro:
         gluPerspective(self.field_of_view, self.screen_width / self.screen_height, 0.1, 100.0)
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
-        glTranslatef(0.0, 0.0, -self.camera_distance)
+        glTranslatef(0.0, self.raise_distance, -self.camera_distance)
         glDisable(GL_LIGHTING)
         glDisable(GL_DEPTH_TEST)
         self.surface.render(self.graffiti.texture)

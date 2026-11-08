@@ -12,6 +12,7 @@ class C64Animation:
 	def __init__(self):
 		self.c64screen = C64Screen()
 		self.instant_speed = 2500.0
+		self.command_typing_speed = 16.0
 		self.row = 6
 		self.time = 2.5
 		self.final_pause = 2.0
@@ -111,6 +112,8 @@ class C64Animation:
 		if instant:
 			typer.set_speed(self.instant_speed)
 			typer.shows_cursor = False
+		else:
+			typer.set_speed(self.command_typing_speed)
 		self.typers.append(typer)
 		self.time = typer.finish_time
 		return typer

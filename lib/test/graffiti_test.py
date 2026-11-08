@@ -8,7 +8,7 @@ from pygame.locals import DOUBLEBUF, OPENGL
 from OpenGL.GL import *
 from OpenGL.GLU import gluPerspective
 
-from lib.graffitti.komoda_amiga_graffiti import KomodaAmigaGraffiti
+from lib.graffitti.kna.komoda_amiga_graffiti import KomodaAmigaGraffiti
 from lib.graffitti.swaying_surface import SwayingSurface
 
 

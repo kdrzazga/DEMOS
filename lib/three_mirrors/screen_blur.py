@@ -74,6 +74,9 @@ class ScreenRegion:
         bottom = math.floor(min(vertical))
         return ScreenRegion(left, bottom, math.ceil(max(horizontal)) - left, math.ceil(max(vertical)) - bottom)
 
+    def area(self):
+        return self.width * self.height
+
     def is_empty(self):
         return self.width == 0 or self.height == 0
 

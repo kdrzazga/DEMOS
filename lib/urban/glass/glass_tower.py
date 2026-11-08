@@ -30,6 +30,9 @@ class TowerTier:
         self.depth = depth
         self.height = height
 
+    def turned(self):
+        return TowerTier(self.depth, self.width, self.height)
+
 
 class GlassVolume:
 
@@ -76,6 +79,7 @@ class RoofBeacon:
         self.flash_color = (1.0, 0.12, 0.08)
         self.idle_color = (0.25, 0.03, 0.02)
         self.clock = 0.0
+        self.display_list = None
 
     def update(self, seconds):
         self.clock = (self.clock + seconds) % self.blink_period
@@ -83,15 +87,23 @@ class RoofBeacon:
     def is_flashing(self):
         return self.clock < self.flash_length
 
-    def draw(self, shapes):
+    def prepare(self, shapes):
+        if self.display_list is not None:
+            return
+        self.display_list = glGenLists(1)
+        glNewList(self.display_list, GL_COMPILE)
         glPushAttrib(GL_ENABLE_BIT)
         glDisable(GL_LIGHTING)
-        glColor3f(*(self.flash_color if self.is_flashing() else self.idle_color))
         glPushMatrix()
         glTranslatef(*self.position)
         gluSphere(shapes.quadric, self.radius, 10, 8)
         glPopMatrix()
         glPopAttrib()
+        glEndList()
+
+    def draw(self):
+        glColor3f(*(self.flash_color if self.is_flashing() else self.idle_color))
+        glCallList(self.display_list)
 
 
 class GlassSkyscraper:
@@ -128,15 +140,22 @@ class GlassSkyscraper:
     def update(self, seconds):
         self.beacon.update(seconds)
 
+    def prepare(self):
+        if self.structure_list is not None:
+            return
+        self.shapes = Shapes()
+        self.structure_list = glGenLists(1)
+        glNewList(self.structure_list, GL_COMPILE)
+        self._draw_structure()
+        glEndList()
+        self.beacon.prepare(self.shapes)
+        for facade in self.reflectors():
+            facade.prepare()
+
     def draw(self):
-        if self.structure_list is None:
-            self.shapes = Shapes()
-            self.structure_list = glGenLists(1)
-            glNewList(self.structure_list, GL_COMPILE)
-            self._draw_structure()
-            glEndList()
+        self.prepare()
         glCallList(self.structure_list)
-        self.beacon.draw(self.shapes)
+        self.beacon.draw()
 
     def _draw_structure(self):
         for volume in self.volumes:

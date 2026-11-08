@@ -1,5 +1,5 @@
 from lib.three_mirrors.mirror import Mirror
-from lib.three_mirrors.mirror_renderer import MirrorRenderer
+from lib.three_mirrors.mirror_renderer import MirrorRenderer, ReflectorSet
 
 
 class FramedScene:
@@ -26,6 +26,7 @@ class MirrorCorner:
             Mirror.spanning((0.0, 0.0, 0.0), (0.0, 0.0, size), (size, 0.0, 0.0)),
             Mirror.spanning((0.0, 0.0, 0.0), (size, 0.0, 0.0), (0.0, size, 0.0)),
         ]
+        self.reflector_set = ReflectorSet(self.mirrors)
         self.renderer = MirrorRenderer(max_reflections=3, reflection_limit=5)
 
     @property
@@ -36,4 +37,4 @@ class MirrorCorner:
         self.renderer.change_reflections(step)
 
     def render(self, scene, eye):
-        self.renderer.render(self.mirrors, FramedScene(scene, self.mirrors), eye)
+        self.renderer.render(self.reflector_set, FramedScene(scene, self.mirrors), eye)

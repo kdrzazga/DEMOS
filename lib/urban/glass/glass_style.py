@@ -1,8 +1,8 @@
 class GlassStyle:
 
     def __init__(self):
-        self.pane_tint = (0.16, 0.22, 0.3)
-        self.pane_opacity = 0.42
+        self.pane_tint = (0.5, 0.75, 1.0)
+        self.pane_opacity = 0.38
         self.tint_variation = 0.12
         self.lit_pane_chance = 0.05
         self.lit_pane_tint = (0.62, 0.8, 0.95)

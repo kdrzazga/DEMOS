@@ -73,6 +73,9 @@ class Mirror:
     def signed_distance(self, point):
         return self.normal.dot(point) - self.distance_from_origin
 
+    def plane_equation(self):
+        return (*self.normal, self.distance_from_origin)
+
     def faces(self, point):
         return self.signed_distance(point) > 0.0
 

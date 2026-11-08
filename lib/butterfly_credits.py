@@ -52,27 +52,43 @@ class ButterfliesAnim:
 		self.helix_depth_scaling = 0.25
 		self.lane_spread_pixels = height * 0.12
 		self.speed_factor = 1.0
+		self.large_every = 5
+		self.large_scale = 2
+		self.huge_every = 16
+		self.huge_scale = 3
 		self.random = random.Random()
-		self.variants = self.create_variants()
+		self.variants_by_scale = self.create_variants()
 		self.start_point, self.end_point = self.flight_endpoints()
 		self.flight_length = math.hypot(self.end_point[0] - self.start_point[0], self.end_point[1] - self.start_point[1])
 		self.along_direction = ((self.end_point[0] - self.start_point[0]) / self.flight_length,
 								(self.end_point[1] - self.start_point[1]) / self.flight_length)
 		self.across_direction = (-self.along_direction[1], self.along_direction[0])
-		self.flyers = [self.create_flyer(self.random.random()) for _ in range(self.butterfly_count)]
+		self.flyers = [self.create_flyer(self.random.random(), slot) for slot in range(self.butterfly_count)]
 		self.lane_offsets = [self.random.uniform(-self.lane_spread_pixels, self.lane_spread_pixels) for _ in range(self.butterfly_count)]
 
 	def create_variants(self):
-		variants = []
-		for _ in range(self.variant_count):
-			butterfly = Butterfly2D(self.random.randint(self.minimum_width_pixels, self.maximum_width_pixels))
-			butterfly.shape.pattern.hue = self.random.uniform(0.0, 360.0)
-			butterfly.render()
-			variants.append(butterfly.image)
-		return variants
+		variant_specs = [(self.random.randint(self.minimum_width_pixels, self.maximum_width_pixels), self.random.uniform(0.0, 360.0))
+						 for _ in range(self.variant_count)]
+		variants_by_scale = {}
+		for scale in (1, self.large_scale, self.huge_scale):
+			variants_by_scale[scale] = []
+			for width_pixels, hue in variant_specs:
+				butterfly = Butterfly2D(width_pixels * scale)
+				butterfly.shape.pattern.hue = hue
+				butterfly.render()
+				variants_by_scale[scale].append(butterfly.image)
+		return variants_by_scale
+
+	def slot_scale(self, slot):
+		ordinal = slot + 1
+		if ordinal % self.huge_every == 0:
+			return self.huge_scale
+		if ordinal % self.large_every == 0:
+			return self.large_scale
+		return 1
 
 	def flight_endpoints(self):
-		margin = self.maximum_width_pixels
+		margin = self.maximum_width_pixels * self.huge_scale
 		low_y = self.area.top + self.area.height * 0.75
 		high_y = self.area.top + self.area.height * 0.25
 		left_x = self.area.left - margin
@@ -84,9 +100,9 @@ class ButterfliesAnim:
 	def heading_degrees(self, velocity):
 		return -math.degrees(math.atan2(velocity[0], -velocity[1]))
 
-	def create_flyer(self, progress):
+	def create_flyer(self, progress, slot):
 		return FlyingButterfly(
-			self.random.choice(self.variants),
+			self.random.choice(self.variants_by_scale[self.slot_scale(slot)]),
 			progress,
 			self.random.uniform(self.minimum_crossing_seconds, self.maximum_crossing_seconds),
 			self.random.uniform(self.minimum_flap_frequency, self.maximum_flap_frequency),
@@ -98,7 +114,7 @@ class ButterfliesAnim:
 		for index, flyer in enumerate(self.flyers):
 			flyer.update(delta_seconds * self.speed_factor)
 			if flyer.has_arrived():
-				self.flyers[index] = self.create_flyer(0.0)
+				self.flyers[index] = self.create_flyer(0.0, index)
 				self.lane_offsets[index] = self.random.uniform(-self.lane_spread_pixels, self.lane_spread_pixels)
 
 	def helix_depth(self, flyer):

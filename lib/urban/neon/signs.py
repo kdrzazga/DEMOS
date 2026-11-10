@@ -209,6 +209,14 @@ class SignDresser:
             for _ in range(self.randomness.randint(1, 2)):
                 self._blade(face, field)
 
+    def dress_sparsely(self, face, field, sign_count, keep_clear):
+        taken = list(keep_clear)
+        attempts = sign_count * 30
+        while sign_count > 0 and attempts > 0:
+            attempts -= 1
+            if self._try_flat_sign(face, field, taken):
+                sign_count -= 1
+
     def _storefront(self, face, field):
         art = self.library.pick("storefront", self.randomness)
         left = 0.4

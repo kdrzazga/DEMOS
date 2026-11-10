@@ -101,10 +101,10 @@ DEMOS = {
     "winter": winter_demo,
     "retrosfera10": retrosfera10_demo,
     "jack": jack_demo,
-    "retro-glasses": retro_glasses,
+    "glasses": retro_glasses,
 }
 
-DEFAULT_DEMO = "45"
+DEFAULT_DEMO = "glasses"
 
 
 def close_boot_splash():

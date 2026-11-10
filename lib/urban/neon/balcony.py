@@ -31,19 +31,19 @@ from lib.vector3 import Vector3
 
 class Balcony:
 
-    def __init__(self, palette, left, right, rail_z, floor_height):
+    def __init__(self, palette, left, right, rail_z, floor_height, floor_depth):
         self.palette = palette
         self.left = left
         self.right = right
         self.rail_z = rail_z
         self.floor_height = floor_height
-        self.floor_depth = 8.0
+        self.floor_depth = floor_depth
         self.slab_thickness = 0.35
         self.rail_height = 1.05
         self.rail_thickness = 0.06
         self.baluster_spacing = 0.3
         self.baluster_width = 0.025
-        self.floor_color = (0.12, 0.11, 0.1)
+        self.floor_color = (0.28, 0.28, 0.29)
         self.shape_list = None
 
     def prepare(self, shapes):

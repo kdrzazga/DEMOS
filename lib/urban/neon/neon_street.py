@@ -27,7 +27,7 @@ from lib.urban.neon.balcony import Balcony, StreetCorner
 from lib.urban.neon.caption_screen import CaptionScreen
 from lib.urban.neon.palette import NeonPalette
 from lib.urban.neon.signs import FacadeFace, GlowSprites, SignArtLibrary, SignDresser, SignField
-from lib.urban.neon.street import Crowd, CrowdArea, Lane, StreetLamps, Traffic, WetStreet
+from lib.urban.neon.street import Crowd, CrowdArea, Lane, RouteLane, StreetLamps, Traffic, WetStreet
 from lib.urban.neon.textures import ClothPainter, GlTexture, SignPainter, SpritePainter, TextureAtlas
 from lib.urban.neon.woman import Woman
 from lib.urban.shapes import Shapes
@@ -148,6 +148,13 @@ class NeonStreetScene:
         self.home_height = 42.0
         self.home_sign_count = 2
         self.home_sign_clearance = 2.5
+        self.next_door_width = 28.0
+        self.next_door_depth = 18.0
+        self.next_door_height = 55.0
+        self.eastbound_z = 2.5
+        self.westbound_z = -0.5
+        self.turn_radius = 4.0
+        self.turn_steps = 10
         self.home = None
         self.avenue = (-10.0, 6.0)
         self.tower_gap = 0.6
@@ -226,7 +233,15 @@ class NeonStreetScene:
         neighbour = TowerPlan([TowerTier(58.0, 17.0, 48.0)], planner.styles.pick(self.randomness), seed=99)
         blocks.append(GlassStreet([neighbour], 0.0, Vector3(self.left_wall_x, 0.0, 10.0),
                                   Vector3(0.0, 0.0, -1.0), Vector3(1.0, 0.0, 0.0)))
+        blocks.append(self._raise_next_door(planner.styles))
         return blocks
+
+    def _raise_next_door(self, styles):
+        plan = TowerPlan([TowerTier(self.next_door_width, self.next_door_depth, self.next_door_height)],
+                         styles.variants[0], seed=102)
+        left_edge = self.left_wall_x + self.home_width + self.tower_gap
+        return GlassStreet([plan], 0.0, Vector3(left_edge, 0.0, self.home_front_z),
+                           Vector3(1.0, 0.0, 0.0), Vector3(0.0, 0.0, -1.0))
 
     def _raise_home(self, styles):
         plan = TowerPlan([TowerTier(self.home_width, self.home_depth, self.home_height)], styles.green, seed=101)
@@ -269,8 +284,11 @@ class NeonStreetScene:
 
     def _route_traffic(self):
         traffic = Traffic(self.palette, self.randomness)
-        traffic.add_lane(Lane(Vector3(-5.0, 0.0, -170.0), Vector3(-5.0, 0.0, self.home_front_z)), 9)
-        traffic.add_lane(Lane(Vector3(1.0, 0.0, self.home_front_z), Vector3(1.0, 0.0, -170.0)), 9)
+        traffic.add_lane(RouteLane.turning(Vector3(-5.0, 0.0, -170.0), Vector3(-5.0, 0.0, self.eastbound_z),
+                                           Vector3(160.0, 0.0, self.eastbound_z),
+                                           self.turn_radius, self.turn_steps), 9)
+        traffic.add_lane(RouteLane.turning(Vector3(160.0, 0.0, self.westbound_z), Vector3(1.0, 0.0, self.westbound_z),
+                                           Vector3(1.0, 0.0, -170.0), self.turn_radius, self.turn_steps), 9)
         traffic.add_lane(Lane(Vector3(-140.0, 0.0, -56.5), Vector3(160.0, 0.0, -56.5)), 8)
         traffic.add_lane(Lane(Vector3(160.0, 0.0, -60.5), Vector3(-140.0, 0.0, -60.5)), 8)
         return traffic

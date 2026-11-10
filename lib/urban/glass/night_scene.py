@@ -16,6 +16,7 @@ class NightGround:
         self.half_extent = half_extent
         self.cell_size = 3.0
         self.color = (0.06, 0.065, 0.075)
+        self.center = Vector3(0.0, 0.0, 0.0)
         self.surface = None
 
     def prepare(self):
@@ -32,8 +33,8 @@ class NightGround:
         glBegin(GL_QUADS)
         for row in range(cells):
             for column in range(cells):
-                near_x = -self.half_extent + column * self.cell_size
-                near_z = -self.half_extent + row * self.cell_size
+                near_x = self.center.x - self.half_extent + column * self.cell_size
+                near_z = self.center.z - self.half_extent + row * self.cell_size
                 far_x = near_x + self.cell_size
                 far_z = near_z + self.cell_size
                 glVertex3f(near_x, 0.0, far_z)
@@ -150,7 +151,7 @@ class NightScene:
 
     def activate(self, window_size):
         self._init_gl(window_size)
-        self._configure()
+        self.configure()
 
     def _init_gl(self, window_size):
         width, height = window_size
@@ -172,7 +173,7 @@ class NightScene:
         gluPerspective(self.field_of_view, width / height, self.near_plane, self.far_plane)
         glMatrixMode(GL_MODELVIEW)
 
-    def _configure(self):
+    def configure(self):
         glFogf(GL_FOG_DENSITY, self.fog_density)
         glFogfv(GL_FOG_COLOR, self.night)
         glLightModelfv(GL_LIGHT_MODEL_AMBIENT, self.ambient)

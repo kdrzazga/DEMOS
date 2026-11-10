@@ -40,9 +40,17 @@ class GreenDistrict:
 
     def __init__(self):
         self.palette = GreenGlassPalette()
+        self.origin = Vector3(0.0, 0.0, 0.0)
+        self.facing = Vector3(0.0, 0.0, 1.0)
+        self.ground_half_extent = 120.0
+        self.tower_gap = 1.2
+
+    def _place(self, across, height, ahead):
+        right = Vector3(0.0, 1.0, 0.0).cross(self.facing)
+        return self.origin + right * across + Vector3(0.0, height, 0.0) + self.facing * ahead
 
     def build(self):
-        street = GlassStreet.centered([
+        plans = [
             TowerPlan([TowerTier(7.0, 9.0, 20.0)], self.palette.standard(), seed=3),
             TowerPlan([TowerTier(9.0, 10.0, 28.0), TowerTier(6.5, 7.0, 8.0)], self.palette.greener(), seed=8),
             TowerPlan([TowerTier(6.0, 8.0, 16.0)], self.palette.darker(), seed=11),
@@ -50,10 +58,15 @@ class GreenDistrict:
                       self.palette.standard(), seed=5),
             TowerPlan([TowerTier(8.0, 9.0, 24.0)], self.palette.greener(), seed=13),
             TowerPlan([TowerTier(7.5, 9.0, 30.0), TowerTier(5.0, 6.0, 6.0)], self.palette.darker(), seed=21),
-        ], gap=1.2, front_line=0.0)
-        camera = OrbitCamera(Vector3(0.0, 18.0, -4.0), 64.0, 4.0, 30.0)
-        scene = NightScene("Green District", [street], NightGround(120.0), camera, fog_density=0.009)
+        ]
+        right = Vector3(0.0, 1.0, 0.0).cross(self.facing)
+        front_start = self._place(-GlassStreet.length_of(plans, self.tower_gap) / 2.0, 0.0, 0.0)
+        street = GlassStreet(plans, self.tower_gap, front_start, right, self.facing)
+        camera = OrbitCamera(self._place(0.0, 18.0, -4.0), 64.0, 4.0, 30.0)
+        ground = NightGround(self.ground_half_extent)
+        ground.center = self.origin
+        scene = NightScene("Green District", [street], ground, camera, fog_density=0.009)
         scene.flood_frontages(street.frontages, GreenFloodLight)
-        scene.add_orb(GreenLight(Vector3(0.0, 5.0, -4.0), 34.0, 0.3, 0.0, 2.0, 0.6))
-        scene.add_orb(GreenLight(Vector3(0.0, 20.0, -4.0), 31.0, -0.22, math.pi, 10.0, 0.25))
+        scene.add_orb(GreenLight(self._place(0.0, 5.0, -4.0), 34.0, 0.3, 0.0, 2.0, 0.6))
+        scene.add_orb(GreenLight(self._place(0.0, 20.0, -4.0), 31.0, -0.22, math.pi, 10.0, 0.25))
         return scene

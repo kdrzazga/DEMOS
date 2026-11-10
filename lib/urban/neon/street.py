@@ -205,6 +205,53 @@ class Lane:
     def point_at(self, distance):
         return self.start + self.direction * (distance % self.length)
 
+    def direction_at(self, distance):
+        return self.direction
+
+    def heading_at(self, distance):
+        return self.heading_degrees
+
+
+class RouteLane:
+
+    def __init__(self, points):
+        self.legs = []
+        travelled = 0.0
+        for start, end in zip(points, points[1:]):
+            leg = Lane(start, end)
+            if leg.length > 0.0:
+                self.legs.append((travelled, leg))
+                travelled += leg.length
+        self.length = travelled
+
+    @staticmethod
+    def turning(start, corner, end, radius, steps):
+        entry = corner - (corner - start).normalized() * radius
+        leaving = corner + (end - corner).normalized() * radius
+        curve = []
+        for step in range(1, steps):
+            share = step / steps
+            curve.append(entry * ((1.0 - share) ** 2) + corner * (2.0 * (1.0 - share) * share)
+                         + leaving * (share ** 2))
+        return RouteLane([start, entry, *curve, leaving, end])
+
+    def _leg_at(self, distance):
+        along = distance % self.length
+        for leg_start, leg in reversed(self.legs):
+            if along >= leg_start:
+                return along - leg_start, leg
+        return along, self.legs[0][1]
+
+    def point_at(self, distance):
+        along, leg = self._leg_at(distance)
+        return leg.point_at(along)
+
+    def direction_at(self, distance):
+        return self._leg_at(distance)[1].direction
+
+    def heading_at(self, distance):
+        return self._leg_at(distance)[1].heading_degrees
+
 
 class Car:
 
@@ -226,13 +273,13 @@ class Car:
         position = self.position()
         glPushMatrix()
         glTranslatef(*position)
-        glRotatef(self.lane.heading_degrees, 0.0, 1.0, 0.0)
+        glRotatef(self.lane.heading_at(self.distance), 0.0, 1.0, 0.0)
         self.model.call()
         glPopMatrix()
 
     def light_points(self):
         position = self.position()
-        forward = self.lane.direction
+        forward = self.lane.direction_at(self.distance)
         side = Vector3(-forward.z, 0.0, forward.x)
         heads = [position + forward * along + Vector3(0.0, rise, 0.0) + side * across
                  for along, rise, across in self.headlight_spots]

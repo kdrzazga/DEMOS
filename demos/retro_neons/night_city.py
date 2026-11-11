@@ -203,6 +203,12 @@ class NightCity:
         if not self.square_screen_on and self.seconds_on_balcony >= self.square_screen_delay:
             self.square_screen_on = True
             self.neon.switch_square_screen()
+        if self.square_screen_on and self.neon.square_screen.every_clip_played:
+            self.neon.woman.fetch_newspaper()
+
+    @property
+    def woman_reading_seconds(self):
+        return self.neon.woman.reading_seconds
 
     def _progress_through(self, window):
         start, end = window

@@ -6,14 +6,14 @@ import pygame
 
 class MkvVideoPlayer:
 
-	def __init__(self, video_path, loop=False):
+	def __init__(self, video_path, loop=False, picture_width=None):
 		self.video_path = video_path
 		self.loop = loop
 		self.container = av.open(video_path)
 		self.video_stream = self.container.streams.video[0]
 		self.video_stream.thread_type = "AUTO"
-		self.width = self.video_stream.width
-		self.height = self.video_stream.height
+		self.width = picture_width or self.video_stream.width
+		self.height = max(1, round(self.width * self.video_stream.height / self.video_stream.width))
 		self.frames_per_second = float(self.video_stream.average_rate or 30.0)
 		self.decoded_frames = self.container.decode(self.video_stream)
 		self.pending_frame = None
@@ -36,7 +36,7 @@ class MkvVideoPlayer:
 				continue
 			if self.seconds_from_loop_start(self.pending_frame) > time.perf_counter() - self.loop_started_at:
 				break
-			self.current_image = self.pending_frame.to_ndarray(format="rgb24")
+			self.current_image = self.pending_frame.to_ndarray(width=self.width, height=self.height, format="rgb24")
 			self.pending_frame = None
 			self.frames_shown_in_this_loop += 1
 			image_changed = True

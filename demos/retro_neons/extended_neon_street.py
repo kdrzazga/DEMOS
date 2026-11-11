@@ -26,6 +26,7 @@ from demos.retro_neons.brand_signs import (BrandedSignField, BrandRule, CaptionA
                                            VerticalCaptionPainter)
 from demos.retro_neons.butterfly_screen import ButterflyWallScreen
 from demos.retro_neons.c64_wall_screen import C64WallScreen
+from demos.retro_neons.newspaper_woman import NewspaperWoman
 from lib.urban.glass import GlassStreet
 from lib.urban.neon.caption_screen import CaptionScreen
 from lib.urban.neon.neon_street import BlockPlanner, NeonStreetScene
@@ -124,6 +125,7 @@ class ExtendedNeonStreet(NeonStreetScene):
         self.square_screen = None
         self.square_screen_tower = 0
         self.ticker_tower = 1
+        self.house_door_depth = 0.6
 
     def _side_row_faces(self):
         toward_square = Vector3(-1.0, 0.0, 0.0)
@@ -272,6 +274,9 @@ class ExtendedNeonStreet(NeonStreetScene):
 
     def build(self):
         super().build()
+        self.woman = NewspaperWoman(self.woman.position, self.palette, self.woman.shirt_texture,
+                                    self.home_front_z + self.house_door_depth)
+        self.woman.prepare()
         self.square_screen = self._hang_square_screen()
         self.square_screen.prepare()
         self._clear_wall_behind_square_screen()

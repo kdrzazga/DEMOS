@@ -37,7 +37,7 @@ class RetroNeonsShow:
         self.near_plane = 0.3
         self.far_plane = 2000.0
         self.appear_seconds = 3.0
-        self.hold_seconds = 20.0
+        self.reading_seconds_before_end = 20.0
         self.ground_blur_pixels = 8.0
         self.ground_blur = ScreenBlur()
         self.graffiti = TurningGraffiti(fps, self.field_of_view, screen_width / screen_height)
@@ -57,12 +57,8 @@ class RetroNeonsShow:
         return self.graffiti.painting_seconds / 2.0
 
     @property
-    def end_seconds(self):
-        return self.graffiti.finish_seconds + self.city.camera.path.duration + self.hold_seconds
-
-    @property
     def finished(self):
-        return self.time >= self.end_seconds
+        return self.city.woman_reading_seconds >= self.reading_seconds_before_end
 
     def setup_gl(self):
         glViewport(0, 0, self.screen_width, self.screen_height)

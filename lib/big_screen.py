@@ -1,8 +1,8 @@
-import math
 import random
 import pygame
 from OpenGL.GL import *
 
+from lib.plasma import PlasmaField
 from lib.specialFX.stripes import StripeEffects
 
 
@@ -32,6 +32,7 @@ class BigScreen:
         self.stand_inset = 0.18
         self.frame_color = (0.06, 0.06, 0.07)
         self.plasma_speed = 0.8
+        self.plasma_field = None
         self.time = 0.0
         self.text_resolution = (1024, 576)
         self.text_margin = 40
@@ -108,16 +109,11 @@ class BigScreen:
             if revealed != self.shown_credit_count:
                 self._show_credit_items(revealed)
 
-    def _plasma_color(self, u, v, brightness):
-        moment = self.time * self.plasma_speed
-        wave = (math.sin(u * 7.0 + moment)
-                + math.sin(v * 5.0 - moment * 1.3)
-                + math.sin((u + v) * 6.0 + moment * 0.7)
-                + math.sin(math.hypot(u - 0.5, v - 0.5) * 12.0 - moment * 1.7)) / 4.0
-        red = 0.5 + 0.5 * math.sin(math.pi * wave)
-        green = 0.5 + 0.5 * math.sin(math.pi * wave + 2.1)
-        blue = 0.5 + 0.5 * math.sin(math.pi * wave + 4.2)
-        return red * brightness, green * brightness, blue * brightness
+    def _plasma_vertex_colors(self, brightness):
+        if (self.plasma_field is None or self.plasma_field.columns != self.columns + 1
+                or self.plasma_field.rows != self.rows + 1):
+            self.plasma_field = PlasmaField(self.columns + 1, self.rows + 1)
+        return (self.plasma_field.colors_at(self.time * self.plasma_speed) * brightness).tolist()
 
     def _draw_plain_picture(self, brightness):
         left = -self.width / 2.0
@@ -139,6 +135,7 @@ class BigScreen:
             return
         left = -self.width / 2.0
         front = self.frame_depth / 2.0 + 0.005
+        vertex_colors = self._plasma_vertex_colors(brightness)
         glDisable(GL_LIGHTING)
         for row in range(self.rows):
             v_low = row / self.rows
@@ -147,9 +144,9 @@ class BigScreen:
             for column in range(self.columns + 1):
                 u = column / self.columns
                 picture_x = left + u * self.width
-                glColor3f(*self._plasma_color(u, v_low, brightness))
+                glColor3f(*vertex_colors[row][column])
                 glVertex3f(picture_x, self.lift + v_low * self.height, front)
-                glColor3f(*self._plasma_color(u, v_high, brightness))
+                glColor3f(*vertex_colors[row + 1][column])
                 glVertex3f(picture_x, self.lift + v_high * self.height, front)
             glEnd()
         glEnable(GL_LIGHTING)

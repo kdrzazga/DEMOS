@@ -265,7 +265,7 @@ class WinterDemo(PygameDemo):
         trees = []
         for index, (x, z) in enumerate(self.tree_positions):
             ground = self.land.surface_height(x, z)
-            trees.append(Tree(x, z, ground, snow_top=index % 3 != 0, seed=index + 1))
+            trees.append(Tree(x, z, ground, snow_top=False, seed=index + 1))
         return trees
 
     def _create_robins(self):

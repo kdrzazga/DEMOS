@@ -8,6 +8,7 @@ from OpenGL.GLU import gluPerspective
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 from demos.retro_neons.night_city import NightCity
+from demos.retro_neons.scene_mirror import SceneMirror
 from demos.retro_neons.turning_graffiti import TurningGraffiti
 from lib import Globals
 from lib.pygame_demo import PygameDemo
@@ -92,6 +93,7 @@ class RetroNeonsShow:
         glHint(GL_FOG_HINT, GL_FASTEST)
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
+        SceneMirror().mirror_projection()
         gluPerspective(self.field_of_view, self.screen_width / self.screen_height, self.near_plane, self.far_plane)
         glMatrixMode(GL_MODELVIEW)
 

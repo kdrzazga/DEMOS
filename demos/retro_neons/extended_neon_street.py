@@ -27,6 +27,7 @@ from demos.retro_neons.brand_signs import (BrandedSignField, BrandRule, CaptionA
 from demos.retro_neons.butterfly_screen import ButterflyWallScreen
 from demos.retro_neons.c64_wall_screen import C64WallScreen
 from demos.retro_neons.newspaper_woman import NewspaperWoman
+from demos.retro_neons.scene_mirror import SceneMirror
 from lib.urban.glass import GlassStreet
 from demos.retro_neons.matte_caption_screen import MatteCaptionScreen
 from lib.urban.neon.neon_street import BlockPlanner, NeonStreetScene
@@ -227,6 +228,7 @@ class ExtendedNeonStreet(NeonStreetScene):
     def _clear_wall_behind_square_screen(self):
         self._remove_signs_under(self.square_screen_face, self.square_screen.covered_rectangle)
         self.signs.seal(self.glow_region)
+        SceneMirror().unflip_signs(self.signs)
 
     def switch_square_screen(self):
         self.square_screen.switch_on()

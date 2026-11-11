@@ -3,6 +3,7 @@ import os
 import numpy
 from OpenGL.GL import glDeleteTextures
 
+from demos.retro_neons.scene_mirror import SceneMirror
 from lib.wall_screen import WallScreen
 from lib.c64_screen import C64Screen
 from lib.particles import Texture2D
@@ -131,9 +132,10 @@ class C64WallScreen(WallScreen):
             self.c64_seconds_shown = 0.0
 
     def draw(self):
-        if self.playing_clip is not None:
-            self.draw_picture(self.playing_clip.texture.id, self.clip_glow_color)
-        elif self.showing_c64:
-            self.draw_picture(self.c64.texture_id, self.c64.border_color)
-        else:
-            self.draw_picture(self.plasma.texture.id, self.plasma_glow_color)
+        with SceneMirror().readable_texturing():
+            if self.playing_clip is not None:
+                self.draw_picture(self.playing_clip.texture.id, self.clip_glow_color)
+            elif self.showing_c64:
+                self.draw_picture(self.c64.texture_id, self.c64.border_color)
+            else:
+                self.draw_picture(self.plasma.texture.id, self.plasma_glow_color)

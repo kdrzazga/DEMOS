@@ -46,6 +46,7 @@ from demos.petscii.files.petsciidemo import PetsciiDemo
 from demos.WinterDemo26.main import WinterDemo
 from demos.jack.main import JackDemo
 from demos.retro_glasses.main import RetroGlasses
+from demos.retro_neons.main import RetroNeons
 
 
 def kna_demo(windowed, triggered, house_style):
@@ -90,6 +91,10 @@ def retro_glasses(windowed, triggered, house_style):
     RetroGlasses(windowed=windowed, triggered=triggered).run()
 
 
+def retro_neons(windowed, triggered, house_style):
+    RetroNeons(windowed=windowed, triggered=triggered).run()
+
+
 # demo name -> launcher; every launcher takes the same (windowed, triggered, house_style)
 DEMOS = {
     "kna": kna_demo,
@@ -101,10 +106,11 @@ DEMOS = {
     "winter": winter_demo,
     "retrosfera10": retrosfera10_demo,
     "jack": jack_demo,
-    "retro-glasses": retro_glasses,
+    "glasses": retro_glasses,
+    "neons": retro_neons,
 }
 
-DEFAULT_DEMO = "pc45"
+DEFAULT_DEMO = "neons"
 
 
 def close_boot_splash():

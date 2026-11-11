@@ -6,4 +6,5 @@ Pillow
 numpy
 pyautogui
 sounddevice
+av
 pyinstaller

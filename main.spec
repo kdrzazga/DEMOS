@@ -32,7 +32,7 @@ def _collect(pkg):
 
 # arcade & friends ship data files / native libs / lazily-imported submodules
 for _pkg in ("arcade", "pyglet", "pytiled_parser", "sounddevice",
-             "OpenGL", "OpenGL_accelerate"):
+             "OpenGL", "OpenGL_accelerate", "av"):
     _collect(_pkg)
 
 # PyOpenGL selects its platform / array backends dynamically at import time;

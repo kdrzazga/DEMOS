@@ -121,7 +121,6 @@ class GlassSkyscraper:
         self.roof_height = base
         self.spire_height = 4.0
         self.spire_width = 0.18
-        self.spire_color = (0.4, 0.42, 0.46)
         self.beacon = RoofBeacon(Vector3(x, self.roof_height + self.spire_height, z))
         self.shapes = None
         self.structure_list = None
@@ -163,4 +162,4 @@ class GlassSkyscraper:
         half_spire = self.spire_width / 2.0
         self.shapes.box(self.x - half_spire, self.roof_height, self.z - half_spire,
                         self.x + half_spire, self.roof_height + self.spire_height, self.z + half_spire,
-                        self.spire_color)
+                        self.style.spire_color)

@@ -11,7 +11,6 @@ from OpenGL.GL import (
     GL_FALSE,
     GL_FLOAT,
     GL_LIGHTING,
-    GL_LINES,
     GL_ONE_MINUS_SRC_ALPHA,
     GL_QUADS,
     GL_SRC_ALPHA,
@@ -206,6 +205,53 @@ class Lane:
     def point_at(self, distance):
         return self.start + self.direction * (distance % self.length)
 
+    def direction_at(self, distance):
+        return self.direction
+
+    def heading_at(self, distance):
+        return self.heading_degrees
+
+
+class RouteLane:
+
+    def __init__(self, points):
+        self.legs = []
+        travelled = 0.0
+        for start, end in zip(points, points[1:]):
+            leg = Lane(start, end)
+            if leg.length > 0.0:
+                self.legs.append((travelled, leg))
+                travelled += leg.length
+        self.length = travelled
+
+    @staticmethod
+    def turning(start, corner, end, radius, steps):
+        entry = corner - (corner - start).normalized() * radius
+        leaving = corner + (end - corner).normalized() * radius
+        curve = []
+        for step in range(1, steps):
+            share = step / steps
+            curve.append(entry * ((1.0 - share) ** 2) + corner * (2.0 * (1.0 - share) * share)
+                         + leaving * (share ** 2))
+        return RouteLane([start, entry, *curve, leaving, end])
+
+    def _leg_at(self, distance):
+        along = distance % self.length
+        for leg_start, leg in reversed(self.legs):
+            if along >= leg_start:
+                return along - leg_start, leg
+        return along, self.legs[0][1]
+
+    def point_at(self, distance):
+        along, leg = self._leg_at(distance)
+        return leg.point_at(along)
+
+    def direction_at(self, distance):
+        return self._leg_at(distance)[1].direction
+
+    def heading_at(self, distance):
+        return self._leg_at(distance)[1].heading_degrees
+
 
 class Car:
 
@@ -227,13 +273,13 @@ class Car:
         position = self.position()
         glPushMatrix()
         glTranslatef(*position)
-        glRotatef(self.lane.heading_degrees, 0.0, 1.0, 0.0)
+        glRotatef(self.lane.heading_at(self.distance), 0.0, 1.0, 0.0)
         self.model.call()
         glPopMatrix()
 
     def light_points(self):
         position = self.position()
-        forward = self.lane.direction
+        forward = self.lane.direction_at(self.distance)
         side = Vector3(-forward.z, 0.0, forward.x)
         heads = [position + forward * along + Vector3(0.0, rise, 0.0) + side * across
                  for along, rise, across in self.headlight_spots]
@@ -364,45 +410,5 @@ class Crowd:
         glDrawArrays(GL_QUADS, 0, 4 * len(self.heights))
         glDisableClientState(GL_COLOR_ARRAY)
         glDisableClientState(GL_TEXTURE_COORD_ARRAY)
-        glDisableClientState(GL_VERTEX_ARRAY)
-        glPopAttrib()
-
-
-class Rain:
-
-    def __init__(self, drop_count, low_corner, high_corner, randomness):
-        generator = numpy.random.default_rng(randomness.randrange(1 << 30))
-        self.low = numpy.array(tuple(low_corner), dtype=numpy.float32)
-        self.high = numpy.array(tuple(high_corner), dtype=numpy.float32)
-        self.drops = generator.uniform(self.low, self.high, (drop_count, 3)).astype(numpy.float32)
-        self.velocity = numpy.array((-1.2, -24.0, 0.8), dtype=numpy.float32)
-        self.streak_seconds = 0.035
-        self.color = (0.65, 0.8, 0.75, 0.22)
-        self.enabled = True
-        self.segments = numpy.zeros((2 * drop_count, 3), dtype=numpy.float32)
-
-    def toggle(self):
-        self.enabled = not self.enabled
-
-    def update(self, seconds):
-        self.drops += self.velocity * seconds
-        span = self.high - self.low
-        self.drops = self.low + numpy.mod(self.drops - self.low, span)
-
-    def draw(self):
-        if not self.enabled:
-            return
-        self.segments[0::2] = self.drops
-        self.segments[1::2] = self.drops - self.velocity * self.streak_seconds
-        glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        glDisable(GL_LIGHTING)
-        glDisable(GL_TEXTURE_2D)
-        glEnable(GL_BLEND)
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-        glDepthMask(GL_FALSE)
-        glColor4f(*self.color)
-        glEnableClientState(GL_VERTEX_ARRAY)
-        glVertexPointer(3, GL_FLOAT, 0, self.segments)
-        glDrawArrays(GL_LINES, 0, len(self.segments))
         glDisableClientState(GL_VERTEX_ARRAY)
         glPopAttrib()

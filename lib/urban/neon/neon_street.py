@@ -20,13 +20,14 @@ from OpenGL.GL import (
 )
 from OpenGL.GLU import gluLookAt
 
+from lib.specialFX.rain import Rain
 from lib.three_mirrors.mirror_renderer import ReflectorSet
 from lib.urban.glass import GlassStreet, GlassStyle, TowerPlan, TowerTier
 from lib.urban.neon.balcony import Balcony, StreetCorner
 from lib.urban.neon.caption_screen import CaptionScreen
 from lib.urban.neon.palette import NeonPalette
 from lib.urban.neon.signs import FacadeFace, GlowSprites, SignArtLibrary, SignDresser, SignField
-from lib.urban.neon.street import Crowd, CrowdArea, Lane, Rain, StreetLamps, Traffic, WetStreet
+from lib.urban.neon.street import Crowd, CrowdArea, Lane, RouteLane, StreetLamps, Traffic, WetStreet
 from lib.urban.neon.textures import ClothPainter, GlTexture, SignPainter, SpritePainter, TextureAtlas
 from lib.urban.neon.woman import Woman
 from lib.urban.shapes import Shapes
@@ -79,6 +80,7 @@ class NeonGlassStyles:
     def __init__(self):
         self.variants = [self._variant((0.18, 0.26, 0.27), 0.16), self._variant((0.22, 0.24, 0.2), 0.12),
                          self._variant((0.14, 0.2, 0.26), 0.2)]
+        self.green = self._variant((0.12, 0.3, 0.17), 0.16)
 
     def _variant(self, tint, lit_chance):
         style = GlassStyle()
@@ -137,7 +139,23 @@ class NeonStreetScene:
         self.palette = NeonPalette()
         self.balcony_height = 14.0
         self.rail_z = -2.0
+        self.balcony_depth = 8.0
+        self.balcony_right = 10.0
         self.left_wall_x = -9.0
+        self.home_front_z = self.rail_z + self.balcony_depth
+        self.home_width = 22.0
+        self.home_depth = 16.0
+        self.home_height = 42.0
+        self.home_sign_count = 2
+        self.home_sign_clearance = 2.5
+        self.next_door_width = 28.0
+        self.next_door_depth = 18.0
+        self.next_door_height = 55.0
+        self.eastbound_z = 2.5
+        self.westbound_z = -0.5
+        self.turn_radius = 4.0
+        self.turn_steps = 10
+        self.home = None
         self.avenue = (-10.0, 6.0)
         self.tower_gap = 0.6
         self.right_row_length = 44.0
@@ -160,15 +178,21 @@ class NeonStreetScene:
     def build(self):
         shapes = Shapes()
         atlas = TextureAtlas(2048)
+        self._add_extra_art(atlas)
         library = SignArtLibrary(SignPainter(self.palette, self.randomness), SpritePainter(), atlas)
         self.atlas_texture = atlas.upload()
         shirt = GlTexture(ClothPainter(self.palette, self.randomness).graffiti_shirt(), repeating=True)
-        self.blocks = self._lay_out_blocks(BlockPlanner(NeonGlassStyles(), self.randomness))
-        for block in self.blocks:
+        styles = NeonGlassStyles()
+        self.blocks = self._lay_out_blocks(BlockPlanner(styles, self.randomness))
+        self.home = self._raise_home(styles)
+        for block in self.blocks + [self.home]:
             block.prepare()
-        self.reflector_set = ReflectorSet([facade for block in self.blocks for facade in block.reflectors()])
+        self.reflector_set = ReflectorSet([facade for block in self.blocks + [self.home]
+                                           for facade in block.reflectors()])
         self.signs = SignField(self.randomness)
-        self._dress_blocks(SignDresser(library, self.randomness))
+        dresser = SignDresser(library, self.randomness)
+        self._dress_blocks(dresser)
+        self._dress_home(dresser)
         self.signs.seal(library.glow_region)
         self.caption = self._hang_caption()
         self.caption.prepare()
@@ -183,7 +207,8 @@ class NeonStreetScene:
         self.crowd = Crowd([CrowdArea(7.0, 44.0, -14.0, -53.0), CrowdArea(-8.5, -7.0, -6.0, -50.0)], 380,
                            library.walker_regions, self.randomness)
         self.rain = Rain(2600, Vector3(-30.0, 0.0, -75.0), Vector3(50.0, 40.0, 6.0), self.randomness)
-        self.balcony = Balcony(self.palette, self.left_wall_x, 10.0, self.rail_z, self.balcony_height)
+        self.balcony = Balcony(self.palette, self.left_wall_x, self.balcony_right, self.rail_z, self.balcony_height,
+                               self.balcony_depth)
         self.balcony.prepare(shapes)
         self.corner = StreetCorner(self.palette, self.left_wall_x, self.balcony_height, self.rail_z)
         self.corner.prepare(shapes)
@@ -209,7 +234,31 @@ class NeonStreetScene:
         neighbour = TowerPlan([TowerTier(58.0, 17.0, 48.0)], planner.styles.pick(self.randomness), seed=99)
         blocks.append(GlassStreet([neighbour], 0.0, Vector3(self.left_wall_x, 0.0, 10.0),
                                   Vector3(0.0, 0.0, -1.0), Vector3(1.0, 0.0, 0.0)))
+        blocks.append(self._raise_next_door(planner.styles))
         return blocks
+
+    def _add_extra_art(self, atlas):
+        pass
+
+    def _raise_next_door(self, styles):
+        plan = TowerPlan([TowerTier(self.next_door_width, self.next_door_depth, self.next_door_height)],
+                         styles.variants[0], seed=102)
+        left_edge = self.left_wall_x + self.home_width + self.tower_gap
+        return GlassStreet([plan], 0.0, Vector3(left_edge, 0.0, self.home_front_z),
+                           Vector3(1.0, 0.0, 0.0), Vector3(0.0, 0.0, -1.0))
+
+    def _raise_home(self, styles):
+        plan = TowerPlan([TowerTier(self.home_width, self.home_depth, self.home_height)], styles.green, seed=101)
+        return GlassStreet([plan], 0.0, Vector3(self.left_wall_x, 0.0, self.home_front_z),
+                           Vector3(1.0, 0.0, 0.0), Vector3(0.0, 0.0, -1.0))
+
+    def _dress_home(self, dresser):
+        toward_street = Vector3(0.0, 0.0, -1.0)
+        faces = [FacadeFace.of_glass_facade(facade) for facade in self.home.reflectors()]
+        street_face = max(faces, key=lambda face: face.normal.dot(toward_street))
+        balcony_band = (0.0, self.balcony_height - self.home_sign_clearance, street_face.width,
+                        self.balcony_height + self.home_sign_clearance)
+        dresser.dress_sparsely(street_face, self.signs, self.home_sign_count, [balcony_band])
 
     def _dress_blocks(self, dresser):
         eye = self.camera.base_eye
@@ -239,8 +288,11 @@ class NeonStreetScene:
 
     def _route_traffic(self):
         traffic = Traffic(self.palette, self.randomness)
-        traffic.add_lane(Lane(Vector3(-5.0, 0.0, -170.0), Vector3(-5.0, 0.0, 30.0)), 9)
-        traffic.add_lane(Lane(Vector3(1.0, 0.0, 30.0), Vector3(1.0, 0.0, -170.0)), 9)
+        traffic.add_lane(RouteLane.turning(Vector3(-5.0, 0.0, -170.0), Vector3(-5.0, 0.0, self.eastbound_z),
+                                           Vector3(160.0, 0.0, self.eastbound_z),
+                                           self.turn_radius, self.turn_steps), 9)
+        traffic.add_lane(RouteLane.turning(Vector3(160.0, 0.0, self.westbound_z), Vector3(1.0, 0.0, self.westbound_z),
+                                           Vector3(1.0, 0.0, -170.0), self.turn_radius, self.turn_steps), 9)
         traffic.add_lane(Lane(Vector3(-140.0, 0.0, -56.5), Vector3(160.0, 0.0, -56.5)), 8)
         traffic.add_lane(Lane(Vector3(160.0, 0.0, -60.5), Vector3(-140.0, 0.0, -60.5)), 8)
         return traffic
@@ -262,7 +314,7 @@ class NeonStreetScene:
             glLightfv(slot, GL_AMBIENT, (0.0, 0.0, 0.0, 1.0))
 
     def set_blur(self, blur):
-        for block in self.blocks:
+        for block in self.blocks + [self.home]:
             block.set_blur(blur)
 
     @property
@@ -277,7 +329,7 @@ class NeonStreetScene:
         self.crowd.update(seconds)
         self.rain.update(seconds)
         self.woman.update(seconds)
-        for block in self.blocks:
+        for block in self.blocks + [self.home]:
             block.update(seconds)
         self._refresh_glows()
 
@@ -289,7 +341,7 @@ class NeonStreetScene:
     def draw(self):
         self._draw_wet_reflections()
         self.street.draw()
-        for block in self.blocks:
+        for block in self.blocks + [self.home]:
             block.draw()
         self.lamps.draw()
         self.traffic.draw()

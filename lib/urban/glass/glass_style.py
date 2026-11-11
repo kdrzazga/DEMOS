@@ -13,6 +13,7 @@ class GlassStyle:
         self.core_inset = 0.12
         self.core_color = (0.07, 0.08, 0.1)
         self.slab_color = (0.32, 0.34, 0.38)
+        self.spire_color = (0.4, 0.42, 0.46)
         self.slab_thickness = 0.45
         self.slab_overhang = 0.15
         self.specular = (0.9, 0.95, 1.0, 1.0)

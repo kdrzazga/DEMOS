@@ -28,7 +28,7 @@ from demos.retro_neons.butterfly_screen import ButterflyWallScreen
 from demos.retro_neons.c64_wall_screen import C64WallScreen
 from demos.retro_neons.newspaper_woman import NewspaperWoman
 from lib.urban.glass import GlassStreet
-from lib.urban.neon.caption_screen import CaptionScreen
+from demos.retro_neons.matte_caption_screen import MatteCaptionScreen
 from lib.urban.neon.neon_street import BlockPlanner, NeonStreetScene
 from lib.urban.neon.signs import FacadeFace
 from lib.urban.neon.street import Car, CompiledShape, Lane, RouteLane, Traffic
@@ -216,8 +216,8 @@ class ExtendedNeonStreet(NeonStreetScene):
 
     def _hang_caption(self):
         face = self._street_face_of(self.blocks[1].towers[self.ticker_tower])
-        return CaptionScreen(face, self.caption_margin, self.caption_rise, face.width - 2.0 * self.caption_margin,
-                             self.caption_height, self.caption_text, self.caption_color)
+        return MatteCaptionScreen(face, self.caption_margin, self.caption_rise, face.width - 2.0 * self.caption_margin,
+                                  self.caption_height, self.caption_text, self.caption_color)
 
     def _hang_square_screen(self):
         self.square_screen_face = self._street_face_of(self.blocks[1].towers[self.square_screen_tower])

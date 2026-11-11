@@ -1,4 +1,19 @@
+import numpy
 from OpenGL.GL import *
+
+
+class ScreenFront:
+
+    def __init__(self, corners, normal):
+        center = (corners[0] + corners[2]) * 0.5
+        self.center = numpy.array((*center, 1.0))
+        self.normal = numpy.array((*normal, 0.0))
+
+    def faces_viewer(self):
+        modelview = numpy.array(glGetDoublev(GL_MODELVIEW_MATRIX), dtype=numpy.float64).reshape(4, 4)
+        center_from_viewer = (self.center @ modelview)[:3]
+        normal_from_viewer = (self.normal @ modelview)[:3]
+        return float(center_from_viewer @ normal_from_viewer) < 0.0
 
 
 class WallScreen:
@@ -14,6 +29,7 @@ class WallScreen:
         self.glow_spread = (1.06, 1.08)
         self.glow_strength = 0.35
         self.corners = None
+        self.front = None
 
     def place(self, height):
         self.height = height
@@ -21,25 +37,29 @@ class WallScreen:
                         self.face.point(self.across + self.width, self.rise, self.wall_offset),
                         self.face.point(self.across + self.width, self.rise + height, self.wall_offset),
                         self.face.point(self.across, self.rise + height, self.wall_offset))
+        self.front = ScreenFront(self.corners, self.face.normal)
 
     @property
     def covered_rectangle(self):
         return self.across, self.rise, self.width, self.height
 
     def draw_picture(self, texture_id, glow_color):
+        if not self.front.faces_viewer():
+            return
         glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_TEXTURE_BIT | GL_CURRENT_BIT)
         glDisable(GL_LIGHTING)
-        glDisable(GL_BLEND)
         glEnable(GL_TEXTURE_2D)
         glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE)
         glBindTexture(GL_TEXTURE_2D, texture_id)
-        glColor4f(1.0, 1.0, 1.0, 1.0)
-        self._quad(self.corners)
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE)
         glDepthMask(GL_FALSE)
         glColor4f(*glow_color, self.glow_strength)
         self._quad(self._glow_corners())
+        glDepthMask(GL_TRUE)
+        glDisable(GL_BLEND)
+        glColor4f(1.0, 1.0, 1.0, 1.0)
+        self._quad(self.corners)
         glPopAttrib()
 
     def _glow_corners(self):

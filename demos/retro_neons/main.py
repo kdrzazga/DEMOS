@@ -19,13 +19,26 @@ from lib.three_mirrors.reflection_governor import ReflectionGovernor
 class Soundtrack:
 
     def __init__(self):
-        self.path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "PleszewWodnik.mp3")
+        resources = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources")
+        self.path = os.path.join(resources, "PleszewWodnik.mp3")
+        self.rain_path = os.path.join(resources, "rain.mp3")
         self.volume = 1.0
+        self.rain_volume = 1.0
+        self.main_tune_started = False
+        self.rain_started = False
 
     def play_once(self):
         pygame.mixer.music.load(self.path)
         pygame.mixer.music.set_volume(self.volume)
         pygame.mixer.music.play(loops=0)
+        self.main_tune_started = True
+
+    def update(self):
+        if self.main_tune_started and not self.rain_started and not pygame.mixer.music.get_busy():
+            self.rain_started = True
+            pygame.mixer.music.load(self.rain_path)
+            pygame.mixer.music.set_volume(self.rain_volume)
+            pygame.mixer.music.play(loops=-1)
 
 
 class RetroNeonsShow:
@@ -84,10 +97,12 @@ class RetroNeonsShow:
     def update(self, seconds):
         self.time += seconds
         self.graffiti.update(self.time)
-        if not self.raining and self.time >= self.graffiti.painting_seconds:
+        if not self.soundtrack.main_tune_started and self.time >= self.graffiti.painting_seconds:
+            self.soundtrack.play_once()
+        self.soundtrack.update()
+        if not self.raining and self.soundtrack.rain_started:
             self.raining = True
             self.city.start_rain()
-            self.soundtrack.play_once()
         if self.graffiti.finished and not self.city.camera.flying:
             self.city.camera.take_off()
         self.city.update(seconds)

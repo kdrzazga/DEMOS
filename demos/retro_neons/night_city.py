@@ -69,6 +69,8 @@ class NightCity:
         self.square_screen_on = False
         self.screen_tour_clip_name = "meet-the-team.mkv"
         self.screen_tour_started = False
+        self.seconds_after_screen_tour = 0.0
+        self.newspaper_delay_after_screen_tour = 2.0
         self.view_field_of_view = 55.0
         self.view_aspect = 16.0 / 9.0
         self.reveal = 0.0
@@ -211,8 +213,14 @@ class NightCity:
         if not self.screen_tour_started and self.neon.square_screen.playing_clip_name == self.screen_tour_clip_name:
             self.screen_tour_started = True
             self.camera.start_screen_tour(self._plan_screen_tour())
-        if self.square_screen_on and self.neon.square_screen.every_clip_played:
+        if self.screen_tour_started and not self.camera.touring_screens:
+            self.seconds_after_screen_tour += seconds
+        if self.seconds_after_screen_tour >= self.newspaper_delay_after_screen_tour:
             self.neon.woman.fetch_newspaper()
+
+    @property
+    def every_wall_clip_played(self):
+        return self.neon.square_screen.every_clip_played
 
     def _plan_screen_tour(self):
         neon = self.neon

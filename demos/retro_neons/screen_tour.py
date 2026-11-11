@@ -84,7 +84,8 @@ class ScreenTour:
         self.scroll_close_seconds = 22.0
         self.sequence_seconds = 25.0
         self.return_seconds = 4.0
-        self.scroll_drift_share_of_view = 1.05
+        self.scroll_close_share_of_view = 0.6
+        self.scroll_drift_share_of_view = 0.66
         self.viewpoint_lamp_clearance = 2.5
         self.screen_edge_lamp_margin = 0.8
         self.viewpoint_rise_step = 0.5
@@ -103,7 +104,7 @@ class ScreenTour:
         if credits_view is not None:
             self.keys.append(self._key(self.credits_close_seconds, credits_view, self.close_share_of_view))
             self.keys.append(self._key(self.credits_wide_again_seconds, credits_view, self.wide_share_of_view))
-        self.keys.append(self._key(self.scroll_close_seconds, scroll_view, self.close_share_of_view))
+        self.keys.append(self._key(self.scroll_close_seconds, scroll_view, self.scroll_close_share_of_view))
         self.keys.append(self._key(self.sequence_seconds, scroll_view, self.scroll_drift_share_of_view))
         self.keys.append(TourKey(self.sequence_seconds + self.return_seconds, balcony_eye, balcony_target))
         self.path = FlightPath(self.keys)

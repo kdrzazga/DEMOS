@@ -73,7 +73,8 @@ class RetroNeonsShow:
 
     @property
     def finished(self):
-        return self.city.woman_reading_seconds >= self.reading_seconds_before_end
+        return (self.city.every_wall_clip_played
+                and self.city.woman_reading_seconds >= self.reading_seconds_before_end)
 
     def setup_gl(self):
         glViewport(0, 0, self.screen_width, self.screen_height)

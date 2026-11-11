@@ -27,6 +27,7 @@ from demos.retro_neons.brand_signs import (BrandedSignField, BrandRule, CaptionA
 from demos.retro_neons.butterfly_screen import ButterflyWallScreen
 from demos.retro_neons.c64_wall_screen import C64WallScreen
 from lib.urban.glass import GlassStreet
+from lib.urban.neon.caption_screen import CaptionScreen
 from lib.urban.neon.neon_street import BlockPlanner, NeonStreetScene
 from lib.urban.neon.signs import FacadeFace
 from lib.urban.neon.street import Car, CompiledShape, Lane, RouteLane, Traffic
@@ -120,6 +121,9 @@ class ExtendedNeonStreet(NeonStreetScene):
         self.butterfly_screen = None
         self.glow_region = None
         self.square_screen_face = None
+        self.square_screen = None
+        self.square_screen_tower = 0
+        self.ticker_tower = 1
 
     def _side_row_faces(self):
         toward_square = Vector3(-1.0, 0.0, 0.0)
@@ -205,17 +209,25 @@ class ExtendedNeonStreet(NeonStreetScene):
         self.butterfly_screen = self._take_over_screen(dresser.library)
         self.glow_region = dresser.library.glow_region
 
+    def _street_face_of(self, tower):
+        return FacadeFace.of_glass_facade(tower.reflectors()[0])
+
     def _hang_caption(self):
-        ticker = super()._hang_caption()
-        tower_across_street = self.blocks[1].towers[0]
-        self.square_screen_face = FacadeFace.of_glass_facade(tower_across_street.reflectors()[0])
+        face = self._street_face_of(self.blocks[1].towers[self.ticker_tower])
+        return CaptionScreen(face, self.caption_margin, self.caption_rise, face.width - 2.0 * self.caption_margin,
+                             self.caption_height, self.caption_text, self.caption_color)
+
+    def _hang_square_screen(self):
+        self.square_screen_face = self._street_face_of(self.blocks[1].towers[self.square_screen_tower])
         return C64WallScreen(self.square_screen_face, self.caption_margin, self.caption_rise,
-                             self.square_screen_face.width - 2.0 * self.caption_margin, ticker)
+                             self.square_screen_face.width - 2.0 * self.caption_margin)
+
+    def _clear_wall_behind_square_screen(self):
+        self._remove_signs_under(self.square_screen_face, self.square_screen.covered_rectangle)
+        self.signs.seal(self.glow_region)
 
     def switch_square_screen(self):
-        self.caption.switch_on()
-        self._remove_signs_under(self.square_screen_face, self.caption.covered_rectangle)
-        self.signs.seal(self.glow_region)
+        self.square_screen.switch_on()
 
     def _route_traffic(self):
         traffic = Traffic(self.palette, self.randomness)
@@ -260,6 +272,9 @@ class ExtendedNeonStreet(NeonStreetScene):
 
     def build(self):
         super().build()
+        self.square_screen = self._hang_square_screen()
+        self.square_screen.prepare()
+        self._clear_wall_behind_square_screen()
         self.street.far = self.street_far
         self.street.prepare()
         self.centre_line = CentreLine(sum(self.avenue) / 2.0, self.centre_line_near, self.centre_line_far)
@@ -273,16 +288,18 @@ class ExtendedNeonStreet(NeonStreetScene):
 
     def update(self, seconds):
         super().update(seconds)
+        self.square_screen.update(seconds)
         if self.butterfly_screen is not None:
             self.butterfly_screen.update(seconds)
 
     def draw_street_reflections(self):
         self._draw_wet_reflections()
+        glPushMatrix()
+        glScalef(1.0, -self.reflection_stretch, 1.0)
+        self.square_screen.draw()
         if self.butterfly_screen is not None:
-            glPushMatrix()
-            glScalef(1.0, -self.reflection_stretch, 1.0)
             self.butterfly_screen.draw()
-            glPopMatrix()
+        glPopMatrix()
 
     def draw_street(self):
         self.street.draw()
@@ -299,6 +316,7 @@ class ExtendedNeonStreet(NeonStreetScene):
         self.signs.draw_signs(self.atlas_texture)
         self.signs.draw_glows(self.atlas_texture)
         self.caption.draw()
+        self.square_screen.draw()
         if self.butterfly_screen is not None:
             self.butterfly_screen.draw()
         self.glows.draw(self.atlas_texture, self.camera.right(), self.camera.up())

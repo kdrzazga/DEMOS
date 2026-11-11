@@ -15,10 +15,17 @@ from OpenGL.GL import (
     glEnable,
     glEnd,
     glPopAttrib,
+    glPopMatrix,
     glPushAttrib,
+    glPushMatrix,
+    glScalef,
     glVertex3f,
 )
 
+from demos.retro_neons.brand_signs import (BrandedSignField, BrandRule, CaptionArtShelf, CaptionStyle,
+                                           VerticalCaptionPainter)
+from demos.retro_neons.butterfly_screen import ButterflyWallScreen
+from demos.retro_neons.c64_wall_screen import C64WallScreen
 from lib.urban.glass import GlassStreet
 from lib.urban.neon.neon_street import BlockPlanner, NeonStreetScene
 from lib.urban.neon.signs import FacadeFace
@@ -96,14 +103,119 @@ class ExtendedNeonStreet(NeonStreetScene):
         self.avenue_cars_per_direction = 9
         self.road_cars_per_direction = 6
         self.cross_street_cars_per_direction = 8
+        self.brand_rules = (BrandRule(11, 0, "COMMODORE", (90, 160, 255)),
+                            BrandRule(11, 5, "AMIGA", (255, 70, 90)),
+                            BrandRule(22, 7, "ATARI", (255, 150, 40)),
+                            BrandRule(22, 3, "ZX SPECTRUM", (110, 255, 140)))
+        self.brand_arts = {}
+        komoda_amiga = CaptionStyle("K&A+", (60, 240, 230))
+        self.road_caption_cycle = (komoda_amiga, CaptionStyle("RetroSfera", (255, 110, 190)),
+                                   komoda_amiga, CaptionStyle("NRG", (255, 220, 60)),
+                                   komoda_amiga, CaptionStyle("C&A", (210, 255, 240)))
+        self.caption_shelf = None
+        self.caption_arts = {}
+        self.screen_enlargement = 1.75
+        self.screen_edge_clearance = 0.3
+        self.sign_wall_offset = 0.25
+        self.butterfly_screen = None
+        self.glow_region = None
+        self.square_screen_face = None
+
+    def _side_row_faces(self):
+        toward_square = Vector3(-1.0, 0.0, 0.0)
+        faces = []
+        for block in self.blocks:
+            if block.facing.dot(toward_square) > 0.9 and block.front_start.x > self.avenue[1] + 1.0:
+                faces.extend(face for face in (FacadeFace.of_glass_facade(facade) for facade in block.reflectors())
+                             if face.normal.dot(toward_square) > 0.9)
+        return faces
+
+    def _sign_on_face(self, sign, face):
+        bottom_left, bottom_right, _, top_left = sign.corners
+        offset = (bottom_left - face.origin).dot(face.normal)
+        if abs(offset - self.sign_wall_offset) > 0.05:
+            return None
+        across = (bottom_left - face.origin).dot(face.right)
+        rise = (bottom_left - face.origin).dot(face.up)
+        width = (bottom_right - bottom_left).length()
+        height = (top_left - bottom_left).length()
+        if across < -0.01 or rise < -0.01 or across + width > face.width + 0.01 or rise + height > face.height + 0.01:
+            return None
+        return across, rise, width, height
+
+    def _enlarged_placement(self, face, across, rise, width, height):
+        wide = width * self.screen_enlargement
+        tall = height * self.screen_enlargement
+        room_across = face.width - 2.0 * self.screen_edge_clearance
+        room_up = face.height - 2.0 * self.screen_edge_clearance
+        if wide > room_across or tall > room_up:
+            return None
+        left = min(max(across + width / 2.0 - wide / 2.0, self.screen_edge_clearance),
+                   face.width - self.screen_edge_clearance - wide)
+        bottom = min(max(rise + height / 2.0 - tall / 2.0, self.screen_edge_clearance),
+                     face.height - self.screen_edge_clearance - tall)
+        return left, bottom, wide, tall
+
+    def _take_over_screen(self, library):
+        screen_arts = library.kinds["screen"]
+        best = None
+        for face in self._side_row_faces():
+            for sign in self.signs.signs:
+                if sign.art not in screen_arts:
+                    continue
+                placement = self._sign_on_face(sign, face)
+                enlarged = placement and self._enlarged_placement(face, *placement)
+                if enlarged and (best is None or enlarged[2] * enlarged[3] > best[2][2] * best[2][3]):
+                    best = (sign, face, enlarged)
+        if best is None:
+            return None
+        sign, face, (left, bottom, wide, tall) = best
+        self._remove_signs_under(face, (left, bottom, wide, tall))
+        return ButterflyWallScreen(face, left, bottom, wide, tall)
+
+    def _remove_signs_under(self, face, rectangle):
+        left, bottom, wide, tall = rectangle
+        covered = (left - self.screen_edge_clearance, bottom - self.screen_edge_clearance,
+                   left + wide + self.screen_edge_clearance, bottom + tall + self.screen_edge_clearance)
+        self.signs.signs = [sign for sign in self.signs.signs if not self._sign_overlaps(sign, face, covered)]
+
+    def _sign_overlaps(self, sign, face, covered):
+        if abs((sign.corners[0] - face.origin).dot(face.normal) - self.sign_wall_offset) > 0.05:
+            return False
+        across = [(corner - face.origin).dot(face.right) for corner in sign.corners]
+        rise = [(corner - face.origin).dot(face.up) for corner in sign.corners]
+        return (min(across) < covered[2] and covered[0] < max(across)
+                and min(rise) < covered[3] and covered[1] < max(rise))
+
+    def _add_extra_art(self, atlas):
+        self.brand_arts = VerticalCaptionPainter().store_all(atlas, self.brand_rules)
+        self.caption_shelf = CaptionArtShelf()
+        self.caption_arts = self.caption_shelf.store(atlas, self.road_caption_cycle)
 
     def _dress_blocks(self, dresser):
         super()._dress_blocks(dresser)
+        road_signs = BrandedSignField(self.signs, self.brand_rules, self.brand_arts, self.road_caption_cycle,
+                                      self.caption_arts, self.caption_shelf)
         for block, toward_road in self.road_side_blocks:
             for facade in block.reflectors():
                 face = FacadeFace.of_glass_facade(facade)
                 if face.normal.dot(toward_road) > 0.9:
-                    dresser.dress(face, self.signs, self.road_sign_density)
+                    road_signs.face = face
+                    dresser.dress(face, road_signs, self.road_sign_density)
+        self.butterfly_screen = self._take_over_screen(dresser.library)
+        self.glow_region = dresser.library.glow_region
+
+    def _hang_caption(self):
+        ticker = super()._hang_caption()
+        tower_across_street = self.blocks[1].towers[0]
+        self.square_screen_face = FacadeFace.of_glass_facade(tower_across_street.reflectors()[0])
+        return C64WallScreen(self.square_screen_face, self.caption_margin, self.caption_rise,
+                             self.square_screen_face.width - 2.0 * self.caption_margin, ticker)
+
+    def switch_square_screen(self):
+        self.caption.switch_on()
+        self._remove_signs_under(self.square_screen_face, self.caption.covered_rectangle)
+        self.signs.seal(self.glow_region)
 
     def _route_traffic(self):
         traffic = Traffic(self.palette, self.randomness)
@@ -152,9 +264,25 @@ class ExtendedNeonStreet(NeonStreetScene):
         self.street.prepare()
         self.centre_line = CentreLine(sum(self.avenue) / 2.0, self.centre_line_near, self.centre_line_far)
         self.centre_line.prepare()
+        if self.butterfly_screen is not None:
+            self.butterfly_screen.prepare()
+
+    def play_butterfly_screen(self, playing):
+        if self.butterfly_screen is not None:
+            self.butterfly_screen.playing = playing
+
+    def update(self, seconds):
+        super().update(seconds)
+        if self.butterfly_screen is not None:
+            self.butterfly_screen.update(seconds)
 
     def draw_street_reflections(self):
         self._draw_wet_reflections()
+        if self.butterfly_screen is not None:
+            glPushMatrix()
+            glScalef(1.0, -self.reflection_stretch, 1.0)
+            self.butterfly_screen.draw()
+            glPopMatrix()
 
     def draw_street(self):
         self.street.draw()
@@ -171,6 +299,8 @@ class ExtendedNeonStreet(NeonStreetScene):
         self.signs.draw_signs(self.atlas_texture)
         self.signs.draw_glows(self.atlas_texture)
         self.caption.draw()
+        if self.butterfly_screen is not None:
+            self.butterfly_screen.draw()
         self.glows.draw(self.atlas_texture, self.camera.right(), self.camera.up())
         self.crowd.draw(self.atlas_texture, self.camera.right())
         self.rain.draw()

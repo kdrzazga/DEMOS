@@ -63,6 +63,10 @@ class NightCity:
         self.hidden_neon_fog_density = 0.05
         self.reveal_seconds = 2.5
         self.reveal_window = None
+        self.square_entry_z = -64.0
+        self.square_screen_delay = 2.0
+        self.square_screen_seconds = 0.0
+        self.square_screen_on = False
         self.reveal = 0.0
         self.brightening_window = (0.0, 1.5)
         self.haze_window = (0.0, 1.0)
@@ -106,6 +110,7 @@ class NightCity:
         path = self._plan_flight()
         reveal_start = self._time_reaching(path, self.district_origin.z - self.start_distance / 2.0)
         self.reveal_window = (reveal_start, reveal_start + self.reveal_seconds)
+        self.square_screen_seconds = self._time_reaching(path, self.square_entry_z) + self.square_screen_delay
         self.camera = FlightCamera(path, self.neon.camera)
         self.neon.camera = self.camera
         self.green_reflectors = self.green.reflector_set
@@ -194,6 +199,10 @@ class NightCity:
         self.brightness = self._progress_through(self.brightening_window)
         self.haze = self._progress_through(self.haze_window)
         self.reveal = self._progress_through(self.reveal_window)
+        self.neon.play_butterfly_screen(self.reveal > 0.0)
+        if not self.square_screen_on and self.camera.elapsed >= self.square_screen_seconds:
+            self.square_screen_on = True
+            self.neon.switch_square_screen()
 
     def _progress_through(self, window):
         start, end = window

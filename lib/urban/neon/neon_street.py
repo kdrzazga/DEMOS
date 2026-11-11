@@ -178,6 +178,7 @@ class NeonStreetScene:
     def build(self):
         shapes = Shapes()
         atlas = TextureAtlas(2048)
+        self._add_extra_art(atlas)
         library = SignArtLibrary(SignPainter(self.palette, self.randomness), SpritePainter(), atlas)
         self.atlas_texture = atlas.upload()
         shirt = GlTexture(ClothPainter(self.palette, self.randomness).graffiti_shirt(), repeating=True)
@@ -235,6 +236,9 @@ class NeonStreetScene:
                                   Vector3(0.0, 0.0, -1.0), Vector3(1.0, 0.0, 0.0)))
         blocks.append(self._raise_next_door(planner.styles))
         return blocks
+
+    def _add_extra_art(self, atlas):
+        pass
 
     def _raise_next_door(self, styles):
         plan = TowerPlan([TowerTier(self.next_door_width, self.next_door_depth, self.next_door_height)],

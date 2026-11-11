@@ -66,6 +66,21 @@ class FlightCamera:
         self.look_distance = 50.0
         self.elapsed = 0.0
         self.flying = False
+        self.screen_tour = None
+        self.screen_tour_seconds = 0.0
+
+    def start_screen_tour(self, screen_tour):
+        self.screen_tour = screen_tour
+        self.screen_tour_seconds = 0.0
+
+    @property
+    def touring_screens(self):
+        return self.screen_tour is not None
+
+    def _update_screen_tour(self, seconds):
+        self.screen_tour_seconds += seconds
+        if self.screen_tour_seconds >= self.screen_tour.duration:
+            self.screen_tour = None
 
     @staticmethod
     def heading_of(direction):
@@ -80,7 +95,9 @@ class FlightCamera:
         return self.elapsed >= self.path.duration
 
     def update(self, seconds):
-        if self.landed:
+        if self.touring_screens:
+            self._update_screen_tour(seconds)
+        elif self.landed:
             self.landing_camera.update(seconds)
         elif self.flying:
             self.elapsed = min(self.elapsed + seconds, self.path.duration)
@@ -89,12 +106,16 @@ class FlightCamera:
         self.landing_camera.toggle_pause()
 
     def eye(self):
+        if self.touring_screens:
+            return self.screen_tour.eye_and_target(self.screen_tour_seconds)[0]
         if self.landed:
             return self.landing_camera.eye()
         x, y, z, _, _ = self.path.sample(self.elapsed)
         return Vector3(x, y, z)
 
     def target(self):
+        if self.touring_screens:
+            return self.screen_tour.eye_and_target(self.screen_tour_seconds)[1]
         if self.landed:
             return self.landing_camera.target()
         _, _, _, yaw_degrees, pitch_degrees = self.path.sample(self.elapsed)

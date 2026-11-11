@@ -42,6 +42,8 @@ class RetroNeonsShow:
         self.ground_blur = ScreenBlur()
         self.graffiti = TurningGraffiti(fps, self.field_of_view, screen_width / screen_height)
         self.city = NightCity()
+        self.city.view_field_of_view = self.field_of_view
+        self.city.view_aspect = screen_width / screen_height
         self.city.build()
         self.graffiti_placement = self.city.camera.placement_matrix()
         self.renderer = MirrorRenderer(max_reflections=1, reflection_limit=1)

@@ -36,6 +36,7 @@ class PlasmaPicture:
 class LetterboxedClip:
 
     def __init__(self, video_path, screen_aspect, picture_width):
+        self.video_path = video_path
         self.player = MkvVideoPlayer(video_path, picture_width=picture_width)
         video_width, video_height = self.player.width, self.player.height
         canvas_width = max(video_width, round(video_height * screen_aspect))
@@ -82,6 +83,10 @@ class C64WallScreen(WallScreen):
         self.next_clip_index = 0
         self.playing_clip = None
         self.finished_clip_count = 0
+
+    @property
+    def playing_clip_name(self):
+        return None if self.playing_clip is None else os.path.basename(self.playing_clip.video_path)
 
     @property
     def every_clip_played(self):

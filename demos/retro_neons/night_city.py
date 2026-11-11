@@ -5,6 +5,7 @@ from OpenGL.GL import *
 
 from demos.retro_neons.extended_neon_street import ExtendedNeonStreet
 from demos.retro_neons.flight import CameraKey, FlightCamera, FlightPath
+from demos.retro_neons.screen_tour import LampObstacles, ScreenTour, ScreenView
 from lib.specialFX.rain import Rain
 from lib.three_mirrors.mirror_renderer import ReflectorSet
 from lib.urban.glass import GreenDistrict
@@ -66,6 +67,10 @@ class NightCity:
         self.square_screen_delay = 2.0
         self.seconds_on_balcony = 0.0
         self.square_screen_on = False
+        self.screen_tour_clip_name = "meet-the-team.mkv"
+        self.screen_tour_started = False
+        self.view_field_of_view = 55.0
+        self.view_aspect = 16.0 / 9.0
         self.reveal = 0.0
         self.brightening_window = (0.0, 1.5)
         self.haze_window = (0.0, 1.0)
@@ -203,8 +208,21 @@ class NightCity:
         if not self.square_screen_on and self.seconds_on_balcony >= self.square_screen_delay:
             self.square_screen_on = True
             self.neon.switch_square_screen()
+        if not self.screen_tour_started and self.neon.square_screen.playing_clip_name == self.screen_tour_clip_name:
+            self.screen_tour_started = True
+            self.camera.start_screen_tour(self._plan_screen_tour())
         if self.square_screen_on and self.neon.square_screen.every_clip_played:
             self.neon.woman.fetch_newspaper()
+
+    def _plan_screen_tour(self):
+        neon = self.neon
+        c64_view = ScreenView(neon.square_screen.corners, neon.square_screen.face.normal)
+        credits_view = None
+        if neon.butterfly_screen is not None:
+            credits_view = ScreenView(neon.butterfly_screen.corners, neon.butterfly_screen.face.normal)
+        scroll_view = ScreenView(neon.caption.corners, neon.caption.facing)
+        return ScreenTour(self.camera.eye(), self.camera.target(), c64_view, credits_view, scroll_view, LampObstacles(neon.lamps),
+                          self.view_field_of_view, self.view_aspect)
 
     @property
     def woman_reading_seconds(self):

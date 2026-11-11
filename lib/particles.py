@@ -17,6 +17,12 @@ class Texture2D:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data)
 
+    def update(self, rgba):
+        data = np.ascontiguousarray(rgba.astype(np.uint8, copy=False))
+        h, w = data.shape[:2]
+        glBindTexture(GL_TEXTURE_2D, self.id)
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, data)
+
 
 class TextureLibrary:
     def __init__(self, glow_size=128, spike_size=192):

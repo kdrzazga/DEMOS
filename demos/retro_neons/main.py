@@ -16,10 +16,10 @@ from lib.three_mirrors.screen_blur import ScreenBlur, ScreenRegion
 from lib.three_mirrors.reflection_governor import ReflectionGovernor
 
 
-class RainSound:
+class Soundtrack:
 
     def __init__(self):
-        self.path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "rain.mp3")
+        self.path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "PleszewWodnik.mp3")
         self.volume = 1.0
 
     def play_once(self):
@@ -35,7 +35,7 @@ class RetroNeonsShow:
         self.screen_height = screen_height
         self.field_of_view = 55.0
         self.near_plane = 0.3
-        self.far_plane = 1200.0
+        self.far_plane = 2000.0
         self.appear_seconds = 3.0
         self.hold_seconds = 20.0
         self.ground_blur_pixels = 8.0
@@ -47,7 +47,7 @@ class RetroNeonsShow:
         self.renderer = MirrorRenderer(max_reflections=1, reflection_limit=1)
         self.governor = ReflectionGovernor(self.renderer, fps)
         self.renderer.reflection_budget = 4
-        self.rain_sound = RainSound()
+        self.soundtrack = Soundtrack()
         self.raining = False
         self.landing_reported = False
         self.time = 0.0
@@ -89,7 +89,7 @@ class RetroNeonsShow:
         if not self.raining and self.time >= self.graffiti.painting_seconds:
             self.raining = True
             self.city.start_rain()
-            self.rain_sound.play_once()
+            self.soundtrack.play_once()
         if self.graffiti.finished and not self.city.camera.flying:
             self.city.camera.take_off()
         self.city.update(seconds)

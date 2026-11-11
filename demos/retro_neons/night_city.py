@@ -40,23 +40,32 @@ class NightCity:
 
     def __init__(self):
         self.night = (0.008, 0.01, 0.02, 1.0)
-        self.district_origin = Vector3(0.0, 0.0, -325.0)
+        self.district_origin = Vector3(0.0, 0.0, -1123.0)
         self.district_facing = Vector3(0.0, 0.0, -1.0)
         self.district_ground_half_extent = 124.5
         self.approach_ground_half_extent = 175.5
+        self.road_lamps_clearance = 20.0
+        self.road_buildings_clearance = 30.0
+        self.centre_line_clearance = 16.0
+        self.road_entry_seconds = 13.5
+        self.road_exit_seconds = 0.0
+        self.road_end_z = -215.0
+        self.road_key_count = 5
+        self.cruise_speed = 90.0
+        self.cruise_height = 12.0
         self.passage_after_tower = 2
         self.start_distance = 460.0
         self.start_yaw_degrees = 8.0
         self.distant_green_fog_density = 0.0015
         self.green_fog_density = 0.009
-        self.distant_neon_fog_density = 0.001
+        self.distant_neon_fog_density = 0.0006
         self.neon_fog_density = 0.011
         self.hidden_neon_fog_density = 0.05
         self.reveal_seconds = 2.5
         self.reveal_window = None
         self.reveal = 0.0
         self.brightening_window = (0.0, 1.5)
-        self.haze_window = (21.0, 30.0)
+        self.haze_window = (0.0, 1.0)
         self.brightness = 0.0
         self.light_slots = (GL_LIGHT0, GL_LIGHT1, GL_LIGHT2, GL_LIGHT3, GL_LIGHT4, GL_LIGHT5, GL_LIGHT6, GL_LIGHT7)
         self.rain_drops = 3500
@@ -86,6 +95,10 @@ class NightCity:
         self.approach_ground.prepare()
         self.neon = ExtendedNeonStreet(seed=7)
         self.neon.street_far = self.district_origin.z - self.district_ground_half_extent
+        self.neon.road_lamps_far = self.district_origin.z + self.road_lamps_clearance
+        self.neon.road_cars_far = self.district_origin.z + self.road_lamps_clearance
+        self.neon.road_buildings_far = self.district_origin.z + self.road_buildings_clearance
+        self.neon.centre_line_far = self.district_origin.z + self.centre_line_clearance
         self.neon.build()
         self.neon.rain.enabled = False
         self.rain = TravellingRain(self.rain_drops, self.rain_low, self.rain_high, random.Random(11))
@@ -131,15 +144,37 @@ class NightCity:
             CameraKey(6.0, Vector3(passage_x, 6.0, front_z - 168.0), 0.0, 0.0),
             CameraKey(9.0, Vector3(passage_x, 6.0, front_z - 40.0), 0.0, 0.0),
             CameraKey(12.0, Vector3(passage_x, 6.5, front_z + 20.0), 0.0, 0.0),
-            CameraKey(14.0, Vector3(passage_x, 7.0, front_z + 37.0), 0.0, 0.0),
-            CameraKey(17.0, Vector3(avenue_x, 12.0, -215.0), 0.0, 0.0),
-            CameraKey(21.0, Vector3(avenue_x, 12.0, -140.0), 0.0, 0.0),
-            CameraKey(26.0, Vector3(avenue_x, 14.0, -62.0), 0.0, -3.0),
-            CameraKey(30.0, Vector3(avenue_x, 20.0, -30.0), 0.0, -8.0),
-            CameraKey(33.0, Vector3(avenue_x + 2.0, 19.5, -8.0), 40.0, -10.0),
-            CameraKey(35.5, Vector3(landing.x + 3.2, 18.5, landing.z - 1.5), 120.0, -12.0),
-            CameraKey(38.0, landing, landing_yaw, landing_pitch),
+            CameraKey(self.road_entry_seconds, Vector3(passage_x, 7.0, front_z + 70.0), 0.0, 0.0),
+            *self._road_keys(avenue_x, front_z + 70.0),
+            *self._square_keys(avenue_x, landing, landing_yaw, landing_pitch),
         ])
+
+    def _road_keys(self, avenue_x, road_start):
+        road_length = self.road_end_z - road_start
+        seconds = self.road_entry_seconds
+        keys = []
+        for index in range(1, self.road_key_count + 1):
+            seconds += road_length / self.road_key_count / self.cruise_speed
+            keys.append(CameraKey(seconds, Vector3(avenue_x, self.cruise_height, road_start
+                                                   + road_length * index / self.road_key_count), 0.0, 0.0))
+        self.road_exit_seconds = seconds
+        return keys
+
+    def _square_keys(self, avenue_x, landing, landing_yaw, landing_pitch):
+        legs = ((1.6, Vector3(avenue_x, self.cruise_height, -140.0), 0.0, 0.0),
+                (2.0, Vector3(avenue_x, 14.0, -62.0), 0.0, -3.0),
+                (1.6, Vector3(avenue_x, 20.0, -30.0), 0.0, -8.0),
+                (2.4, Vector3(avenue_x + 2.0, 19.5, -8.0), 40.0, -10.0),
+                (2.0, Vector3(landing.x + 3.2, 18.5, landing.z - 1.5), 120.0, -12.0),
+                (2.0, landing, landing_yaw, landing_pitch))
+        seconds = self.road_exit_seconds
+        keys = []
+        for leg_seconds, eye, yaw_degrees, pitch_degrees in legs:
+            seconds += leg_seconds
+            keys.append(CameraKey(seconds, eye, yaw_degrees, pitch_degrees))
+        arrival = self.road_exit_seconds + legs[0][0]
+        self.haze_window = (arrival, arrival + legs[1][0] + legs[2][0] + 1.5)
+        return keys
 
     @property
     def sky(self):

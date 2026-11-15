@@ -46,6 +46,7 @@ class FlyingLogo:
 		self.full_turns = full_turns
 		self.caption_gap_below_logo_in_logo_heights = caption_gap_below_logo_in_logo_heights
 		self.caption_fade_in_seconds = caption_fade_in_seconds
+		self.caption_stays_on_screen_during_whole_flight = False
 		self.picture = PictureTexture.load(image_path)
 		self.logo_width = logo_height * self.picture.aspect_ratio
 		self.caption_picture = None
@@ -87,6 +88,10 @@ class FlyingLogo:
 
 	@property
 	def caption_opacity(self):
+		if self.caption_stays_on_screen_during_whole_flight:
+			seconds_until_finished = self.total_seconds - self.elapsed_seconds
+			return max(0.0, min(1.0, self.elapsed_seconds / self.caption_fade_in_seconds,
+			                    seconds_until_finished / self.caption_fade_in_seconds))
 		if not self.is_settled:
 			return 0.0
 		seconds_since_settling = self.elapsed_seconds - self.arrival_seconds
@@ -122,9 +127,20 @@ class FlyingLogo:
 		glScalef(current_scale, current_scale, 1.0)
 		glColor4f(1.0, 1.0, 1.0, 1.0)
 		self.picture.draw_vertical_strip(0.0, 1.0, self.logo_width, self.logo_height)
+		if not self.caption_stays_on_screen_during_whole_flight:
+			self._draw_caption_below_logo()
+		glPopMatrix()
+		if self.caption_stays_on_screen_during_whole_flight:
+			self._draw_caption_at_settled_logo_place()
+		glPopAttrib()
+
+	def _draw_caption_at_settled_logo_place(self):
+		glPushMatrix()
+		glLoadIdentity()
+		glTranslatef(0.0, 0.0, -self.camera_distance)
+		glScalef(self.scale_when_settled, self.scale_when_settled, 1.0)
 		self._draw_caption_below_logo()
 		glPopMatrix()
-		glPopAttrib()
 
 	def _draw_caption_below_logo(self):
 		caption_opacity = self.caption_opacity

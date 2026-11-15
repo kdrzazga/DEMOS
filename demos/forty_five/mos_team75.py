@@ -87,6 +87,7 @@ class MosTeamParams:
 		self.zoom_seconds = 1.25
 		self.zoom_target_screen_fill_fraction = 0.85
 		self.picture_description_lines = ()
+		self.stays_on_screen_after_finishing = False
 		self.picture_description_line_height_in_screen_heights = 0.035
 		self.picture_description_gap_in_screen_heights = 0.01
 
@@ -119,6 +120,7 @@ class MosTeam:
 			                              flight_seconds=params.logo_flight_seconds,
 			                              settled_caption_lines=params.logo_caption_lines,
 			                              caption_font_path=FONT_PATH)
+			self.flying_logo.caption_stays_on_screen_during_whole_flight = True
 		self.restart()
 
 	@property
@@ -354,7 +356,8 @@ class MosTeam:
 		self.laser_line.move_to(laser_x, self.active_transition.laser_movement_direction)
 
 	def draw(self):
-		if (self.finished and not self.is_leaving) or self.has_left:
+		hidden_after_finishing = self.finished and not self.is_leaving and not self.params.stays_on_screen_after_finishing
+		if hidden_after_finishing or self.has_left:
 			return
 		if self.logo_is_flying:
 			self.flying_logo.draw()
@@ -506,3 +509,4 @@ class RobertYannesParams(AlCharpentierParams):
 		self.picture_shift_left_in_picture_widths = 1.5 #3
 		self.picture_shift_down_in_picture_heights = 0.1
 		self.picture_description_lines = ("Robert", "Yannes")
+		self.stays_on_screen_after_finishing = True

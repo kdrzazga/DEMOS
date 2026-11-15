@@ -31,6 +31,7 @@ class RobertYannesIntroduction:
 		self.sid_sound = self._load_sound(SID_SOUND_PATH)
 		self.speech_bubble = SpeechBubble(None, size=self.speech_bubble_font_size, lines=ROBERT_YANNES_SPEECH_LINES,
 		                                  font_path=FONT_PATH)
+		self.speech_bubble.silent_seconds = float("inf")
 		self.speech_bubble.upside_down = True
 		self.speech_bubble.text_width_share = self.speech_bubble_text_width_share
 		self.speech_bubble.max_world_height = self.speech_bubble_max_height
@@ -78,8 +79,9 @@ class RobertYannesIntroduction:
 			self.speech_bubble.start()
 		sound_has_ended = self.elapsed_seconds >= self.sid_sound.get_length()
 		if self.show.done and sound_has_ended and not self.show.is_leaving:
-			self.speech_bubble.stop()
 			self.show.leave_through_bottom(self.photo_exit_seconds)
+		if self.show.has_left:
+			self.speech_bubble.stop()
 
 	def draw(self):
 		self.show.draw()

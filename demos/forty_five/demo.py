@@ -259,6 +259,8 @@ class C64Demo(PygameDemo):
 			self._board_yaw_sway_step(seconds)
 		elif self.phase == "board_packing":
 			self._board_packing_step(seconds)
+		elif self.phase == "c64_step_back":
+			self._c64_step_back_step(seconds)
 		elif self.phase == "grand_presentation":
 			self._grand_presentation_step(seconds)
 		elif self.phase == "acrobatics":
@@ -682,6 +684,14 @@ class C64Demo(PygameDemo):
 		self._draw_board_with_seated_chips(seconds)
 		self.board_packing.draw()
 		if self.board_packing.done:
+			self._enter("c64_step_back")
+			self.board_arrival.begin_step_back()
+
+	def _c64_step_back_step(self, seconds):
+		self.board_packing.update(seconds)
+		self._draw_board_with_seated_chips(seconds)
+		self.board_packing.draw()
+		if self.board_arrival.step_back_finished:
 			self._enter("grand_presentation")
 			self.grand_presentation.begin()
 

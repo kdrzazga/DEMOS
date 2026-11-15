@@ -3,23 +3,23 @@ import os
 import pygame
 from OpenGL.GL import *
 
-from lib.caption_sequence import CaptionSequence
 from lib.flying_logo import ease_out_cubic
 from lib.laser_line import PictureTexture, smooth_step
 from lib.morphing_caption import MorphingCaption
 from lib.picture_surface import PictureSurface
 from lib.speech_bubble import SpeechBubble
 from demos.forty_five.font import FONT_PATH
+from demos.forty_five.paths import COMMODORE_HISTORY_DIRECTORY, MOS_HISTORY_DIRECTORY
+from demos.forty_five.year_flashes import YearFlashFactory
 
-HISTORY_DIRECTORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "history")
-JABBA_IMAGE_PATH = os.path.join(HISTORY_DIRECTORY, "c=", "jabba.png")
-JACK_TRAMIEL_IMAGE_PATH = os.path.join(HISTORY_DIRECTORY, "c=", "Jack.png")
-JACK_TRAMIEL_BIG_IMAGE_PATH = os.path.join(HISTORY_DIRECTORY, "c=", "JackBig.png")
+JABBA_IMAGE_PATH = os.path.join(COMMODORE_HISTORY_DIRECTORY, "jabba.png")
+JACK_TRAMIEL_IMAGE_PATH = os.path.join(COMMODORE_HISTORY_DIRECTORY, "Jack.png")
+JACK_TRAMIEL_BIG_IMAGE_PATH = os.path.join(COMMODORE_HISTORY_DIRECTORY, "JackBig.png")
 JACK_PICTURE_TOP_LEFT_PIXEL_INSIDE_BIG_PICTURE = (121, 0)
-MOS_LOGO_IMAGE_PATH = os.path.join(HISTORY_DIRECTORY, "mos", "logo.png")
+MOS_LOGO_IMAGE_PATH = os.path.join(MOS_HISTORY_DIRECTORY, "logo.png")
 JABBA_TO_JACK_CAPTION_SEGMENTS = (("Ja", "Ja"), ("bba", "ck"), (" T", " T"), ("he Hutt", "ramiel"))
 JACK_TRAMIEL_SPEECH_LINES = ("Time to buy", "MOS Technology")
-ACQUISITION_YEAR_FLASHES = ("1976", "1976", "1976")
+ACQUISITION_YEAR = "1976"
 
 
 class MosAcquisition:
@@ -42,13 +42,8 @@ class MosAcquisition:
 		self.logo_stop_fraction_from_left = 0.6
 		self.speech_bubble_font_size = 15
 		self.speech_seconds = 2.5
-		self.year_flash_seconds = 0.5
-		self.pause_seconds_between_year_flashes = 0.25
-		self.year_flash_color = (230, 40, 40)
-		self.year_flash_font_pixel_size = 110
-		self.year_flash_margin_from_top_left_pixels = (115.0, 110.0)
-		self.year_flash_gap_below_chips_pixels = 30.0
-		self.design_screen_height = 800.0
+		self.year_flash_left_margin_pixels = 115.0
+		self.year_flash_chips_bottom_fraction_before_placing = 0.1
 		self.hold_seconds_after_speech = 1.0
 		self.big_jack_fade_seconds = 0.4
 		self.hold_seconds_after_big_jack = 2.0
@@ -71,20 +66,14 @@ class MosAcquisition:
 		                               * self.world_units_per_jack_pixel / screen_plane.visible_height)
 		self.jack_speech_bubble = SpeechBubble(None, size=self.speech_bubble_font_size, lines=JACK_TRAMIEL_SPEECH_LINES,
 		                                       silent_seconds=self.speech_seconds, font_path=FONT_PATH)
-		self.year_flashes = CaptionSequence(ACQUISITION_YEAR_FLASHES, seconds_per_caption=self.year_flash_seconds,
-		                                    pause_seconds_between_captions=self.pause_seconds_between_year_flashes,
-		                                    text_color=self.year_flash_color,
-		                                    screen_scale=glGetIntegerv(GL_VIEWPORT)[3] / self.design_screen_height,
-		                                    font_pixel_size=self.year_flash_font_pixel_size,
-		                                    margin_from_top_left_pixels=self.year_flash_margin_from_top_left_pixels,
-		                                    font_path=FONT_PATH)
+		self.year_flash_factory = YearFlashFactory()
+		self.year_flash_factory.left_margin_pixels = self.year_flash_left_margin_pixels
+		self.year_flashes = self.year_flash_factory.create_below_fraction(
+			ACQUISITION_YEAR, self.year_flash_chips_bottom_fraction_before_placing)
 		self.restart()
 
 	def place_year_flashes_below(self, chips_bottom_fraction_from_top):
-		screen_scale = glGetIntegerv(GL_VIEWPORT)[3] / self.design_screen_height
-		left_margin_pixels, _ = self.year_flash_margin_from_top_left_pixels
-		top_margin_pixels = chips_bottom_fraction_from_top * self.design_screen_height + self.year_flash_gap_below_chips_pixels
-		self.year_flashes.margin_from_top_left_pixels = (left_margin_pixels * screen_scale, top_margin_pixels * screen_scale)
+		self.year_flash_factory.move_below_fraction(self.year_flashes, chips_bottom_fraction_from_top)
 
 	def _build_mos_logo(self):
 		logo_picture = PictureTexture.load(MOS_LOGO_IMAGE_PATH)

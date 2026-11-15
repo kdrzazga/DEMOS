@@ -2,6 +2,7 @@ import math
 
 from OpenGL.GL import *
 
+from demos.retro_neons.scene_mirror import SceneMirror
 from lib.graffitti.kna.komoda_amiga_graffiti import KomodaAmigaGraffiti
 from lib.graffitti.swaying_surface import SwayingSurface
 from lib.rotator import AngleRotator, Edge
@@ -119,10 +120,11 @@ class TurningGraffiti:
         glPushMatrix()
         glMultMatrixf(placement)
         glTranslatef(0.0, 0.0, -self.camera_distance)
-        if self.turning:
-            self._draw_turning()
-        else:
-            self.surface.render(self.graffiti.texture)
+        with SceneMirror().readable_texturing():
+            if self.turning:
+                self._draw_turning()
+            else:
+                self.surface.render(self.graffiti.texture)
         glPopMatrix()
         glPopAttrib()
 

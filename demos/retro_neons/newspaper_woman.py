@@ -28,6 +28,7 @@ from OpenGL.GL import (
 )
 
 from lib import Globals
+from demos.retro_neons.scene_mirror import SceneMirror
 from lib.urban.neon.textures import GlTexture
 from lib.urban.neon.woman import Woman, WomanPose
 from lib.vector3 import Vector3
@@ -173,11 +174,12 @@ class Newspaper:
         glEnable(GL_TEXTURE_2D)
         self.texture.bind()
         glColor3f(self.cover_brightness, self.cover_brightness, self.cover_brightness)
-        glBegin(GL_QUADS)
-        for corner, (u, v) in zip(cover_corners, ((0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0))):
-            glTexCoord2f(u, v)
-            glVertex3f(*corner)
-        glEnd()
+        with SceneMirror().readable_texturing():
+            glBegin(GL_QUADS)
+            for corner, (u, v) in zip(cover_corners, ((0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0))):
+                glTexCoord2f(u, v)
+                glVertex3f(*corner)
+            glEnd()
         glDisable(GL_TEXTURE_2D)
         glColor3f(*self.back_page_color)
         glBegin(GL_QUADS)

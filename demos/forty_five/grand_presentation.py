@@ -2,9 +2,10 @@ import pygame
 from OpenGL.GL import *
 
 from lib.geometry import upload_texture
-from lib.typing_effect.typed_label import TypedLabel
 from lib.laser_line import smooth_step
 from demos.forty_five.font import FONT_PATH
+from demos.forty_five.overlay import screen_overlay
+from demos.forty_five.typed_lines import built_typed_label, draw_label_facing_screen
 
 ANNOUNCEMENT_LINES = (
 	"Ladies and gentlemen!",
@@ -18,19 +19,14 @@ YEARS_OF_CAPTION = "YEARS OF"
 YEARS_SPAN_CAPTION = "1982-2027"
 
 
-class ZoomingCaption:
+class CaptionTexture:
 
-	def __init__(self, screen_plane, text):
-		self.screen_plane = screen_plane
+	def __init__(self, text):
 		self.text = text
 		self.font_px = 160
 		self.font_rgb = (255, 255, 255)
 		self.opacity = 0.7
 		self.dimming = 1.0
-		self.zoom_seconds = 3.0
-		self.hold_seconds = 3.0
-		self.start_width_in_screen_widths = 0.05
-		self.final_width_in_screen_widths = 0.85
 		self.elapsed_seconds = 0.0
 		self.started = False
 		self._texture = None
@@ -42,10 +38,6 @@ class ZoomingCaption:
 		self.aspect = surface.get_width() / surface.get_height()
 		self._texture = upload_texture(surface)
 
-	@property
-	def finished(self):
-		return self.started and self.elapsed_seconds >= self.zoom_seconds + self.hold_seconds
-
 	def begin(self):
 		self.elapsed_seconds = 0.0
 		self.started = True
@@ -53,6 +45,39 @@ class ZoomingCaption:
 	def update(self, seconds):
 		if self.started:
 			self.elapsed_seconds += seconds
+
+	def _draw_quad(self, centre_x, centre_y, half_width, half_height, depth, opacity):
+		glEnable(GL_BLEND)
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+		glEnable(GL_TEXTURE_2D)
+		glBindTexture(GL_TEXTURE_2D, self._texture)
+		glColor4f(1.0, 1.0, 1.0, opacity)
+		glBegin(GL_QUADS)
+		for (s, t), (across, along) in (((0, 0), (-1, -1)), ((1, 0), (1, -1)), ((1, 1), (1, 1)), ((0, 1), (-1, 1))):
+			glTexCoord2f(s, t)
+			glVertex3f(centre_x + across * half_width, centre_y + along * half_height, depth)
+		glEnd()
+		glDisable(GL_TEXTURE_2D)
+
+	def destroy(self):
+		if self._texture:
+			glDeleteTextures([self._texture])
+			self._texture = None
+
+
+class ZoomingCaption(CaptionTexture):
+
+	def __init__(self, screen_plane, text):
+		super().__init__(text)
+		self.screen_plane = screen_plane
+		self.zoom_seconds = 3.0
+		self.hold_seconds = 3.0
+		self.start_width_in_screen_widths = 0.05
+		self.final_width_in_screen_widths = 0.85
+
+	@property
+	def finished(self):
+		return self.started and self.elapsed_seconds >= self.zoom_seconds + self.hold_seconds
 
 	def width(self):
 		progress = smooth_step(min(1.0, self.elapsed_seconds / self.zoom_seconds))
@@ -66,77 +91,23 @@ class ZoomingCaption:
 	def draw(self, centre_x, centre_y, scale):
 		if not self.started:
 			return
-		half_width = self.width() * scale / 2
-		half_height = self.height() * scale / 2
-		depth = -self.screen_plane.camera_distance
-		glEnable(GL_BLEND)
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-		glEnable(GL_TEXTURE_2D)
-		glBindTexture(GL_TEXTURE_2D, self._texture)
-		glColor4f(1.0, 1.0, 1.0, self.opacity * self.dimming)
-		glBegin(GL_QUADS)
-		for (s, t), (across, along) in (((0, 0), (-1, -1)), ((1, 0), (1, -1)), ((1, 1), (1, 1)), ((0, 1), (-1, 1))):
-			glTexCoord2f(s, t)
-			glVertex3f(centre_x + across * half_width, centre_y + along * half_height, depth)
-		glEnd()
-		glDisable(GL_TEXTURE_2D)
-
-	def destroy(self):
-		if self._texture:
-			glDeleteTextures([self._texture])
-			self._texture = None
+		self._draw_quad(centre_x, centre_y, self.width() * scale / 2, self.height() * scale / 2,
+		                -self.screen_plane.camera_distance, self.opacity * self.dimming)
 
 
-class FadingCaption:
+class FadingCaption(CaptionTexture):
 
 	def __init__(self, text, height_in_make_heights):
-		self.text = text
+		super().__init__(text)
 		self.height_in_make_heights = height_in_make_heights
-		self.font_px = 160
-		self.font_rgb = (255, 255, 255)
-		self.opacity = 0.7
-		self.dimming = 1.0
 		self.fade_in_seconds = 1.0
-		self.elapsed_seconds = 0.0
-		self.started = False
-		self._texture = None
-
-	def build(self):
-		pygame.font.init()
-		font = pygame.font.Font(FONT_PATH, self.font_px)
-		surface = font.render(self.text, True, self.font_rgb)
-		self.aspect = surface.get_width() / surface.get_height()
-		self._texture = upload_texture(surface)
-
-	def begin(self):
-		self.elapsed_seconds = 0.0
-		self.started = True
-
-	def update(self, seconds):
-		if self.started:
-			self.elapsed_seconds += seconds
 
 	def draw(self, centre_x, centre_y, height, depth):
 		if not self.started:
 			return
-		half_width, half_height = height * self.aspect / 2, height / 2
 		fade_progress = min(1.0, self.elapsed_seconds / self.fade_in_seconds)
-		glEnable(GL_BLEND)
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-		glEnable(GL_TEXTURE_2D)
-		glBindTexture(GL_TEXTURE_2D, self._texture)
-		glColor4f(1.0, 1.0, 1.0, self.opacity * self.dimming * fade_progress)
-		glBegin(GL_QUADS)
-		for (s, t), (across, along) in (((0, 0), (-1, -1)), ((1, 0), (1, -1)), ((1, 1), (1, 1)), ((0, 1), (-1, 1))):
-			glTexCoord2f(s, t)
-			glVertex3f(centre_x + across * half_width, centre_y + along * half_height, depth)
-		glEnd()
-		glDisable(GL_TEXTURE_2D)
-
-	def destroy(self):
-		if self._texture:
-			glDeleteTextures([self._texture])
-			self._texture = None
+		self._draw_quad(centre_x, centre_y, height * self.aspect / 2, height / 2, depth,
+		                self.opacity * self.dimming * fade_progress)
 
 
 class GrandPresentation:
@@ -147,11 +118,8 @@ class GrandPresentation:
 		self.frames_per_letter = 4
 		self.pause_seconds_between_lines = 1.0
 		self.line_margin_from_bottom = 0.8
-		self.announcement_labels = tuple(TypedLabel(line, self.line_height, frames_per_letter=self.frames_per_letter,
-		                                            font_path=FONT_PATH)
+		self.announcement_labels = tuple(built_typed_label(line, self.line_height, self.frames_per_letter)
 		                                 for line in ANNOUNCEMENT_LINES)
-		for label in self.announcement_labels:
-			label.build()
 		self.model_to_make_height_ratio = 1.6
 		self.gap_in_make_heights = 0.15
 		self.captions_centre_y_in_screen_heights = 0.05
@@ -244,19 +212,11 @@ class GrandPresentation:
 	def draw_overlay(self):
 		if self.phase == "idle":
 			return
-		glPushAttrib(GL_ENABLE_BIT | GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT)
-		glDisable(GL_LIGHTING)
-		glDisable(GL_DEPTH_TEST)
-		glMatrixMode(GL_MODELVIEW)
-		glPushMatrix()
-		glLoadIdentity()
-		self._draw_captions()
-		if self.phase != "retreat":
-			line_y = -self.screen_plane.visible_height / 2 + self.line_margin_from_bottom
-			self._current_label.draw((0.0, line_y, -self.screen_plane.camera_distance), (1.0, 0.0, 0.0),
-			                         (0.0, 1.0, 0.0))
-		glPopMatrix()
-		glPopAttrib()
+		with screen_overlay():
+			self._draw_captions()
+			if self.phase != "retreat":
+				line_y = -self.screen_plane.visible_height / 2 + self.line_margin_from_bottom
+				draw_label_facing_screen(self._current_label, 0.0, line_y, self.screen_plane)
 
 	def _draw_captions(self):
 		retreat_progress = self._retreat_progress()

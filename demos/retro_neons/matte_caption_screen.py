@@ -19,6 +19,7 @@ from OpenGL.GL import (
     glPushAttrib,
 )
 
+from demos.retro_neons.scene_mirror import SceneMirror
 from lib.urban.neon.caption_screen import CaptionScreen
 from lib.wall_screen import ScreenFront
 
@@ -40,9 +41,10 @@ class MatteCaptionScreen(CaptionScreen):
         glBlendFunc(GL_SRC_ALPHA, GL_ONE)
         glDepthMask(GL_FALSE)
         glColor4f(1.0, 1.0, 1.0, self.glow_strength)
-        self._quad(self._glow_corners())
-        glDepthMask(GL_TRUE)
-        glDisable(GL_BLEND)
-        glColor4f(1.0, 1.0, 1.0, 1.0)
-        self._quad(self.corners)
+        with SceneMirror().readable_texturing():
+            self._quad(self._glow_corners())
+            glDepthMask(GL_TRUE)
+            glDisable(GL_BLEND)
+            glColor4f(1.0, 1.0, 1.0, 1.0)
+            self._quad(self.corners)
         glPopAttrib()

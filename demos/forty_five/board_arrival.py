@@ -5,9 +5,7 @@ from OpenGL.GL import *
 
 from demos.forty_five.c64breadbox.c64_board import C64Board
 from demos.forty_five.c64breadbox.layout import BoardLayoutFactory
-from demos.forty_five.chips.mos906114 import MOS906114
-from demos.forty_five.chips.tms4164 import TMS4164
-from demos.forty_five.chips.ttl74xx import TTL74xx
+from demos.forty_five.chips.labelled_chip import ChipFactory
 from demos.forty_five.rotation import rotation_x, rotation_y
 from lib.flying_logo import ease_out_cubic
 from lib.laser_line import smooth_step
@@ -30,6 +28,8 @@ class BoardArrival:
 		self.sway_period_seconds = 4.0
 		self.yaw_sway_amplitude_degrees = 30.0
 		self.yaw_sway_seconds = 4.0
+		self.whole_computer_camera_distance = 50.0
+		self.step_back_seconds = 1.5
 		self.acrobatics_camera_distance = 70.0
 		self.acrobatics_zoom_out_seconds = 2.0
 		self.acrobatics_spin_seconds = 1.2
@@ -45,11 +45,12 @@ class BoardArrival:
 		self.board.build()
 		self.ram_socket_names = tuple(f"RAM{index}" for index in range(1, 9))
 		self.preinstalled_chips = self._preinstall_chips(
-			(("PLA", MOS906114()), ("U31", TTL74xx("74LS629", 16)))
-			+ tuple((socket_name, TMS4164()) for socket_name in self.ram_socket_names))
+			(("PLA", ChipFactory.create_pla()), ("U31", ChipFactory.create_ttl("74LS629", 16)))
+			+ tuple((socket_name, ChipFactory.create_ram()) for socket_name in self.ram_socket_names))
 		self.elapsed_seconds = None
 		self.showcase_elapsed_seconds = None
 		self.yaw_sway_elapsed_seconds = None
+		self.step_back_elapsed_seconds = None
 		self.acrobatics_elapsed_seconds = None
 
 	def _preinstall_chips(self, socket_names_and_chips):
@@ -102,6 +103,18 @@ class BoardArrival:
 	def begin_yaw_sway(self):
 		self.yaw_sway_elapsed_seconds = 0.0
 
+	@property
+	def step_back_finished(self):
+		return self.step_back_elapsed_seconds is not None and self.step_back_elapsed_seconds >= self.step_back_seconds
+
+	def begin_step_back(self):
+		self.step_back_elapsed_seconds = 0.0
+
+	def _step_back_progress(self):
+		if self.step_back_elapsed_seconds is None:
+			return 0.0
+		return smooth_step(min(1.0, self.step_back_elapsed_seconds / self.step_back_seconds))
+
 	def begin_acrobatics(self):
 		self.acrobatics_elapsed_seconds = 0.0
 
@@ -115,6 +128,8 @@ class BoardArrival:
 			self.showcase_elapsed_seconds += seconds
 		if self.yaw_sway_elapsed_seconds is not None:
 			self.yaw_sway_elapsed_seconds += seconds
+		if self.step_back_elapsed_seconds is not None:
+			self.step_back_elapsed_seconds += seconds
 		if self.acrobatics_elapsed_seconds is not None:
 			self.acrobatics_elapsed_seconds += seconds
 
@@ -140,8 +155,10 @@ class BoardArrival:
 	def _current_camera_distance(self):
 		zoomed_distance = (self.camera_distance
 		                   + (self.zoomed_camera_distance - self.camera_distance) * self._zoom_progress())
+		stepped_back_distance = (zoomed_distance
+		                         + (self.whole_computer_camera_distance - zoomed_distance) * self._step_back_progress())
 		zoom_out_progress = self._acrobatics_progress(0.0, self.acrobatics_zoom_out_seconds)
-		return zoomed_distance + (self.acrobatics_camera_distance - zoomed_distance) * zoom_out_progress
+		return stepped_back_distance + (self.acrobatics_camera_distance - stepped_back_distance) * zoom_out_progress
 
 	def _current_fraction_from_top(self):
 		arrival_progress = ease_out_cubic(min(1.0, self.elapsed_seconds / self.enter_seconds))

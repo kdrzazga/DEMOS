@@ -1,6 +1,7 @@
 import numpy
 import pygame
 
+from demos.retro_neons.scene_mirror import SceneMirror
 from lib.wall_screen import WallScreen
 from lib.butterfly_credits import ButterflyCredits
 from lib.particles import Texture2D
@@ -42,4 +43,5 @@ class ButterflyWallScreen(WallScreen):
 
     def draw(self):
         if self.has_frame:
-            self.draw_picture(self.texture.id, self.glow_color)
+            with SceneMirror().readable_texturing():
+                self.draw_picture(self.texture.id, self.glow_color)

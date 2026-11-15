@@ -58,23 +58,37 @@ class ChipPoseGlide:
 		return self.start_pose.blended_toward(self.target_pose, self.easing(progress), self.roll_easing(progress))
 
 
-class ChipAnimation:
+class PhotoStage:
 
-	def __init__(self, chip, aspect_ratio, field_of_view_degrees, photo_camera_distance, photo_width, photo_height,
-	             sway_yaw_amplitude_degrees=12.0, sway_pitch_amplitude_degrees=4.0, sway_period_seconds=5.0,
-	             light_direction=(-0.35, 0.5, 1.0, 0.0), screen_margin_fraction=0.03):
+	def __init__(self, aspect_ratio, field_of_view_degrees, photo_camera_distance, photo_width, photo_height):
 		self.aspect_ratio = aspect_ratio
+		self.field_of_view_degrees = field_of_view_degrees
 		self.photo_camera_distance = photo_camera_distance
 		self.photo_width = photo_width
 		self.photo_height = photo_height
-		self.sway_yaw_amplitude_degrees = sway_yaw_amplitude_degrees
-		self.sway_pitch_amplitude_degrees = sway_pitch_amplitude_degrees
-		self.sway_period_seconds = sway_period_seconds
-		self.light_direction = light_direction
-		self.screen_margin_fraction = screen_margin_fraction
+
+	@property
+	def visible_height_on_photo_plane(self):
+		return 2 * self.photo_camera_distance * math.tan(math.radians(self.field_of_view_degrees) / 2)
+
+
+class ChipAnimation:
+
+	def __init__(self, chip, photo_stage):
+		self.aspect_ratio = photo_stage.aspect_ratio
+		self.photo_camera_distance = photo_stage.photo_camera_distance
+		self.photo_width = photo_stage.photo_width
+		self.photo_height = photo_stage.photo_height
+		self.sway_yaw_amplitude_degrees = 12.0
+		self.sway_pitch_amplitude_degrees = 4.0
+		self.sway_period_seconds = 5.0
+		self.light_direction = (-0.35, 0.5, 1.0, 0.0)
+		self.screen_margin_fraction = 0.03
 		self.gap_to_left_neighbour_fraction = 0.08
-		self.visible_height_on_photo_plane = 2 * photo_camera_distance * math.tan(math.radians(field_of_view_degrees) / 2)
-		self.visible_width_on_photo_plane = self.visible_height_on_photo_plane * aspect_ratio
+		self.horizontal_roll_degrees = 90.0
+		self.turn_starts_at_drive_progress = 0.5
+		self.visible_height_on_photo_plane = photo_stage.visible_height_on_photo_plane
+		self.visible_width_on_photo_plane = self.visible_height_on_photo_plane * self.aspect_ratio
 		self.chip = chip
 		self.chip.build()
 		self.chip_length = 2 * self.chip.body_half_length
@@ -212,6 +226,32 @@ class ChipAnimation:
 	def grow_into_view_at(self, target_pose, grow_seconds, easing=smooth_step):
 		self.pose = target_pose.with_height(0.0)
 		self.glide_to(target_pose, grow_seconds, easing)
+
+	def appear_at(self, fraction_from_left, fraction_from_top, appear_seconds, height_in_photo_heights=0.4):
+		self.grow_into_view_at(ChipPose(fraction_from_left, fraction_from_top, 0.0, height_in_photo_heights),
+		                       appear_seconds, easing=ease_out_cubic)
+
+	def move_behind_photo(self, move_seconds, depth_behind_photo=8.0):
+		target_pose = ChipPose(0.5, 0.5, depth_behind_photo, self.pose.height_in_photo_heights)
+		self.glide_to(target_pose, move_seconds)
+
+	def zoom_out_to_top_left_corner(self, travel_seconds, height_in_photo_heights=0.4):
+		self.glide_to(self.pose_in_top_left_corner(height_in_photo_heights, self.pose.depth_behind_photo),
+		              travel_seconds)
+
+	def drive_to_screen_centre_turning_horizontal(self, drive_seconds, height_in_photo_heights):
+		self.pose = self.pose_just_beyond_left_edge(height_in_photo_heights)
+		screen_centre_pose = ChipPose(0.5, 0.5, 0.0, height_in_photo_heights, self.horizontal_roll_degrees)
+		self.glide_to(screen_centre_pose, drive_seconds, easing=ease_out_cubic, roll_easing=self._turn_near_the_end)
+
+	def _turn_near_the_end(self, drive_progress):
+		turn_progress = (drive_progress - self.turn_starts_at_drive_progress) / (1.0 - self.turn_starts_at_drive_progress)
+		return smooth_step(min(1.0, max(0.0, turn_progress)))
+
+	def take_place_turning_vertical(self, place_pose, travel_seconds):
+		vertical_place_pose = place_pose.copy()
+		vertical_place_pose.roll_degrees = 0.0
+		self.glide_to(vertical_place_pose, travel_seconds)
 
 	def update(self, seconds):
 		self.sway_elapsed_seconds += seconds

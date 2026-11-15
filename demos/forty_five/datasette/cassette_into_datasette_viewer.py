@@ -2,7 +2,7 @@
 
 Run from the DEMOS project root:
 
-    python -m demos.c64.datasette.cassette_into_datasette_viewer
+    python -m demos.forty_five.datasette.cassette_into_datasette_viewer
 
 or directly as a script (python demos\\c64\\datasette\\cassette_into_datasette_viewer.py).
 """

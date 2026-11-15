@@ -1,7 +1,7 @@
 from OpenGL.GL import *
 
-from demos.forty_five.font import FONT_PATH
-from lib.typing_effect.typed_label import TypedLabel
+from demos.forty_five.overlay import screen_overlay
+from demos.forty_five.typed_lines import built_typed_label, draw_label_facing_screen
 from lib.laser_line import smooth_step
 
 
@@ -74,11 +74,8 @@ class ChipListing:
 		self.centre_x = 0.0
 		self.centre_y = 0.0
 		self.vertical_offset = 0.0
-		self.labels = tuple(TypedLabel(text, self.text_line_height, frames_per_letter=self.text_frames_per_letter,
-		                               font_path=FONT_PATH)
+		self.labels = tuple(built_typed_label(text, self.text_line_height, self.text_frames_per_letter)
 		                    for text in (header,) + chip_names)
-		for label in self.labels:
-			label.build()
 		self.chip_lines = ()
 		self.typing_index = 0
 		self.typing = False
@@ -147,25 +144,17 @@ class ChipListing:
 			chip_line.opacity = opacity
 
 	def draw(self):
-		glPushAttrib(GL_ENABLE_BIT | GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_LINE_BIT)
-		glDisable(GL_LIGHTING)
-		glDisable(GL_DEPTH_TEST)
-		glDisable(GL_TEXTURE_2D)
-		glMatrixMode(GL_MODELVIEW)
-		glPushMatrix()
-		glLoadIdentity()
-		for chip_line in self.chip_lines:
-			chip_line.draw()
-		self._draw_labels()
-		glPopMatrix()
-		glPopAttrib()
+		with screen_overlay(GL_LINE_BIT):
+			glDisable(GL_TEXTURE_2D)
+			for chip_line in self.chip_lines:
+				chip_line.draw()
+			self._draw_labels()
 
 	def _draw_labels(self):
-		line_step = self.text_line_height + self.text_line_gap
+		line_step = self.line_step
 		top_centre_y = self.centre_y + line_step * (len(self.labels) - 1) / 2 + self.vertical_offset
-		depth = -self.screen_plane.camera_distance
 		for index, label in enumerate(self.labels):
-			label.draw((self.centre_x, top_centre_y - index * line_step, depth), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0))
+			draw_label_facing_screen(label, self.centre_x, top_centre_y - index * line_step, self.screen_plane)
 
 	def destroy(self):
 		for label in self.labels:

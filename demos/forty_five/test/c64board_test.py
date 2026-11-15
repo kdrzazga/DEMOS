@@ -10,8 +10,7 @@ from lib.pygame_demo import PygameDemo
 from demos.forty_five.c64breadbox.c64_board import C64Board
 from demos.forty_five.c64breadbox.layout import BoardLayoutFactory
 from demos.forty_five.chips.chip_insertion import ChipInsertion
-from demos.forty_five.chips.mos65xx import MOS65xx
-from demos.forty_five.chips.mos901xxx import MOS901xxx
+from demos.forty_five.chips.labelled_chip import ChipFactory
 from demos.forty_five.orbit_camera import OrbitCamera
 from demos.forty_five.scene import setup_scene
 
@@ -42,8 +41,8 @@ class C64BoardTest(PygameDemo):
 		self.camera = OrbitCamera(self.field_of_view_degrees, aspect_ratio, *self.default_view)
 		self.board = C64Board(BoardLayoutFactory.create_assy_250425())
 		self.board.build()
-		self.processor = MOS65xx("6510")
-		self.basic_rom = MOS901xxx("901226-01")
+		self.processor = ChipFactory.create_mos_40_pin_chip("6510")
+		self.basic_rom = ChipFactory.create_rom("901226-01")
 		self.chips = (self.processor, self.basic_rom)
 		for chip in self.chips:
 			chip.build()

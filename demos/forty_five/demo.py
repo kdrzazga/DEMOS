@@ -46,16 +46,10 @@ from demos.forty_five.chips.chip_name_flash import ChipNameFlash
 from demos.forty_five.chuck_peddle import ChuckPeddleSurface
 from demos.forty_five.intro import IntroCaptionVideo
 from demos.forty_five.mos_team75 import MosTeamFactory
-from demos.forty_five.anims.animation6502 import Processor6502Animation
-from demos.forty_five.anims.animation652x import PeripheralChip652xAnimation
-from demos.forty_five.anims.animation901226 import BasicRom901226Animation
-from demos.forty_five.anims.animation901225 import CharacterRom901225Animation
-from demos.forty_five.anims.animation901xxx import KernalRom901xxxAnimation
-from demos.forty_five.anims.animation6560 import VicChip6560Animation
+from demos.forty_five.anims.chip_animation import ChipAnimation, PhotoStage
+from demos.forty_five.chips.labelled_chip import ChipFactory
 from demos.forty_five.pet77 import PetIntroduction
 from demos.forty_five.vic20_80 import Vic20Arrival
-from demos.forty_five.anims.animation6510 import Processor6510Animation
-from demos.forty_five.anims.animation6567 import VicIIChip6567Animation
 from demos.forty_five.chips.quick_chip_swap import (QuickChipSwap, CIA_SOUND_PATH, CIA_SWAP_CAPTION,
                                                     CIA_SWAP_PREDECESSOR_NAME)
 from demos.forty_five.board_arrival import BoardArrival
@@ -64,7 +58,6 @@ from demos.forty_five.farewell_message import FarewellMessage
 from demos.forty_five.final_goodbye import FinalGoodbye
 from demos.forty_five.grand_presentation import GrandPresentation
 from lib.music_fade_out import MusicFadeOut
-from demos.forty_five.anims.animation6581 import SidChip6581Animation
 from demos.forty_five.yannes82 import RobertYannesIntroduction
 from demos.forty_five.assembly84 import AssemblyStep, ChipAssembly
 from demos.forty_five.chips.chip_replacement import (ChipReplacement, MOS6510_SOUND_PATH, MOS6510_TEXT_LINES,
@@ -111,6 +104,8 @@ class C64Demo(PygameDemo):
 		self.pia_leave_seconds = 1.5
 		self.chip_row_gap_close_seconds = 1.2
 		self.basic_rom_appear_seconds = 0.4
+		self.basic_rom_fraction_from_left = 0.53
+		self.basic_rom_fraction_from_top = 0.72
 		self.vic_chip_slide_in_seconds = 2.5
 		self.al_charpentier_exit_seconds = 1.5
 		self.year_flash_count = 3
@@ -135,12 +130,11 @@ class C64Demo(PygameDemo):
 
 		self.mos_team = MosTeamFactory.create_default_mos_team(aspect, self.fov)
 		self.mos_team_sound = load_sound(self.mos_team_sound_path)
-		self.processor_6502 = Processor6502Animation(aspect, self.fov, self.mos_team.camera_distance,
-		                                             self.mos_team.picture_width, self.mos_team.params.picture_height)
-		self.pia_6520 = PeripheralChip652xAnimation("6520", aspect, self.fov, self.mos_team.camera_distance,
-		                                            self.mos_team.picture_width, self.mos_team.params.picture_height)
-		self.via_6522 = PeripheralChip652xAnimation("6522", aspect, self.fov, self.mos_team.camera_distance,
-		                                            self.mos_team.picture_width, self.mos_team.params.picture_height)
+		photo_stage = PhotoStage(aspect, self.fov, self.mos_team.camera_distance, self.mos_team.picture_width,
+		                         self.mos_team.params.picture_height)
+		self.processor_6502 = ChipAnimation(ChipFactory.create_mos_40_pin_chip("6502"), photo_stage)
+		self.pia_6520 = ChipAnimation(ChipFactory.create_mos_40_pin_chip("6520"), photo_stage)
+		self.via_6522 = ChipAnimation(ChipFactory.create_mos_40_pin_chip("6522"), photo_stage)
 		self.pia_via_sound = load_sound(self.pia_via_sound_path)
 		self.pia_via_sound_seconds = None
 		self.pia_and_via_have_joined_processor = False
@@ -149,17 +143,10 @@ class C64Demo(PygameDemo):
 			name_flash.build()
 		self.pia_removal_name_flash = ChipNameFlash.before_gallery_removal(self.pia_6520, "PIA")
 		self.pia_removal_name_flash.build()
-		self.basic_rom_901226 = BasicRom901226Animation(aspect, self.fov, self.mos_team.camera_distance,
-		                                                self.mos_team.picture_width,
-		                                                self.mos_team.params.picture_height)
-		self.kernal_rom_901xxx = KernalRom901xxxAnimation(aspect, self.fov, self.mos_team.camera_distance,
-		                                                  self.mos_team.picture_width,
-		                                                  self.mos_team.params.picture_height)
-		self.character_rom_901225 = CharacterRom901225Animation(aspect, self.fov, self.mos_team.camera_distance,
-		                                                        self.mos_team.picture_width,
-		                                                        self.mos_team.params.picture_height)
-		self.vic_chip_6560 = VicChip6560Animation(aspect, self.fov, self.mos_team.camera_distance,
-		                                          self.mos_team.picture_width, self.mos_team.params.picture_height)
+		self.basic_rom_901226 = ChipAnimation(ChipFactory.create_rom("901226"), photo_stage)
+		self.kernal_rom_901xxx = ChipAnimation(ChipFactory.create_rom("901xxx"), photo_stage)
+		self.character_rom_901225 = ChipAnimation(ChipFactory.create_rom("901225"), photo_stage)
+		self.vic_chip_6560 = ChipAnimation(ChipFactory.create_mos_40_pin_chip("6560"), photo_stage)
 
 		self.screen_plane = ScreenPlane(aspect, self.fov)
 		self.chuck_peddle = ChuckPeddleSurface(self.screen_plane)
@@ -171,27 +158,21 @@ class C64Demo(PygameDemo):
 		self.al_charpentier_show = MosTeamFactory.create_al_charpentier_show(aspect, self.fov)
 		self.vic_sound = load_sound(self.vic_sound_path)
 		self.vic20_arrival = Vic20Arrival(self.screen_plane)
-		self.processor_6510 = Processor6510Animation(aspect, self.fov, self.mos_team.camera_distance,
-		                                             self.mos_team.picture_width, self.mos_team.params.picture_height)
+		self.processor_6510 = ChipAnimation(ChipFactory.create_mos_40_pin_chip("6510"), photo_stage)
 		self.mos6510_arrival = ChipReplacement(self.screen_plane, MOS6510_SOUND_PATH, MOS6510_TEXT_LINES,
 		                                       MOS6510_PREDECESSOR_NAME)
-		self.vic_ii_6567 = VicIIChip6567Animation(aspect, self.fov, self.mos_team.camera_distance,
-		                                          self.mos_team.picture_width, self.mos_team.params.picture_height)
+		self.vic_ii_6567 = ChipAnimation(ChipFactory.create_mos_40_pin_chip("6567"), photo_stage)
 		self.vic_ii_arrival = ChipReplacement(self.screen_plane, VIC_II_SOUND_PATH, VIC_II_TEXT_LINES,
 		                                      VIC_II_PREDECESSOR_NAME)
 		self.pause_seconds_before_vic_ii = 2.0
-		self.cia_6526 = PeripheralChip652xAnimation("6526", aspect, self.fov, self.mos_team.camera_distance,
-		                                            self.mos_team.picture_width, self.mos_team.params.picture_height)
-		self.sid_6581 = SidChip6581Animation(aspect, self.fov, self.mos_team.camera_distance,
-		                                     self.mos_team.picture_width, self.mos_team.params.picture_height)
+		self.cia_6526 = ChipAnimation(ChipFactory.create_mos_40_pin_chip("6526"), photo_stage)
+		self.sid_6581 = ChipAnimation(ChipFactory.create_sid(), photo_stage)
 		self.robert_yannes_introduction = RobertYannesIntroduction(self.screen_plane, aspect, self.fov)
 		self.cia_swap = QuickChipSwap(self.screen_plane, CIA_SOUND_PATH, CIA_SWAP_CAPTION, CIA_SWAP_PREDECESSOR_NAME)
 		self.cia_caption_hold_seconds = 2.0
 		self.year_1982_flashes = None
 		self.board_arrival = BoardArrival(self.fov)
-		self.second_cia_6526 = PeripheralChip652xAnimation("6526", aspect, self.fov, self.mos_team.camera_distance,
-		                                                   self.mos_team.picture_width,
-		                                                   self.mos_team.params.picture_height)
+		self.second_cia_6526 = ChipAnimation(ChipFactory.create_mos_40_pin_chip("6526"), photo_stage)
 		self.chip_assembly = ChipAssembly(self.screen_plane)
 		self.board_packing = BoardPacking(self.board_arrival)
 		self.grand_presentation = GrandPresentation(self.screen_plane)
@@ -272,8 +253,8 @@ class C64Demo(PygameDemo):
 
 	def _spoken_sounds(self):
 		spoken_sounds = [self.mos_team_sound, self.pia_via_sound, self.mos_acquisition_sound,
-		                 self.pet_introduction.pet_sound, self.vic_sound, self.vic20_arrival.vic20_sound,
-		                 self.mos6510_arrival.replacement_sound, self.vic_ii_arrival.replacement_sound,
+		                 self.pet_introduction.computer_sound, self.vic_sound, self.vic20_arrival.computer_sound,
+		                 self.mos6510_arrival.swap_sound, self.vic_ii_arrival.swap_sound,
 		                 self.robert_yannes_introduction.sid_sound, self.cia_swap.swap_sound]
 		if self.basic_license is not None:
 			spoken_sounds.append(self.basic_license.basic_license_sound)
@@ -449,7 +430,8 @@ class C64Demo(PygameDemo):
 
 	def _move_basic_rom_with_basic_license(self):
 		if self.basic_license.talk_finished and not self.basic_rom_901226.visible:
-			self.basic_rom_901226.appear_between_jack_and_bill(self.basic_rom_appear_seconds)
+			self.basic_rom_901226.appear_at(self.basic_rom_fraction_from_left, self.basic_rom_fraction_from_top,
+			                                self.basic_rom_appear_seconds)
 		rom_is_still_between_jack_and_bill = self.basic_rom_901226.resting_pose.depth_behind_photo == 0.0
 		if self.basic_license.exit_has_started and rom_is_still_between_jack_and_bill:
 			self.basic_rom_901226.rise_next_to(self.via_6522, self.basic_license.exit_seconds)
@@ -466,7 +448,7 @@ class C64Demo(PygameDemo):
 		self.pet_introduction.update(seconds)
 		if self.pet_introduction.peddle_destroyed:
 			self.chuck_peddle = None
-		self.pet_introduction.draw_pet()
+		self.pet_introduction.draw()
 		if self.chuck_peddle is not None:
 			self.chuck_peddle.draw()
 		self._draw_chips()
@@ -550,7 +532,7 @@ class C64Demo(PygameDemo):
 			self._close_gap_left_by_pia()
 		gap_is_closed = self.chip_row_gap_is_closing and not any(
 			chip_animation.is_gliding for chip_animation in self._chip_row())
-		if gap_is_closed and self.vic20_arrival.phase == "arrived":
+		if gap_is_closed and self.vic20_arrival.waits_for_chip_list:
 			self.vic20_arrival.list_chips((self.processor_6502, self.via_6522, self.basic_rom_901226,
 			                               self.character_rom_901225, self.kernal_rom_901xxx, self.vic_chip_6560))
 		if self.vic20_arrival.done:

@@ -1,23 +1,24 @@
 import os
 
-import pygame
-
 from demos.forty_five.chips.chip_listing import ChipListing
+from demos.forty_five.paths import COMMODORE_HISTORY_DIRECTORY, COMMON_COMMODORE_DIRECTORY
+from demos.forty_five.phased_scene import PhasedScene
+from demos.forty_five.sound import load_sound
 from lib.flying_logo import ease_in_cubic, ease_out_cubic
 from lib.laser_line import PictureTexture
 from lib.picture_surface import PictureSurface
 
-FORTY_FIVE_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
-PET_IMAGE_PATH = os.path.join(os.path.dirname(FORTY_FIVE_DIRECTORY), "common", "commodore", "pet.png")
-PET_SOUND_PATH = os.path.join(FORTY_FIVE_DIRECTORY, "resources", "history", "c=", "77PET.mp3")
+PET_IMAGE_PATH = os.path.join(COMMON_COMMODORE_DIRECTORY, "pet.png")
+PET_SOUND_PATH = os.path.join(COMMODORE_HISTORY_DIRECTORY, "77PET.mp3")
 PET_CHIPS_HEADER = "Chips used in PET:"
 PET_CHIP_NAMES = ("Processor 6502", "PIA (I/O support)", "VIA (I/O support)", "BASIC ROM", "Character ROM",
                   "KERNAL ROM")
 
 
-class PetIntroduction:
+class PetIntroduction(PhasedScene):
 
 	def __init__(self, screen_plane):
+		super().__init__()
 		self.screen_plane = screen_plane
 		self.wait_seconds = 1.0
 		self.pet_height_in_screen_heights = 0.5
@@ -37,7 +38,7 @@ class PetIntroduction:
 		self.pet_picture = PictureTexture.load(PET_IMAGE_PATH)
 		self.pet = PictureSurface(self.pet_picture, screen_plane, self.pet_height_in_screen_heights,
 		                          swing_amplitude_degrees=self.pet_swing_amplitude_degrees)
-		self.pet_sound = self._load_sound(PET_SOUND_PATH)
+		self.pet_sound = load_sound(PET_SOUND_PATH)
 		self.chip_listing = ChipListing(screen_plane, PET_CHIPS_HEADER, PET_CHIP_NAMES, self.pet,
 		                                ((0.25, 0.05), (0.35, 0.05), (0.45, 0.05), (0.55, 0.05), (0.65, 0.05),
 		                                 (0.75, 0.05)))
@@ -45,17 +46,10 @@ class PetIntroduction:
 		self.chip_listing.place_in_bottom_right_corner(self.chip_listing_margin_in_screen_heights
 		                                               * screen_plane.visible_height)
 		self.chuck_peddle = None
+		self.basic_rom = None
 		self.character_rom = None
 		self.kernal_rom = None
 		self.peddle_destroyed = False
-		self.phase = "idle"
-		self.phase_seconds = 0.0
-
-	@staticmethod
-	def _load_sound(sound_path):
-		if not pygame.mixer.get_init():
-			pygame.mixer.init()
-		return pygame.mixer.Sound(sound_path)
 
 	def begin(self, chuck_peddle, processor, pia, via, basic_rom, character_rom, kernal_rom):
 		self.chuck_peddle = chuck_peddle
@@ -66,10 +60,6 @@ class PetIntroduction:
 		self.chip_listing.begin((processor, pia, via, basic_rom, character_rom, kernal_rom))
 		self.pet_drop_start_y = None
 		self._enter("wait")
-
-	def _enter(self, phase):
-		self.phase = phase
-		self.phase_seconds = 0.0
 
 	@property
 	def done(self):

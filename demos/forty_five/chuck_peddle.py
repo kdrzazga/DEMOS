@@ -1,13 +1,12 @@
 import os
 
-from OpenGL.GL import *
-
+from demos.forty_five.overlay import screen_overlay
+from demos.forty_five.paths import MOS_HISTORY_DIRECTORY
 from demos.forty_five.picture_description import PictureDescription
 from lib.laser_line import PictureTexture
 from lib.picture_surface import PictureSurface
 
-CHUCK_PEDDLE_IMAGE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "history", "mos",
-                                       "peddle.jpg")
+CHUCK_PEDDLE_IMAGE_PATH = os.path.join(MOS_HISTORY_DIRECTORY, "peddle.jpg")
 CHUCK_PEDDLE_NAME_LINES = ("Charles", "Peddle")
 
 
@@ -36,16 +35,9 @@ class ChuckPeddleSurface(PictureSurface):
 		center_x, center_y = self.world_center_point
 		visible_height = self.screen_plane.visible_height
 		caption_top_y = center_y - self.picture_height / 2 - self.picture_description_gap_in_screen_heights * visible_height
-		glPushAttrib(GL_ENABLE_BIT | GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT)
-		glDisable(GL_LIGHTING)
-		glDisable(GL_DEPTH_TEST)
-		glMatrixMode(GL_MODELVIEW)
-		glPushMatrix()
-		glLoadIdentity()
-		self.picture_description.draw_below(center_x, caption_top_y, -self.screen_plane.camera_distance,
-		                             self.picture_description_line_height_in_screen_heights * visible_height)
-		glPopMatrix()
-		glPopAttrib()
+		with screen_overlay():
+			self.picture_description.draw_below(center_x, caption_top_y, -self.screen_plane.camera_distance,
+			                                    self.picture_description_line_height_in_screen_heights * visible_height)
 
 	def destroy(self):
 		super().destroy()

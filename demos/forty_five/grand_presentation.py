@@ -2,9 +2,10 @@ import pygame
 from OpenGL.GL import *
 
 from lib.geometry import upload_texture
-from lib.typing_effect.typed_label import TypedLabel
 from lib.laser_line import smooth_step
 from demos.forty_five.font import FONT_PATH
+from demos.forty_five.overlay import screen_overlay
+from demos.forty_five.typed_lines import built_typed_label, draw_label_facing_screen
 
 ANNOUNCEMENT_LINES = (
 	"Ladies and gentlemen!",
@@ -147,11 +148,8 @@ class GrandPresentation:
 		self.frames_per_letter = 4
 		self.pause_seconds_between_lines = 1.0
 		self.line_margin_from_bottom = 0.8
-		self.announcement_labels = tuple(TypedLabel(line, self.line_height, frames_per_letter=self.frames_per_letter,
-		                                            font_path=FONT_PATH)
+		self.announcement_labels = tuple(built_typed_label(line, self.line_height, self.frames_per_letter)
 		                                 for line in ANNOUNCEMENT_LINES)
-		for label in self.announcement_labels:
-			label.build()
 		self.model_to_make_height_ratio = 1.6
 		self.gap_in_make_heights = 0.15
 		self.captions_centre_y_in_screen_heights = 0.05
@@ -244,19 +242,11 @@ class GrandPresentation:
 	def draw_overlay(self):
 		if self.phase == "idle":
 			return
-		glPushAttrib(GL_ENABLE_BIT | GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT)
-		glDisable(GL_LIGHTING)
-		glDisable(GL_DEPTH_TEST)
-		glMatrixMode(GL_MODELVIEW)
-		glPushMatrix()
-		glLoadIdentity()
-		self._draw_captions()
-		if self.phase != "retreat":
-			line_y = -self.screen_plane.visible_height / 2 + self.line_margin_from_bottom
-			self._current_label.draw((0.0, line_y, -self.screen_plane.camera_distance), (1.0, 0.0, 0.0),
-			                         (0.0, 1.0, 0.0))
-		glPopMatrix()
-		glPopAttrib()
+		with screen_overlay():
+			self._draw_captions()
+			if self.phase != "retreat":
+				line_y = -self.screen_plane.visible_height / 2 + self.line_margin_from_bottom
+				draw_label_facing_screen(self._current_label, 0.0, line_y, self.screen_plane)
 
 	def _draw_captions(self):
 		retreat_progress = self._retreat_progress()

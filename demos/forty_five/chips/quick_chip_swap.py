@@ -1,14 +1,12 @@
 import os
 
-import pygame
-from OpenGL.GL import *
-
 from demos.forty_five.chips.chip_name_flash import ChipNameFlash
-from demos.forty_five.font import FONT_PATH
-from lib.typing_effect.typed_label import TypedLabel
+from demos.forty_five.overlay import screen_overlay
+from demos.forty_five.paths import COMMODORE_HISTORY_DIRECTORY
+from demos.forty_five.sound import load_sound
+from demos.forty_five.typed_lines import built_typed_label, draw_label_facing_screen
 
-FORTY_FIVE_DIRECTORY = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CIA_SOUND_PATH = os.path.join(FORTY_FIVE_DIRECTORY, "resources", "history", "c=", "CIA.mp3")
+CIA_SOUND_PATH = os.path.join(COMMODORE_HISTORY_DIRECTORY, "CIA.mp3")
 CIA_SWAP_CAPTION = "VIA (6522) -> CIA (6526)"
 CIA_SWAP_PREDECESSOR_NAME = "VIA"
 
@@ -22,21 +20,13 @@ class QuickChipSwap:
 		self.swap_seconds = 3.0
 		self.caption_height = 0.5
 		self.caption_frames_per_letter = 4
-		self.swap_sound = self._load_sound(sound_path)
-		self.caption_label = TypedLabel(caption, self.caption_height, frames_per_letter=self.caption_frames_per_letter,
-		                                font_path=FONT_PATH)
-		self.caption_label.build()
+		self.swap_sound = load_sound(sound_path)
+		self.caption_label = built_typed_label(caption, self.caption_height, self.caption_frames_per_letter)
 		self.newcomer = None
 		self.predecessor = None
 		self.place_of_predecessor = None
 		self.sound_seconds = 0.0
 		self.phase = "idle"
-
-	@staticmethod
-	def _load_sound(sound_path):
-		if not pygame.mixer.get_init():
-			pygame.mixer.init()
-		return pygame.mixer.Sound(sound_path)
 
 	@property
 	def done(self):
@@ -75,15 +65,8 @@ class QuickChipSwap:
 		return self.sound_seconds >= self.swap_sound.get_length() and self.caption_label.finished
 
 	def draw_overlay(self):
-		glPushAttrib(GL_ENABLE_BIT | GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT)
-		glDisable(GL_LIGHTING)
-		glDisable(GL_DEPTH_TEST)
-		glMatrixMode(GL_MODELVIEW)
-		glPushMatrix()
-		glLoadIdentity()
-		self.caption_label.draw((0.0, 0.0, -self.screen_plane.camera_distance), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0))
-		glPopMatrix()
-		glPopAttrib()
+		with screen_overlay():
+			draw_label_facing_screen(self.caption_label, 0.0, 0.0, self.screen_plane)
 		self.predecessor_name_flash.draw()
 
 	def destroy(self):

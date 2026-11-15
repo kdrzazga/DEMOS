@@ -1,8 +1,7 @@
-from OpenGL.GL import *
-
 from demos.forty_five.anims.socket_move import SocketMove
-from demos.forty_five.font import FONT_PATH
-from lib.typing_effect.typed_label import TypedLabel
+from demos.forty_five.overlay import screen_overlay
+from demos.forty_five.phased_scene import PhasedScene
+from demos.forty_five.typed_lines import built_typed_label, draw_label_facing_screen
 
 
 class AssemblyStep:
@@ -15,9 +14,10 @@ class AssemblyStep:
 		self.arrival_neighbour = arrival_neighbour
 
 
-class ChipAssembly:
+class ChipAssembly(PhasedScene):
 
 	def __init__(self, screen_plane):
+		super().__init__()
 		self.screen_plane = screen_plane
 		self.caption_height = 0.6
 		self.caption_bottom_margin = 0.3
@@ -27,8 +27,6 @@ class ChipAssembly:
 		self.steps = ()
 		self.caption_labels = ()
 		self.step_index = 0
-		self.phase = "idle"
-		self.phase_seconds = 0.0
 
 	@property
 	def done(self):
@@ -36,17 +34,10 @@ class ChipAssembly:
 
 	def begin(self, steps):
 		self.steps = tuple(steps)
-		self.caption_labels = tuple(TypedLabel(step.caption, self.caption_height,
-		                                       frames_per_letter=self.caption_frames_per_letter, font_path=FONT_PATH)
+		self.caption_labels = tuple(built_typed_label(step.caption, self.caption_height, self.caption_frames_per_letter)
 		                            for step in self.steps)
-		for label in self.caption_labels:
-			label.build()
 		self.step_index = 0
 		self._enter("typing")
-
-	def _enter(self, phase):
-		self.phase = phase
-		self.phase_seconds = 0.0
 
 	@property
 	def _current_step(self):
@@ -101,16 +92,8 @@ class ChipAssembly:
 		if self.phase in ("idle", "done"):
 			return
 		caption_y = -self.screen_plane.visible_height / 2 + self.caption_bottom_margin + self.caption_height / 2
-		glPushAttrib(GL_ENABLE_BIT | GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT)
-		glDisable(GL_LIGHTING)
-		glDisable(GL_DEPTH_TEST)
-		glMatrixMode(GL_MODELVIEW)
-		glPushMatrix()
-		glLoadIdentity()
-		self._current_label.draw((0.0, caption_y, -self.screen_plane.camera_distance), (1.0, 0.0, 0.0),
-		                         (0.0, 1.0, 0.0))
-		glPopMatrix()
-		glPopAttrib()
+		with screen_overlay():
+			draw_label_facing_screen(self._current_label, 0.0, caption_y, self.screen_plane)
 
 	def destroy(self):
 		for label in self.caption_labels:

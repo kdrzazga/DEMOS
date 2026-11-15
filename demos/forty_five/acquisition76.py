@@ -10,13 +10,13 @@ from lib.morphing_caption import MorphingCaption
 from lib.picture_surface import PictureSurface
 from lib.speech_bubble import SpeechBubble
 from demos.forty_five.font import FONT_PATH
+from demos.forty_five.paths import COMMODORE_HISTORY_DIRECTORY, MOS_HISTORY_DIRECTORY
 
-HISTORY_DIRECTORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "history")
-JABBA_IMAGE_PATH = os.path.join(HISTORY_DIRECTORY, "c=", "jabba.png")
-JACK_TRAMIEL_IMAGE_PATH = os.path.join(HISTORY_DIRECTORY, "c=", "Jack.png")
-JACK_TRAMIEL_BIG_IMAGE_PATH = os.path.join(HISTORY_DIRECTORY, "c=", "JackBig.png")
+JABBA_IMAGE_PATH = os.path.join(COMMODORE_HISTORY_DIRECTORY, "jabba.png")
+JACK_TRAMIEL_IMAGE_PATH = os.path.join(COMMODORE_HISTORY_DIRECTORY, "Jack.png")
+JACK_TRAMIEL_BIG_IMAGE_PATH = os.path.join(COMMODORE_HISTORY_DIRECTORY, "JackBig.png")
 JACK_PICTURE_TOP_LEFT_PIXEL_INSIDE_BIG_PICTURE = (121, 0)
-MOS_LOGO_IMAGE_PATH = os.path.join(HISTORY_DIRECTORY, "mos", "logo.png")
+MOS_LOGO_IMAGE_PATH = os.path.join(MOS_HISTORY_DIRECTORY, "logo.png")
 JABBA_TO_JACK_CAPTION_SEGMENTS = (("Ja", "Ja"), ("bba", "ck"), (" T", " T"), ("he Hutt", "ramiel"))
 JACK_TRAMIEL_SPEECH_LINES = ("Time to buy", "MOS Technology")
 ACQUISITION_YEAR_FLASHES = ("1976", "1976", "1976")

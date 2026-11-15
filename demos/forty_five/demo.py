@@ -70,8 +70,10 @@ from demos.forty_five.assembly84 import AssemblyStep, ChipAssembly
 from demos.forty_five.chips.chip_replacement import (ChipReplacement, MOS6510_SOUND_PATH, MOS6510_TEXT_LINES,
                                                 MOS6510_PREDECESSOR_NAME, VIC_II_SOUND_PATH, VIC_II_TEXT_LINES,
                                                 VIC_II_PREDECESSOR_NAME)
+from demos.forty_five.paths import RESOURCES_DIRECTORY
 from demos.forty_five.scene import setup_scene
-from lib.typing_effect.typed_label import TypedLabel
+from demos.forty_five.sound import load_sound
+from demos.forty_five.typed_lines import built_typed_label
 
 
 class C64Demo(PygameDemo):
@@ -81,7 +83,7 @@ class C64Demo(PygameDemo):
 		self.presents = presents
 		self.fov = 40.0
 		self.background = (0.0, 0.0, 0.0)
-		self.resources = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources")
+		self.resources = RESOURCES_DIRECTORY
 		self.intro_video = "iny.mp4"
 		self.intro_audio = "iny.wav"
 		self.presents_height = 1.1
@@ -129,18 +131,17 @@ class C64Demo(PygameDemo):
 		self.computer.build()
 		self.animation = CrashAnimationText(self.computer, aspect, self.fov, self.caption, fps=self.fps,
 		                                    caption_hold_seconds=0.0)
-		self.presents_label = TypedLabel(self.presents, self.presents_height, font_path=FONT_PATH)
-		self.presents_label.build()
+		self.presents_label = built_typed_label(self.presents, self.presents_height)
 
 		self.mos_team = MosTeamFactory.create_default_mos_team(aspect, self.fov)
-		self.mos_team_sound = self._load_sound(self.mos_team_sound_path)
+		self.mos_team_sound = load_sound(self.mos_team_sound_path)
 		self.processor_6502 = Processor6502Animation(aspect, self.fov, self.mos_team.camera_distance,
 		                                             self.mos_team.picture_width, self.mos_team.params.picture_height)
 		self.pia_6520 = PeripheralChip652xAnimation("6520", aspect, self.fov, self.mos_team.camera_distance,
 		                                            self.mos_team.picture_width, self.mos_team.params.picture_height)
 		self.via_6522 = PeripheralChip652xAnimation("6522", aspect, self.fov, self.mos_team.camera_distance,
 		                                            self.mos_team.picture_width, self.mos_team.params.picture_height)
-		self.pia_via_sound = self._load_sound(self.pia_via_sound_path)
+		self.pia_via_sound = load_sound(self.pia_via_sound_path)
 		self.pia_via_sound_seconds = None
 		self.pia_and_via_have_joined_processor = False
 		self.pia_via_name_flashes = (ChipNameFlash(self.pia_6520, "PIA"), ChipNameFlash(self.via_6522, "VIA"))
@@ -163,12 +164,12 @@ class C64Demo(PygameDemo):
 		self.screen_plane = ScreenPlane(aspect, self.fov)
 		self.chuck_peddle = ChuckPeddleSurface(self.screen_plane)
 		self.mos_acquisition = MosAcquisition(self.screen_plane)
-		self.mos_acquisition_sound = self._load_sound(self.mos_acquisition_sound_path)
+		self.mos_acquisition_sound = load_sound(self.mos_acquisition_sound_path)
 		self.mos_acquisition_sound_seconds = None
 		self.basic_license = BasicLicense(self.screen_plane)
 		self.pet_introduction = PetIntroduction(self.screen_plane)
 		self.al_charpentier_show = MosTeamFactory.create_al_charpentier_show(aspect, self.fov)
-		self.vic_sound = self._load_sound(self.vic_sound_path)
+		self.vic_sound = load_sound(self.vic_sound_path)
 		self.vic20_arrival = Vic20Arrival(self.screen_plane)
 		self.processor_6510 = Processor6510Animation(aspect, self.fov, self.mos_team.camera_distance,
 		                                             self.mos_team.picture_width, self.mos_team.params.picture_height)
@@ -756,12 +757,6 @@ class C64Demo(PygameDemo):
 		if show.done and not show.is_leaving:
 			show.leave_through_bottom(self.al_charpentier_exit_seconds)
 			self.vic_chip_6560.rise_next_to(self.kernal_rom_901xxx, self.al_charpentier_exit_seconds)
-
-	@staticmethod
-	def _load_sound(path):
-		if not pygame.mixer.get_init():
-			pygame.mixer.init()
-		return pygame.mixer.Sound(path)
 
 	@staticmethod
 	def _play_music(path, loops=0):

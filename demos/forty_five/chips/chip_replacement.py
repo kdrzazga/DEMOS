@@ -1,14 +1,11 @@
 import os
 
-import pygame
-from OpenGL.GL import *
-
 from demos.forty_five.chips.chip_name_flash import ChipNameFlash
-from demos.forty_five.font import FONT_PATH
-from lib.typing_effect.typed_label import TypedLabel
+from demos.forty_five.overlay import screen_overlay
+from demos.forty_five.paths import COMMODORE_HISTORY_DIRECTORY
+from demos.forty_five.sound import load_sound
+from demos.forty_five.typed_lines import TypedLines, built_typed_label, draw_label_facing_screen
 
-FORTY_FIVE_DIRECTORY = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-COMMODORE_HISTORY_DIRECTORY = os.path.join(FORTY_FIVE_DIRECTORY, "resources", "history", "c=")
 MOS6510_SOUND_PATH = os.path.join(COMMODORE_HISTORY_DIRECTORY, "6510.mp3")
 MOS6510_TEXT_LINES = ("MOS 6510 was supposed to replace", "its older buddy 6502")
 MOS6510_PREDECESSOR_NAME = "  6502"
@@ -31,23 +28,13 @@ class ChipReplacement:
 		self.text_line_gap = 0.3
 		self.text_frames_per_letter = 4
 		self.text_top_line_y = -2.4
-		self.replacement_sound = self._load_sound(sound_path)
-		self.text_labels = tuple(TypedLabel(text, self.text_line_height, frames_per_letter=self.text_frames_per_letter,
-		                                    font_path=FONT_PATH)
-		                         for text in text_lines)
-		for label in self.text_labels:
-			label.build()
+		self.replacement_sound = load_sound(sound_path)
+		self.typed_lines = TypedLines(built_typed_label(text, self.text_line_height, self.text_frames_per_letter)
+		                              for text in text_lines)
 		self.newcomer = None
 		self.predecessor = None
 		self.sound_seconds = 0.0
-		self.typing_index = 0
 		self.phase = "idle"
-
-	@staticmethod
-	def _load_sound(sound_path):
-		if not pygame.mixer.get_init():
-			pygame.mixer.init()
-		return pygame.mixer.Sound(sound_path)
 
 	@property
 	def done(self):
@@ -58,9 +45,7 @@ class ChipReplacement:
 		self.predecessor = predecessor
 		self.predecessor_name_flash = ChipNameFlash.before_gallery_removal(predecessor,self.predecessor_name)
 		self.predecessor_name_flash.build()
-		for label in self.text_labels:
-			label.restart()
-		self.typing_index = 0
+		self.typed_lines.restart()
 		self.sound_seconds = 0.0
 		self.replacement_sound.play()
 		self.newcomer.drive_to_screen_centre_turning_horizontal(self.drive_in_seconds, self.chip_height_in_photo_heights)
@@ -79,13 +64,8 @@ class ChipReplacement:
 			self.phase = "done"
 
 	def _advance_typing(self):
-		label = self.text_labels[self.typing_index]
-		label.update()
-		if not label.finished:
-			return
-		if self.typing_index + 1 < len(self.text_labels):
-			self.typing_index += 1
-		else:
+		self.typed_lines.update()
+		if self.typed_lines.finished:
 			self.phase = "listening"
 
 	def _name_predecessor_as_sound_ends(self):
@@ -105,23 +85,14 @@ class ChipReplacement:
 	def draw_overlay(self):
 		if self.phase in ("idle", "drive_in"):
 			return
-		glPushAttrib(GL_ENABLE_BIT | GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT)
-		glDisable(GL_LIGHTING)
-		glDisable(GL_DEPTH_TEST)
-		glMatrixMode(GL_MODELVIEW)
-		glPushMatrix()
-		glLoadIdentity()
 		line_step = self.text_line_height + self.text_line_gap
-		depth = -self.screen_plane.camera_distance
-		for index, label in enumerate(self.text_labels):
-			label.draw((0.0, self.text_top_line_y - index * line_step, depth), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0))
-		glPopMatrix()
-		glPopAttrib()
+		with screen_overlay():
+			for index, label in enumerate(self.typed_lines.labels):
+				draw_label_facing_screen(label, 0.0, self.text_top_line_y - index * line_step, self.screen_plane)
 		self.predecessor_name_flash.draw()
 
 	def destroy(self):
 		self.replacement_sound.stop()
-		for label in self.text_labels:
-			label.destroy()
+		self.typed_lines.destroy()
 		if self.predecessor_name_flash:
 			self.predecessor_name_flash.destroy()

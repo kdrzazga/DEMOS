@@ -15,6 +15,8 @@ import random
 import pygame
 from OpenGL.GL import *
 
+from demos.forty_five.sound import load_sound
+
 
 class FlyingKey:
 
@@ -64,7 +66,7 @@ class CrashAnimation:
 		self.key_spin = key_spin
 		self.case_tilt_speed = case_tilt_speed
 		self.seed = seed
-		self.sound = self._load_sound(sound_path) if play_sound else None
+		self.sound = load_sound(sound_path) if play_sound else None
 
 		placed = computer.key_world_positions()
 		left = min(x - key.width * computer.key_pitch / 2 for key, (x, _, _) in placed)
@@ -88,12 +90,6 @@ class CrashAnimation:
 		if self.sound:
 			self.sound.stop()
 		self.flying_keys = self._launch_keys(random.Random(self.seed))
-
-	@staticmethod
-	def _load_sound(sound_path):
-		if not pygame.mixer.get_init():
-			pygame.mixer.init()
-		return pygame.mixer.Sound(sound_path)
 
 	def _launch_keys(self, rng):
 		placed = self.computer.key_world_positions()

@@ -1,23 +1,24 @@
 import os
 
-import pygame
-
 from demos.forty_five.chips.chip_listing import ChipListing
+from demos.forty_five.paths import COMMODORE_HISTORY_DIRECTORY, COMMON_COMMODORE_DIRECTORY
+from demos.forty_five.phased_scene import PhasedScene
+from demos.forty_five.sound import load_sound
 from lib.flying_logo import ease_in_cubic, ease_out_cubic
 from lib.laser_line import PictureTexture
 from lib.picture_surface import PictureSurface
 
-FORTY_FIVE_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
-VIC20_IMAGE_PATH = os.path.join(os.path.dirname(FORTY_FIVE_DIRECTORY), "common", "commodore", "vic20.png")
-VIC20_SOUND_PATH = os.path.join(FORTY_FIVE_DIRECTORY, "resources", "history", "c=", "80VIC-20.mp3")
+VIC20_IMAGE_PATH = os.path.join(COMMON_COMMODORE_DIRECTORY, "vic20.png")
+VIC20_SOUND_PATH = os.path.join(COMMODORE_HISTORY_DIRECTORY, "80VIC-20.mp3")
 VIC20_CHIPS_HEADER = "Chips used in VIC-20:"
 VIC20_CHIP_NAMES = ("Processor 6502", "VIA (I/O chip)", "BASIC ROM", "Character ROM", "KERNAL ROM",
                     "VIC (MOS 6560)")
 
 
-class Vic20Arrival:
+class Vic20Arrival(PhasedScene):
 
 	def __init__(self, screen_plane):
+		super().__init__()
 		self.screen_plane = screen_plane
 		self.wait_seconds = 2.0
 		self.vic20_height_in_screen_heights = 0.4
@@ -26,7 +27,7 @@ class Vic20Arrival:
 		self.vic20_picture = PictureTexture.load(VIC20_IMAGE_PATH)
 		self.vic20 = PictureSurface(self.vic20_picture, screen_plane, self.vic20_height_in_screen_heights,
 		                            swing_amplitude_degrees=self.vic20_swing_amplitude_degrees)
-		self.vic20_sound = self._load_sound(VIC20_SOUND_PATH)
+		self.vic20_sound = load_sound(VIC20_SOUND_PATH)
 		self.chip_listing = ChipListing(screen_plane, VIC20_CHIPS_HEADER, VIC20_CHIP_NAMES, self.vic20,
 		                                ((0.25, 0.1), (0.35, 0.1), (0.45, 0.1), (0.55, 0.1), (0.65, 0.1),
 		                                 (0.75, 0.1)))
@@ -38,21 +39,9 @@ class Vic20Arrival:
 		self.listing_hold_seconds = 4.0
 		self.vic20_drop_seconds = 1.5
 		self.vic20_drop_start_y = None
-		self.phase = "idle"
-		self.phase_seconds = 0.0
-
-	@staticmethod
-	def _load_sound(sound_path):
-		if not pygame.mixer.get_init():
-			pygame.mixer.init()
-		return pygame.mixer.Sound(sound_path)
 
 	def begin(self):
 		self._enter("wait")
-
-	def _enter(self, phase):
-		self.phase = phase
-		self.phase_seconds = 0.0
 
 	@property
 	def vic20_visible(self):

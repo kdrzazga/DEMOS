@@ -2,22 +2,23 @@ import os
 
 from OpenGL.GL import *
 
-from demos.forty_five.font import FONT_PATH
+from demos.forty_five.overlay import screen_overlay
+from demos.forty_five.paths import LIB_RESOURCES_DIRECTORY
+from demos.forty_five.phased_scene import PhasedScene
+from demos.forty_five.typed_lines import built_typed_label, draw_label_facing_screen
 from lib.geometry import image_texture
-from lib.typing_effect.typed_label import TypedLabel
 from lib.laser_line import smooth_step
 
-LIB_RESOURCES_DIRECTORY = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-                                       "lib", "resources")
 KOMODA_AMIGA_PLUS_LOGO_PATH = os.path.join(LIB_RESOURCES_DIRECTORY, "K&Alogo.png")
 DEMO_WORD = "Demo"
 BROUGHT_BY_WORDS = "brought to you by"
 CREDITS_LINE = "Pls visit: https://ka-plus.pl/en/"
 
 
-class FinalGoodbye:
+class FinalGoodbye(PhasedScene):
 
 	def __init__(self, screen_plane, grand_presentation, farewell_message):
+		super().__init__()
 		self.screen_plane = screen_plane
 		self.grand_presentation = grand_presentation
 		self.farewell_message = farewell_message
@@ -42,13 +43,9 @@ class FinalGoodbye:
 		self.credits_label = self._label(CREDITS_LINE, self.credits_line_height)
 		self.logo_texture, self.logo_aspect = image_texture(KOMODA_AMIGA_PLUS_LOGO_PATH)
 		self.years_count_start_centre = (0.0, 0.0)
-		self.phase_elapsed_seconds = 0.0
-		self.phase = "idle"
 
 	def _label(self, text, height):
-		label = TypedLabel(text, height, frames_per_letter=self.frames_per_letter, font_path=FONT_PATH)
-		label.build()
-		return label
+		return built_typed_label(text, height, self.frames_per_letter)
 
 	@property
 	def started(self):
@@ -56,7 +53,7 @@ class FinalGoodbye:
 
 	@property
 	def done(self):
-		return self.phase == "screen_fade" and self.phase_elapsed_seconds >= self.screen_fade_seconds
+		return self.phase == "screen_fade" and self.phase_seconds >= self.screen_fade_seconds
 
 	def _seconds_until_end(self):
 		after_credits_seconds = self.hold_seconds_before_screen_fade + self.screen_fade_seconds
@@ -64,9 +61,9 @@ class FinalGoodbye:
 			remaining_frames = len(self.credits_label.text) * self.frames_per_letter - self.credits_label.frame
 			return remaining_frames / self.frames_per_second + after_credits_seconds
 		if self.phase == "hold":
-			return after_credits_seconds - self.phase_elapsed_seconds
+			return after_credits_seconds - self.phase_seconds
 		if self.phase == "screen_fade":
-			return self.screen_fade_seconds - self.phase_elapsed_seconds
+			return self.screen_fade_seconds - self.phase_seconds
 		return None
 
 	@property
@@ -83,38 +80,34 @@ class FinalGoodbye:
 		self.years_count_start_centre = self.grand_presentation.years_count_corner_centre
 		self._enter("caption_fade")
 
-	def _enter(self, phase):
-		self.phase = phase
-		self.phase_elapsed_seconds = 0.0
-
 	def _phase_progress(self, seconds):
-		return smooth_step(min(1.0, self.phase_elapsed_seconds / seconds))
+		return smooth_step(min(1.0, self.phase_seconds / seconds))
 
 	@property
 	def _years_count_centre_target(self):
 		return 0.0, (0.5 - self.years_count_centre_fraction_from_top) * self.screen_plane.visible_height
 
 	def update(self, seconds):
-		self.phase_elapsed_seconds += seconds
+		self.phase_seconds += seconds
 		if self.phase == "caption_fade":
 			remaining_opacity = 1.0 - self._phase_progress(self.caption_fade_seconds)
 			self.grand_presentation.dim_all_but_years_count(remaining_opacity)
 			self.farewell_message.set_opacity(remaining_opacity)
-			if self.phase_elapsed_seconds >= self.caption_fade_seconds:
+			if self.phase_seconds >= self.caption_fade_seconds:
 				self._enter("years_count_move")
 		elif self.phase == "years_count_move":
 			self._move_years_count()
-			if self.phase_elapsed_seconds >= self.years_count_move_seconds:
+			if self.phase_seconds >= self.years_count_move_seconds:
 				self._enter("demo_typing")
 		elif self.phase == "demo_typing":
 			self._type_then_enter(self.demo_label, "brought_by_typing")
 		elif self.phase == "brought_by_typing":
 			self._type_then_enter(self.brought_by_label, "logo_fade")
-		elif self.phase == "logo_fade" and self.phase_elapsed_seconds >= self.logo_fade_seconds:
+		elif self.phase == "logo_fade" and self.phase_seconds >= self.logo_fade_seconds:
 			self._enter("credits_typing")
 		elif self.phase == "credits_typing":
 			self._type_then_enter(self.credits_label, "hold")
-		elif self.phase == "hold" and self.phase_elapsed_seconds >= self.hold_seconds_before_screen_fade:
+		elif self.phase == "hold" and self.phase_seconds >= self.hold_seconds_before_screen_fade:
 			self._enter("screen_fade")
 
 	def _move_years_count(self):
@@ -136,22 +129,15 @@ class FinalGoodbye:
 	def draw_overlay(self):
 		if not self.started:
 			return
-		glPushAttrib(GL_ENABLE_BIT | GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT)
-		glDisable(GL_LIGHTING)
-		glDisable(GL_DEPTH_TEST)
-		glMatrixMode(GL_MODELVIEW)
-		glPushMatrix()
-		glLoadIdentity()
-		self._draw_words_beside_years_count()
-		if self._has_reached("logo_fade"):
-			self._draw_logo()
-		if self._has_reached("credits_typing"):
-			credits_y = (0.5 - self.credits_centre_fraction_from_top) * self.screen_plane.visible_height
-			self.credits_label.draw((0.0, credits_y, self._depth), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0))
-		if self.phase == "screen_fade":
-			self._draw_black_veil(self._phase_progress(self.screen_fade_seconds))
-		glPopMatrix()
-		glPopAttrib()
+		with screen_overlay():
+			self._draw_words_beside_years_count()
+			if self._has_reached("logo_fade"):
+				self._draw_logo()
+			if self._has_reached("credits_typing"):
+				credits_y = (0.5 - self.credits_centre_fraction_from_top) * self.screen_plane.visible_height
+				draw_label_facing_screen(self.credits_label, 0.0, credits_y, self.screen_plane)
+			if self.phase == "screen_fade":
+				self._draw_black_veil(self._phase_progress(self.screen_fade_seconds))
 
 	@property
 	def _depth(self):
@@ -166,8 +152,8 @@ class FinalGoodbye:
 		brought_by_width = self.brought_by_label.height * self.brought_by_label.aspect
 		demo_x = centre_x - years_count_half_width - self.gap_beside_years_count - demo_width / 2
 		brought_by_x = centre_x + years_count_half_width + self.gap_beside_years_count + brought_by_width / 2
-		self.demo_label.draw((demo_x, centre_y, self._depth), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0))
-		self.brought_by_label.draw((brought_by_x, centre_y, self._depth), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0))
+		draw_label_facing_screen(self.demo_label, demo_x, centre_y, self.screen_plane)
+		draw_label_facing_screen(self.brought_by_label, brought_by_x, centre_y, self.screen_plane)
 
 	def _draw_logo(self):
 		opacity = 1.0 - self._phase_progress(self.screen_fade_seconds) if self.phase == "screen_fade" else 1.0

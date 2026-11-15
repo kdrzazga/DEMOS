@@ -2,8 +2,8 @@
 
 Run from the DEMOS project root:
 
-    python -m demos.c64.c64c.test.test_crash_animation_text
-    python -m demos.c64.c64c.test.test_crash_animation_text "HELLO WORLD"
+    python -m demos.forty_five.c64c.test.test_crash_animation_text
+    python -m demos.forty_five.c64c.test.test_crash_animation_text "HELLO WORLD"
 
 The caption defaults to COMMODORE 64, which repeats O and M, so the gap
 filling shows too. SPACE replays at once, otherwise it replays a second after
@@ -16,7 +16,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(
 	os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))))
 
-from demos.forty_five.c64c.crash_animation import CrashAnimationText
+from demos.forty_five.c64c.keyboard_crash_anim import CrashAnimationText
 from demos.forty_five.c64c.test.test_crash_animation import CrashAnimationTest
 
 

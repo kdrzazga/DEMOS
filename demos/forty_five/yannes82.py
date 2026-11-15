@@ -1,14 +1,14 @@
 import os
 
-import pygame
 from OpenGL.GL import *
 
 from demos.forty_five.mos_team75 import MosTeamFactory
 from lib.speech_bubble import SpeechBubble
 from demos.forty_five.font import FONT_PATH
+from demos.forty_five.paths import COMMODORE_HISTORY_DIRECTORY
+from demos.forty_five.sound import load_sound
 
-FORTY_FIVE_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
-SID_SOUND_PATH = os.path.join(FORTY_FIVE_DIRECTORY, "resources", "history", "c=", "SID.mp3")
+SID_SOUND_PATH = os.path.join(COMMODORE_HISTORY_DIRECTORY, "SID.mp3")
 ROBERT_YANNES_SPEECH_LINES = ("I'd worked with synthesizers", "and I wanted a chip that was", "a music synthesizer.")
 
 
@@ -28,7 +28,7 @@ class RobertYannesIntroduction:
 		self.speech_bubble_anchor_fraction_from_picture_bottom = 0.5
 		self.photo_exit_seconds = 1.5
 		self.show = MosTeamFactory.create_robert_yannes_show(aspect_ratio, field_of_view_degrees)
-		self.sid_sound = self._load_sound(SID_SOUND_PATH)
+		self.sid_sound = load_sound(SID_SOUND_PATH)
 		self.speech_bubble = SpeechBubble(None, size=self.speech_bubble_font_size, lines=ROBERT_YANNES_SPEECH_LINES,
 		                                  font_path=FONT_PATH)
 		self.speech_bubble.silent_seconds = float("inf")
@@ -41,12 +41,6 @@ class RobertYannesIntroduction:
 		self.elapsed_seconds = 0.0
 		self.sid_has_arrived = False
 		self.sid_has_set_off = False
-
-	@staticmethod
-	def _load_sound(sound_path):
-		if not pygame.mixer.get_init():
-			pygame.mixer.init()
-		return pygame.mixer.Sound(sound_path)
 
 	@property
 	def done(self):

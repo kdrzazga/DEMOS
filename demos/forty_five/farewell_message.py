@@ -1,7 +1,5 @@
-from OpenGL.GL import *
-
-from demos.forty_five.font import FONT_PATH
-from lib.typing_effect.typed_label import TypedLabel
+from demos.forty_five.overlay import screen_overlay
+from demos.forty_five.typed_lines import TypedLines, built_typed_label, draw_label_facing_screen
 
 THANKS_LINE = "Thanks for watching !"
 CIGARS_WARNING_LINE = "Don't smoke cigars !"
@@ -34,13 +32,12 @@ class FarewellMessage:
 		               self.anniversary_label)
 		self.blinking_labels = (self.cigars_warning_label, self.retro_warning_label)
 		self._fit_lines_into_width()
-		self.typing_index = 0
+		self.typed_lines = TypedLines(self.labels)
 		self.seconds_since_typed = 0.0
 		self.phase = "idle"
 
 	def _label(self, text, tint_rgb):
-		label = TypedLabel(text, self.wanted_line_height, frames_per_letter=self.frames_per_letter, font_path=FONT_PATH)
-		label.build()
+		label = built_typed_label(text, self.wanted_line_height, self.frames_per_letter)
 		label.tint_rgb = tint_rgb
 		return label
 
@@ -60,27 +57,17 @@ class FarewellMessage:
 		return self.phase == "holding" and self.seconds_since_typed >= self.hold_seconds_after_typing
 
 	def begin(self):
-		for label in self.labels:
-			label.restart()
-		self.typing_index = 0
+		self.typed_lines.restart()
 		self.seconds_since_typed = 0.0
 		self.phase = "typing"
 
 	def update(self, seconds):
 		if self.phase == "typing":
-			self._advance_typing()
+			self.typed_lines.update()
+			if self.typed_lines.finished:
+				self.phase = "holding"
 		elif self.phase == "holding":
 			self.seconds_since_typed += seconds
-
-	def _advance_typing(self):
-		label = self.labels[self.typing_index]
-		label.update()
-		if not label.finished:
-			return
-		if self.typing_index + 1 < len(self.labels):
-			self.typing_index += 1
-		else:
-			self.phase = "holding"
 
 	def set_opacity(self, opacity):
 		for label in self.labels:
@@ -95,22 +82,14 @@ class FarewellMessage:
 	def draw_overlay(self):
 		if not self.started:
 			return
-		glPushAttrib(GL_ENABLE_BIT | GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT)
-		glDisable(GL_LIGHTING)
-		glDisable(GL_DEPTH_TEST)
-		glMatrixMode(GL_MODELVIEW)
-		glPushMatrix()
-		glLoadIdentity()
-		depth = -self.screen_plane.camera_distance
 		top_line_y = (0.5 - self.top_fraction_from_top) * self.screen_plane.visible_height
-		for index, label in enumerate(self.labels):
-			if not self._shows(label):
-				continue
-			line_y = top_line_y - index * label.height * self.line_spacing_in_line_heights
-			centre_x = self.text_left_x + label.height * label.aspect / 2
-			label.draw((centre_x, line_y, depth), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0))
-		glPopMatrix()
-		glPopAttrib()
+		with screen_overlay():
+			for index, label in enumerate(self.labels):
+				if not self._shows(label):
+					continue
+				line_y = top_line_y - index * label.height * self.line_spacing_in_line_heights
+				centre_x = self.text_left_x + label.height * label.aspect / 2
+				draw_label_facing_screen(label, centre_x, line_y, self.screen_plane)
 
 	def destroy(self):
 		for label in self.labels:

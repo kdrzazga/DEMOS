@@ -5,6 +5,8 @@ from OpenGL.GL import *
 
 from demos.forty_five.picture_description import PictureDescription
 from demos.forty_five.font import FONT_PATH
+from demos.forty_five.overlay import screen_overlay
+from demos.forty_five.paths import COMMODORE_HISTORY_DIRECTORY, MOS_HISTORY_DIRECTORY
 from lib.caption_sequence import CaptionSequence
 from lib.flying_logo import FlyingLogo, ease_in_cubic
 from lib.laser_line import LaserLine, LaserSweepPath, PictureTexture, PictureTransition, smooth_step
@@ -42,7 +44,7 @@ class MosTeamParams:
 	def __init__(self, aspect_ratio, field_of_view_degrees):
 		self.aspect_ratio = aspect_ratio
 		self.field_of_view_degrees = field_of_view_degrees
-		self.picture_directory = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "history", "mos")
+		self.picture_directory = MOS_HISTORY_DIRECTORY
 		self.picture_file_names = ("MOS.png", "MOS2.png", "MOS3.png", "MOS4.png", "MOS5.png")
 		self.logo_file_name = LOGO_FILE_NAME
 		self.logo_flight_seconds = LOGO_FLIGHT_SECONDS
@@ -362,24 +364,17 @@ class MosTeam:
 		if self.logo_is_flying:
 			self.flying_logo.draw()
 			return
-		glPushAttrib(GL_ENABLE_BIT | GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT)
-		glDisable(GL_LIGHTING)
-		glDisable(GL_DEPTH_TEST)
-		glMatrixMode(GL_MODELVIEW)
-		glPushMatrix()
-		glLoadIdentity()
 		picture_shift_down = self.params.picture_shift_down_in_picture_heights * self.params.picture_height
-		glTranslatef(self._picture_centre_x(), -self._exit_drop() - picture_shift_down, -self.camera_distance)
-		self._apply_drive_in_offset_and_turn()
-		self._apply_sway()
-		self._apply_zoom_to_target()
-		self._draw_pictures()
-		self._draw_picture_description()
-		self.laser_line.draw()
-		self._draw_team_member_annotations()
-		self.closing_caption_sequence.draw()
-		glPopMatrix()
-		glPopAttrib()
+		with screen_overlay():
+			glTranslatef(self._picture_centre_x(), -self._exit_drop() - picture_shift_down, -self.camera_distance)
+			self._apply_drive_in_offset_and_turn()
+			self._apply_sway()
+			self._apply_zoom_to_target()
+			self._draw_pictures()
+			self._draw_picture_description()
+			self.laser_line.draw()
+			self._draw_team_member_annotations()
+			self.closing_caption_sequence.draw()
 
 	def _draw_picture_description(self):
 		if self.picture_description is None:
@@ -485,7 +480,7 @@ class AlCharpentierParams(MosTeamParams):
 
 	def __init__(self, aspect_ratio, field_of_view_degrees):
 		super().__init__(aspect_ratio, field_of_view_degrees)
-		self.picture_directory = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "history", "c=")
+		self.picture_directory = COMMODORE_HISTORY_DIRECTORY
 		self.picture_file_names = ("al-charpentier1.png", "al-charpentier2.png", "al-charpentier3.png")
 		self.transition_styles = ("laser_sweep", "laser_sweep")
 		self.logo_file_name = None

@@ -1,6 +1,5 @@
 import os
 
-import pygame
 from OpenGL.GL import *
 
 from lib.flying_logo import ease_in_cubic, ease_out_cubic
@@ -8,8 +7,9 @@ from lib.laser_line import PictureTexture
 from lib.picture_surface import PictureSurface
 from lib.speech_bubble import SpeechBubble
 from demos.forty_five.font import FONT_PATH
+from demos.forty_five.paths import COMMODORE_HISTORY_DIRECTORY
+from demos.forty_five.sound import load_sound
 
-COMMODORE_HISTORY_DIRECTORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "history", "c=")
 BILL_GATES_IMAGE_PATH = os.path.join(COMMODORE_HISTORY_DIRECTORY, "bill.png")
 BASIC_LICENSE_SOUND_PATH = os.path.join(COMMODORE_HISTORY_DIRECTORY, "77basic.mp3")
 JACK_TRAMIEL_QUESTION_LINES = ("How much for this", "BASIC, Bill?")
@@ -62,7 +62,7 @@ class BasicLicense:
 		self.jack_question_bubble = SpeechBubble(None, size=self.speech_bubble_font_size,
 		                                         lines=JACK_TRAMIEL_QUESTION_LINES,
 		                                         silent_seconds=self.jack_question_seconds, font_path=FONT_PATH)
-		self.basic_license_sound = self._load_sound(BASIC_LICENSE_SOUND_PATH)
+		self.basic_license_sound = load_sound(BASIC_LICENSE_SOUND_PATH)
 		self.talking_jack = None
 		self.fading_logo = None
 		self.logo_fade_out = None
@@ -70,12 +70,6 @@ class BasicLicense:
 		self.bill_has_set_off = False
 		self.jack_question_has_started = False
 		self.exit_has_started = False
-
-	@staticmethod
-	def _load_sound(sound_path):
-		if not pygame.mixer.get_init():
-			pygame.mixer.init()
-		return pygame.mixer.Sound(sound_path)
 
 	def begin(self, talking_jack, fading_logo):
 		self.talking_jack = talking_jack

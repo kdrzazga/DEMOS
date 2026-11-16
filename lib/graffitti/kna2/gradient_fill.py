@@ -1,6 +1,6 @@
 from lib.graffitti.graffiti_piece import GraffitiPiece
 from lib.graffitti.keyframes import Keyframes, linear
-from lib.graffitti.spray_texture import SprayTexture
+from lib.graffitti.spray_texture import SprayOrderMap, SprayTexture
 
 
 class GradientCycle:
@@ -58,13 +58,24 @@ class GradientFill:
 		self.layers = [self._layer(glyph, gradient_index, seed) for gradient_index, glyph in enumerate(fill_glyphs)]
 
 	def _layer(self, glyph, gradient_index, seed):
-		layer = GraffitiPiece(SprayTexture(glyph, seed), self.position)
+		layer = GraffitiPiece(SprayTexture(glyph, seed, self._order_map_ignoring_dark_colors(seed)), self.position)
 		layer.progress = self.progress
 		layer.opacity = LayerOpacity(self.cycle, gradient_index)
 		return layer
 
+	@staticmethod
+	def _order_map_ignoring_dark_colors(seed):
+		order_map = SprayOrderMap(seed)
+		order_map.outline_brightness_limit = 0
+		return order_map
+
 	def spray(self, start_seconds, duration_seconds):
 		self.progress.animate(start_seconds, duration_seconds, 1.0, linear)
+		return self
+
+	def blink_together_with(self, outline_piece):
+		for layer in self.layers:
+			layer.outline_blink = outline_piece.outline_blink
 		return self
 
 	def cycle_gradients_from(self, start_seconds):

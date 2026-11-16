@@ -5,6 +5,7 @@ import pygame
 from lib.graffitti.graffiti_glyph import GraffitiGlyph
 from lib.graffitti.kna2.color_gradient import GradientPalette
 from lib.graffitti.kna2.letter_interior import LetterInterior
+from lib.graffitti.kna2.outline_blur import OutlineBlur
 from lib.graffitti.kna2.stroke_order_map import StrokeOrderMap
 
 
@@ -30,6 +31,7 @@ class LetterPainter:
 		self.line_color = (0, 0, 0)
 		self.supersampling = 2
 		self.palette = GradientPalette()
+		self.outline_blur = OutlineBlur()
 
 	@property
 	def padding(self):
@@ -42,14 +44,21 @@ class LetterPainter:
 		local_outline = scaled_outline.transformed(1.0, -offset[0], -offset[1])
 		size = (math.ceil(right) - offset[0] + self.padding, math.ceil(bottom) - offset[1] + self.padding)
 		line_surface = self._draw_lines(local_outline, size)
-		fill_glyphs = self._paint_fills(outline.name, line_surface, offset) if filled else []
+		fill_glyphs = self._paint_fills(local_outline, line_surface, offset) if filled else []
 		return PaintedLetter(GraffitiGlyph(outline.name, line_surface, offset),
 		                     StrokeOrderMap(local_outline, self.line_width), local_outline.total_length, fill_glyphs)
 
-	def _paint_fills(self, name, line_surface, offset):
+	def _paint_fills(self, local_outline, line_surface, offset):
 		interior = LetterInterior(line_surface, self.line_width)
-		return [GraffitiGlyph(f"{name}_{gradient.name}", gradient.paint(interior.area), offset)
+		blurred_area = self.outline_blur.blurred_area(local_outline, interior.area, self.line_width)
+		return [GraffitiGlyph(f"{local_outline.name}_{gradient.name}",
+		                      self._paint_fill(gradient, interior.area, blurred_area), offset)
 		        for gradient in self.palette.gradients]
+
+	def _paint_fill(self, gradient, interior_area, blurred_area):
+		fill_surface = gradient.paint(interior_area)
+		self.outline_blur.apply(fill_surface, blurred_area)
+		return fill_surface
 
 	def _draw_lines(self, outline, size):
 		enlarged = pygame.Surface((size[0] * self.supersampling, size[1] * self.supersampling), pygame.SRCALPHA)

@@ -1,7 +1,9 @@
 from OpenGL.GL import *
 from OpenGL.GLU import gluPerspective
 
+from lib.graffitti.keyframes import blend
 from lib.graffitti.kna2.komoda_amiga_plus_graffiti import KomodaAmigaPlusGraffiti
+from lib.graffitti.kna2.solid_texture import SolidTexture
 from lib.graffitti.swaying_surface import SwayingSurface
 
 
@@ -11,11 +13,14 @@ class KomodaAmigaPlusAnimation:
 		self.window_size = window_size
 		self.field_of_view_degrees = 45.0
 		self.camera_distance = 7.2
-		self.surface_height = 4.4
+		self.surface_height = 5.4
+		self.graffiti_speed = 5.0
 		self.hold_seconds = 4.0
 		self.wave_stagger_seconds = 0.08
 		self.wall_color = (0.62, 0.6, 0.56)
+		self.background_switch_seconds = 0.8
 		self.graffiti = KomodaAmigaPlusGraffiti()
+		self.wall_backing = SolidTexture()
 		self.surface = SwayingSurface(self.surface_height * self.graffiti.aspect_ratio, self.surface_height)
 		self.elapsed_seconds = 0.0
 		self.sway_seconds = 0.0
@@ -42,18 +47,34 @@ class KomodaAmigaPlusAnimation:
 	def update(self, frame_seconds):
 		if self.paused:
 			return
-		self.elapsed_seconds += frame_seconds
+		self.elapsed_seconds += frame_seconds * self.graffiti_speed
 		self.sway_seconds += frame_seconds
-		if not self.showing_finished and self.elapsed_seconds > self.graffiti.duration_seconds + self.hold_seconds:
+		if self.showing_finished:
+			self._stay_before_blackout()
+		elif self.elapsed_seconds > self.graffiti.duration_seconds + self.hold_seconds:
 			self._rewind()
+
+	def _stay_before_blackout(self):
+		while self.elapsed_seconds > self.graffiti.blackout_start_seconds:
+			self.elapsed_seconds -= self.graffiti.gradient_cycle_seconds
 
 	def render(self):
 		self.graffiti.render(self.elapsed_seconds)
 		self.surface.update(self.sway_seconds)
 		self._set_camera()
-		glClearColor(*self.wall_color, 1.0)
+		background_switch = self._background_switch_amount()
+		glClearColor(*blend(self.wall_color, self._frame_color(), background_switch), 1.0)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+		self.wall_backing.fill(self.wall_color, background_switch)
+		self.surface.render(self.wall_backing.texture)
 		self.surface.render(self.graffiti.texture)
+
+	def _background_switch_amount(self):
+		seconds_since_frame_done = self.elapsed_seconds - self.graffiti.frame_done_seconds
+		return min(1.0, max(0.0, seconds_since_frame_done / self.background_switch_seconds))
+
+	def _frame_color(self):
+		return tuple(channel / 255.0 for channel in self.graffiti.frame_color)
 
 	def _rewind(self):
 		self.elapsed_seconds = 0.0

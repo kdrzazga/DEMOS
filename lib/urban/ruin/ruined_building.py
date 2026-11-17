@@ -32,6 +32,8 @@ class Ruin:
         raise NotImplementedError
 
     def render(self):
+        if self.display_list is None:
+            self.compile()
         glCallList(self.display_list)
 
     def varied_concrete(self):
@@ -132,6 +134,29 @@ class RuinedWall:
         return (UP - self.along * slope).normalized()
 
 
+class RuinedFloor:
+
+    def __init__(self, level, thickness, low_corner, high_corner, cell_size):
+        self.level = level
+        self.thickness = thickness
+        self.low_corner = low_corner
+        self.high_corner = high_corner
+        self.columns = max(1, round((high_corner[0] - low_corner[0]) / cell_size))
+        self.rows = max(1, round((high_corner[1] - low_corner[1]) / cell_size))
+        self.cell_width = (high_corner[0] - low_corner[0]) / self.columns
+        self.cell_depth = (high_corner[1] - low_corner[1]) / self.rows
+        self.solid = [[True] * self.rows for _ in range(self.columns)]
+        self.color = None
+
+    def cell_center(self, column, row):
+        return (self.low_corner[0] + (column + 0.5) * self.cell_width,
+                self.low_corner[1] + (row + 0.5) * self.cell_depth)
+
+    def opens_onto(self, column, row):
+        inside = 0 <= column < self.columns and 0 <= row < self.rows
+        return inside and not self.solid[column][row]
+
+
 class Ruin1(Ruin):
 
     def __init__(self, size, height, texture=None, seed=None):
@@ -162,8 +187,81 @@ class Ruin1(Ruin):
         self.crack_lift = 0.012
         self.crack_color = (0.11, 0.10, 0.09)
         self.window_crack_chance = 0.18
+        self.floor_chance = 0.10
+        self.floor_thickness = 0.3
+        self.floor_cell = 0.4
+        self.floor_hole_chance = 0.8
+        self.floor_hole_size = (0.15, 0.4)
+        self.floor_hole_ripples = ((2, 0.30), (3, 0.20), (5, 0.12), (8, 0.06))
         self.walls = self.make_walls()
-        self.compile()
+        self.floors = self.make_floors()
+
+    @property
+    def highest_top(self):
+        return max(level for wall in self.walls for _, level in wall.profile)
+
+    def new_floor(self, level):
+        thickness = self.wall_thickness
+        left, right = -self.width / 2.0 + thickness, self.width / 2.0 - thickness
+        back, front = -self.depth / 2.0 + thickness, self.depth / 2.0 - thickness
+        floor = RuinedFloor(level, self.floor_thickness, (left, back), (right, front), self.floor_cell)
+        floor.color = self.varied_concrete()
+        return floor
+
+    def make_floors(self):
+        lowest_wall = min(sum(level for _, level in wall.profile) / len(wall.profile) for wall in self.walls)
+        floors = []
+        for storey in range(1, int(lowest_wall / self.floor_height) + 1):
+            level = storey * self.floor_height
+            if level + self.floor_thickness < lowest_wall and self.random.random() < self.floor_chance:
+                floor = self.new_floor(level)
+                if self.random.random() < self.floor_hole_chance:
+                    self.break_hole(floor)
+                floors.append(floor)
+        return floors
+
+    def break_hole(self, floor):
+        (left, back), (right, front) = floor.low_corner, floor.high_corner
+        center = (self.random.uniform(left, right), self.random.uniform(back, front))
+        radius = self.random.uniform(*self.floor_hole_size) * min(right - left, front - back)
+        self.carve_hole(floor, center, (radius, radius), 0.0)
+
+    def carve_hole(self, floor, center, half_sizes, smallest_reach):
+        ripples = [(count, strength, self.random.uniform(0.0, 2.0 * math.pi)) for count, strength in self.floor_hole_ripples]
+        for column in range(floor.columns):
+            for row in range(floor.rows):
+                x, z = floor.cell_center(column, row)
+                across, along = (x - center[0]) / half_sizes[0], (z - center[1]) / half_sizes[1]
+                angle = math.atan2(along, across)
+                reach = 1.0 + sum(strength * math.sin(count * angle + phase) for count, strength, phase in ripples)
+                if math.hypot(across, along) < max(smallest_reach, reach):
+                    floor.solid[column][row] = False
+
+    def storey_below(self, level):
+        return math.floor(level / self.floor_height) * self.floor_height
+
+    def add_holed_floor(self, level, hole_center, hole_half_sizes):
+        self.floors = [floor for floor in self.floors if abs(floor.level - level) > 1e-6]
+        floor = self.new_floor(level)
+        self.carve_hole(floor, hole_center, hole_half_sizes, 1.0)
+        self.floors.append(floor)
+        self.display_list = None
+
+    def passages(self, storeys_down=0):
+        front, back = self.walls[0], self.walls[1]
+        half_width = self.width / 2.0
+        drop = storeys_down * self.floor_height
+        found = []
+        for front_left, front_right, front_bottom, front_top in front.windows:
+            for back_left, back_right, back_bottom, back_top in back.windows:
+                if abs(back_bottom - (front_bottom - drop)) > 1e-6:
+                    continue
+                left = max(front_left - half_width, half_width - back_right)
+                right = min(front_right - half_width, half_width - back_left)
+                if right - left > 1.0 and min(front_top - front_bottom, back_top - back_bottom) > 1.2:
+                    found.append(((left + right) / 2.0, front_bottom + self.window_height / 2.0,
+                                  back_bottom + self.window_height / 2.0))
+        return found
 
     def make_walls(self):
         half_width, half_depth, thickness = self.width / 2.0, self.depth / 2.0, self.wall_thickness
@@ -223,12 +321,38 @@ class Ruin1(Ruin):
             glBegin(GL_QUADS)
             for wall in self.walls:
                 self.emit_wall(wall)
+            for floor in self.floors:
+                self.emit_floor(floor)
             glEnd()
         glBegin(GL_QUADS)
         for wall in self.walls:
             for path in self.crack_paths(wall):
                 self.emit_crack(wall, path)
         glEnd()
+
+    def emit_floor(self, floor):
+        bottom = floor.level - floor.thickness / 2.0
+        top = floor.level + floor.thickness / 2.0
+        for column in range(floor.columns):
+            for row in range(floor.rows):
+                if not floor.solid[column][row]:
+                    continue
+                left = floor.low_corner[0] + column * floor.cell_width
+                right = left + floor.cell_width
+                back = floor.low_corner[1] + row * floor.cell_depth
+                front = back + floor.cell_depth
+                self.emit_quad((Vector3(left, top, front), Vector3(right, top, front),
+                                Vector3(right, top, back), Vector3(left, top, back)), UP, floor.color)
+                self.emit_quad((Vector3(left, bottom, back), Vector3(right, bottom, back),
+                                Vector3(right, bottom, front), Vector3(left, bottom, front)), -UP, floor.color)
+                edges = ((column + 1, row, Vector3(1.0, 0.0, 0.0), ((right, front), (right, back))),
+                         (column - 1, row, Vector3(-1.0, 0.0, 0.0), ((left, back), (left, front))),
+                         (column, row + 1, Vector3(0.0, 0.0, 1.0), ((left, front), (right, front))),
+                         (column, row - 1, Vector3(0.0, 0.0, -1.0), ((right, back), (left, back))))
+                for neighbour_column, neighbour_row, normal, ((start_x, start_z), (end_x, end_z)) in edges:
+                    if floor.opens_onto(neighbour_column, neighbour_row):
+                        self.emit_quad((Vector3(start_x, bottom, start_z), Vector3(end_x, bottom, end_z),
+                                        Vector3(end_x, top, end_z), Vector3(start_x, top, start_z)), normal, floor.color)
 
     def column_edges(self, wall):
         edges = set(wall.profile_positions)
@@ -375,7 +499,23 @@ class Ruin2(Ruin):
         self.columns_z = self.column_line(self.depth)
         self.column_tops = self.make_column_tops()
         self.broken_ends = []
-        self.compile()
+
+    @property
+    def highest_top(self):
+        return max(self.column_tops.values()) + max(self.rebar_length)
+
+    def passages(self, storeys_down=0):
+        found = []
+        clear_height = self.floor_height - self.beam_height
+        for column_x in range(len(self.columns_x) - 1):
+            middle = (self.columns_x[column_x] + self.columns_x[column_x + 1]) / 2.0
+            lowest_frame = min(self.column_tops[(line, column_z)] for line in (column_x, column_x + 1)
+                               for column_z in range(len(self.columns_z)))
+            for floor in range(self.floor_count):
+                if (floor + 1) * self.floor_height <= lowest_frame:
+                    level = floor * self.floor_height + clear_height / 2.0
+                    found.append((middle, level, level))
+        return found
 
     def column_line(self, span):
         count = max(2, round(span / self.bay_target) + 1)

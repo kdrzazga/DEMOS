@@ -27,7 +27,7 @@ class Credits:
     def __init__(self, screen_width, screen_height):
         self.screen_width = screen_width
         self.screen_height = screen_height
-        self.caption_lines = ["Demo RETRO GLASSES", "brought to you by"]
+        self.caption_lines = ["Demo RETRO GLASSES", "was brought to you by"]
         self.caption_height_share = 0.05
         self.caption_center_shares = [0.54, 0.60]
         self.logo_center_share = 0.77

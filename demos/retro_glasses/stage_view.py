@@ -99,7 +99,7 @@ class SpeechSubtitles:
             return
         margin = overlay.screen_width * self.edge_margin_share
         left = max(overlay.screen_width - margin - self.texture.width, margin)
-        top = overlay.screen_height * self.vertical_share - self.texture.height / 2.0
+        top = overlay.screen_height * self.vertical_share - 3*self.texture.height / 4.0
         overlay.draw_at(self.texture, 1.0, left, top)
 
 

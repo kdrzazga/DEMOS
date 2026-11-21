@@ -472,6 +472,8 @@ class DragonModel:
         self.caption_letters = self.built(self.build_caption, self.left_to_right)
         self.body = self.built(self.build_figure)
         self.eyes = self.built(self.build_eyes)
+        self.jaw = self.built(self.build_jaw)
+        self.jaw_hinge = numpy.asarray(self.jaw_points[0], dtype=numpy.float32)
         self.tail = self.built(self.build_tail)
         self.tail_along, self.tail_sideways = self.tail_bend_frame(self.tail[0])
         self.wings = {}
@@ -601,12 +603,9 @@ class DragonModel:
         sculptor = self.sculptor
         skull = sculptor.tube(self.skull_points, self.skull_profile, self.clay, rings=26, segments=24,
                               up_hint=(0.0, 1.0, 0.0), scales=self.head_scales, lining=MouthLining(math.pi))
-        jaw = sculptor.tube(self.jaw_points, self.jaw_profile, self.clay, rings=18, segments=20,
-                            up_hint=(0.0, 1.0, 0.0), scales=self.head_scales, lining=MouthLining(0.0))
         sculptor.spike((0.0, 0.628, 0.318), (0.0, 1.0, 0.35), 0.03, 0.007, self.bone_clay, curl=(0.0, 0.0, -0.2))
         for side in (1.0, -1.0):
             self.add_teeth(skull, 0.42, 0.95, self.upper_tooth_count, side, -1.0)
-            self.add_teeth(jaw, 0.35, 0.92, self.lower_tooth_count, side, 1.0)
             sculptor.ellipsoid(self.mirrored(self.brow_position, side), (side * -0.5, -0.4, 0.8), 0.032, 0.017,
                                0.012, self.clay, up_hint=(0.0, 1.0, 0.0))
             sculptor.spike(self.mirrored((0.045, 0.7, 0.21), side), (side * 0.6, 0.7, -0.6), 0.035, 0.007,
@@ -618,8 +617,6 @@ class DragonModel:
                            self.mirrored((0.10, 0.82, 0.02), side), self.mirrored((0.085, 0.86, -0.04), side)),
                           ((0.0, 0.016, 0.016), (0.5, 0.01, 0.01), (1.0, 0.0, 0.0)), self.bone_clay, rings=18,
                           segments=12, cap_end=False)
-        for offset in (-0.016, 0.0, 0.016):
-            sculptor.spike((offset, 0.57, 0.225), (offset * 8.0, -1.0, -0.35), 0.035, 0.006, self.clay)
         center = numpy.asarray(self.crown_center)
         for spread in numpy.radians(numpy.linspace(-self.crown_spread_degrees, self.crown_spread_degrees,
                                                    self.crown_spike_count)):
@@ -627,6 +624,15 @@ class DragonModel:
             length = 0.035 + 0.045 * math.cos(spread) ** 2
             sculptor.spike(base, (math.sin(spread) * 0.7, 1.0, -0.4), length, 0.0105, self.bone_clay,
                            curl=(0.0, 0.0, -0.12))
+
+    def build_jaw(self):
+        sculptor = self.sculptor
+        jaw = sculptor.tube(self.jaw_points, self.jaw_profile, self.clay, rings=18, segments=20,
+                            up_hint=(0.0, 1.0, 0.0), scales=self.head_scales, lining=MouthLining(0.0))
+        for side in (1.0, -1.0):
+            self.add_teeth(jaw, 0.35, 0.92, self.lower_tooth_count, side, 1.0)
+        for offset in (-0.016, 0.0, 0.016):
+            sculptor.spike((offset, 0.57, 0.225), (offset * 8.0, -1.0, -0.35), 0.035, 0.006, self.clay)
 
     def add_teeth(self, frame, first, last, count, side, pointing):
         centers, sides, ups, widths, heights = frame
@@ -803,6 +809,7 @@ class Dragon:
         self.tail_waves_along = 1.6
         self.tail_wiggles_per_second = 0.5
         self.tail_phase = 0.0
+        self.jaw_closing_degrees = 0.0
         self.tail_positions = self.model.tail[0].copy()
 
     def update(self, seconds):
@@ -873,8 +880,18 @@ class Dragon:
         glDisable(GL_TEXTURE_2D)
         glEnableClientState(GL_COLOR_ARRAY)
 
+    def draw_jaw(self):
+        hinge = self.model.jaw_hinge
+        glPushMatrix()
+        glTranslatef(*hinge)
+        glRotatef(-self.jaw_closing_degrees, 1.0, 0.0, 0.0)
+        glTranslatef(*(-hinge))
+        self.draw(*self.model.jaw)
+        glPopMatrix()
+
     def draw_figure(self, lettering_textures=None, eye_flash=None):
         self.draw(*self.model.body)
+        self.draw_jaw()
         self.draw_eyes(eye_flash)
         _, tail_normals, tail_colors, tail_indices = self.model.tail
         self.draw(self.tail_positions, tail_normals, tail_colors, tail_indices)
@@ -1137,6 +1154,12 @@ class KnAdragonAnim:
         for name, duration in self.phases:
             self.phase_spans[name] = (start, duration)
             start += duration
+        self.jaw_snap_count = 4
+        self.jaw_snap_degrees = 16.0
+        self.phase_spans["jaw snaps"] = (self.phase_spans["fire"][0], 6.0)
+        self.frozen_jaw_snap_count = 2
+        self.frozen_jaw_snap_seconds = 1.5
+        self.closing_eye_flash_seconds = 0.7
         self.sway_degrees = 22.0
         self.sway_period_seconds = 7.0
         self.descent_height = 1.5
@@ -1150,14 +1173,41 @@ class KnAdragonAnim:
                           1.0: WingLettering(self.font_path, ("AMIGA", "plus"))}
         self.lettering_phases = ((-1.0, 0, "KOMODA"), (-1.0, 1, "and"), (1.0, 0, "AMIGA"), (1.0, 1, "plus"))
         self.fire = DragonFire(self.model)
+        self.final_hold_seconds = 15.0
+        self.hold_zoom_seconds = 1.2
+        self.hold_zoom_margin = 0.97
+        self.base_rim_radius = 0.405
+        self.hold_zoom = 0.0
         self.seconds = 0.0
         self.sway_angle = 0.0
+        self.sway_frozen = False
+        self.held_seconds = 0.0
         self.descent_offset = self.descent_height
         self.eye_flash = None
 
     def restart(self):
         self.seconds = 0.0
+        self.sway_angle = 0.0
+        self.sway_frozen = False
+        self.held_seconds = 0.0
         self.update(0.0)
+
+    def swaying_angle(self):
+        sway_start = self.phase_spans["sway"][0]
+        ramp = self.progress("sway")
+        return (self.sway_degrees * ramp * ramp * (3.0 - 2.0 * ramp)
+                * math.sin(2.0 * math.pi * max(0.0, self.seconds - sway_start) / self.sway_period_seconds))
+
+    def update_sway(self, seconds):
+        if self.sway_frozen:
+            self.held_seconds += seconds
+            return
+        angle = self.swaying_angle()
+        waves_over = self.progress("wing waves") >= 1.0
+        if waves_over and (angle == 0.0 or (angle > 0.0) != (self.sway_angle > 0.0)):
+            self.sway_frozen = True
+            angle = 0.0
+        self.sway_angle = angle
 
     def progress(self, phase):
         start, duration = self.phase_spans[phase]
@@ -1177,19 +1227,35 @@ class KnAdragonAnim:
 
     def update(self, seconds):
         self.seconds += seconds * self.timeline_speed
-        sway_start = self.phase_spans["sway"][0]
-        ramp = self.progress("sway")
-        self.sway_angle = (self.sway_degrees * ramp * ramp * (3.0 - 2.0 * ramp)
-                           * math.sin(2.0 * math.pi * max(0.0, self.seconds - sway_start) / self.sway_period_seconds))
+        self.update_sway(seconds)
+        if self.held_seconds >= self.final_hold_seconds:
+            self.restart()
+            return
         self.descent_offset = self.descent_height * (1.0 - self.progress("descent")) ** 3
         self.dragon.tail_strength = self.progress("tail wiggle")
         flaps = self.progress("wing flaps")
         waves = self.progress("wing waves")
         self.dragon.wing_degrees = (self.wing_flap_degrees * math.sin(2.0 * math.pi * self.wing_flap_count * flaps)
                                     + self.wing_wave_degrees * math.sin(2.0 * math.pi * self.wing_wave_count * waves))
+        snap_turns = self.jaw_snap_count * self.progress("jaw snaps")
+        frozen_snaps = 0.0
+        closing_flash = 0.0
+        self.hold_zoom = 0.0
+        if self.sway_frozen:
+            zooming_in = min(self.held_seconds / self.hold_zoom_seconds, 1.0)
+            zooming_out = min(max(self.final_hold_seconds - self.held_seconds, 0.0) / self.hold_zoom_seconds, 1.0)
+            ease = min(zooming_in, zooming_out)
+            self.hold_zoom = ease * ease * (3.0 - 2.0 * ease)
+            frozen_snaps = min(self.held_seconds / self.frozen_jaw_snap_seconds, 1.0)
+            closing_flash = min(max((self.held_seconds - self.frozen_jaw_snap_seconds)
+                                    / self.closing_eye_flash_seconds, 0.0), 1.0)
+            snap_turns = self.frozen_jaw_snap_count * frozen_snaps
+        self.dragon.jaw_closing_degrees = self.jaw_snap_degrees * 0.5 * (1.0 - math.cos(2.0 * math.pi * snap_turns))
         self.dragon.update(seconds)
         self.eye_flash = (self.flash_color(self.progress("first eye flash"))
-                          or self.flash_color(self.progress("second eye flash")))
+                          or self.flash_color(self.progress("second eye flash"))
+                          or self.flash_color(frozen_snaps)
+                          or self.flash_color(closing_flash))
         for side, line, phase in self.lettering_phases:
             self.lettering[side].reveal(line, self.progress(phase))
         if self.started("fire"):
@@ -1199,7 +1265,43 @@ class KnAdragonAnim:
     def revealed_count(arrays, fraction):
         return round(fraction * (len(arrays[3]) // 3)) * 3
 
+    def statue_outline_points(self):
+        dragon = self.dragon
+        scale = dragon.height / self.model.total_height
+        rim = self.base_rim_radius * scale
+        x, y, z = dragon.position
+        return numpy.array(((x, y, z + rim, 1.0), (x, y, z - rim, 1.0), (x + rim, y, z, 1.0), (x - rim, y, z, 1.0),
+                            (x, y + dragon.height, z + rim, 1.0), (x, y + dragon.height, z - rim, 1.0)))
+
+    def fitting_zoom(self, projection):
+        clip = self.statue_outline_points() @ glGetDoublev(GL_MODELVIEW_MATRIX) @ projection
+        screen = clip[:, :2] / clip[:, 3:4]
+        lowest, highest = screen[:, 1].min(), screen[:, 1].max()
+        center_x = 0.5 * (screen[:, 0].min() + screen[:, 0].max())
+        full_zoom = 2.0 * self.hold_zoom_margin / (highest - lowest)
+        zoom = 1.0 + (full_zoom - 1.0) * self.hold_zoom
+        center = numpy.array((center_x, 0.5 * (lowest + highest))) * self.hold_zoom
+        lens = numpy.identity(4)
+        lens[0, 0] = lens[1, 1] = zoom
+        lens[3, :2] = -zoom * center
+        return lens
+
     def render(self):
+        if self.hold_zoom <= 0.0:
+            self.render_scene()
+            return
+        projection = glGetDoublev(GL_PROJECTION_MATRIX)
+        lens = self.fitting_zoom(projection)
+        glMatrixMode(GL_PROJECTION)
+        glPushMatrix()
+        glLoadMatrixd(projection @ lens)
+        glMatrixMode(GL_MODELVIEW)
+        self.render_scene()
+        glMatrixMode(GL_PROJECTION)
+        glPopMatrix()
+        glMatrixMode(GL_MODELVIEW)
+
+    def render_scene(self):
         dragon = self.dragon
         dragon.yaw = math.radians(self.sway_angle)
         dragon.begin()

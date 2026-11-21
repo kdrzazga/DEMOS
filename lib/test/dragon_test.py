@@ -36,11 +36,13 @@ class DragonTest:
         self.fill_light_direction = (0.8, 0.2, 0.4, 0.0)
         self.fill_light_color = (0.30, 0.32, 0.38, 1.0)
         self.ambient_color = (0.22, 0.20, 0.20, 1.0)
-        self.caption = "KnA dragon - {:.0f} fps, {:.1f} s  (drag to orbit, wheel zoom, SPACE spin, R restart, P pause, ESC quit)"
+        self.caption = "KnA dragon - {:.0f} fps, {:.1f} s  (drag to orbit, wheel zoom, SPACE spin, R restart, P pause, F fire, ESC quit)"
         pygame.init()
         pygame.display.set_mode(self.window_size, DOUBLEBUF | OPENGL)
         self.clock = pygame.time.Clock()
         self.animation = KnAdragonAnim(1.0)
+        self.fire_render = self.animation.fire.render
+        self.fire_shown = True
         self.running = True
         self.setup_gl()
 
@@ -60,6 +62,11 @@ class DragonTest:
         gluPerspective(self.field_of_view, self.window_size[0] / self.window_size[1], 0.05, 50.0)
         glMatrixMode(GL_MODELVIEW)
 
+    def toggle_fire(self):
+        self.fire_shown = not self.fire_shown
+        fire = self.animation.fire
+        fire.render = self.fire_render if self.fire_shown else lambda strength: None
+
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -73,6 +80,8 @@ class DragonTest:
                     self.animation.restart()
                 elif event.key == pygame.K_p:
                     self.paused = not self.paused
+                elif event.key == pygame.K_f:
+                    self.toggle_fire()
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 self.dragging = True
             elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:

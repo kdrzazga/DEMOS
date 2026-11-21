@@ -1001,6 +1001,63 @@ class WingLettering:
         return self.texture
 
 
+class StatuePicture:
+
+    def __init__(self, path):
+        self.surface = pygame.image.load(path)
+        self.size = self.surface.get_size()
+        self.aspect = self.size[0] / self.size[1]
+        self.right_pixels = 3
+        self.down_pixels = 2
+        self.texture = None
+
+    def bound_texture(self):
+        if self.texture is None:
+            self.texture = glGenTextures(1)
+            glBindTexture(GL_TEXTURE_2D, self.texture)
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, *self.size, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                         pygame.image.tobytes(self.surface, "RGBA", True))
+        glBindTexture(GL_TEXTURE_2D, self.texture)
+
+    def render(self, height_fraction):
+        _, _, viewport_width, viewport_height = glGetIntegerv(GL_VIEWPORT)
+        half_height = height_fraction
+        half_width = half_height * self.aspect * viewport_height / viewport_width
+        shift_x = 2.0 * self.right_pixels / viewport_width
+        shift_y = -2.0 * self.down_pixels / viewport_height
+        glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_TEXTURE_BIT | GL_CURRENT_BIT)
+        glMatrixMode(GL_PROJECTION)
+        glPushMatrix()
+        glLoadIdentity()
+        glMatrixMode(GL_MODELVIEW)
+        glPushMatrix()
+        glLoadIdentity()
+        glDisable(GL_LIGHTING)
+        glDisable(GL_DEPTH_TEST)
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        glEnable(GL_TEXTURE_2D)
+        self.bound_texture()
+        glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+        glColor4f(1.0, 1.0, 1.0, 1.0)
+        glBegin(GL_QUADS)
+        for corner_x, corner_y in ((0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)):
+            glTexCoord2f(corner_x, corner_y)
+            glVertex2f((2.0 * corner_x - 1.0) * half_width + shift_x, (2.0 * corner_y - 1.0) * half_height + shift_y)
+        glEnd()
+        glBindTexture(GL_TEXTURE_2D, 0)
+        glPopMatrix()
+        glMatrixMode(GL_PROJECTION)
+        glPopMatrix()
+        glMatrixMode(GL_MODELVIEW)
+        glPopAttrib()
+
+
 class DragonFire:
 
     def __init__(self, model, seed=3):
@@ -1178,6 +1235,10 @@ class KnAdragonAnim:
         self.hold_zoom_margin = 0.97
         self.base_rim_radius = 0.405
         self.hold_zoom = 0.0
+        self.picture = StatuePicture(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "resources",
+                                                  "dragon.png"))
+        self.picture_seconds = 3.0
+        self.showing_picture = False
         self.seconds = 0.0
         self.sway_angle = 0.0
         self.sway_frozen = False
@@ -1228,9 +1289,10 @@ class KnAdragonAnim:
     def update(self, seconds):
         self.seconds += seconds * self.timeline_speed
         self.update_sway(seconds)
-        if self.held_seconds >= self.final_hold_seconds:
+        if self.held_seconds >= self.final_hold_seconds + self.picture_seconds:
             self.restart()
             return
+        self.showing_picture = self.held_seconds >= self.final_hold_seconds
         self.descent_offset = self.descent_height * (1.0 - self.progress("descent")) ** 3
         self.dragon.tail_strength = self.progress("tail wiggle")
         flaps = self.progress("wing flaps")
@@ -1242,9 +1304,7 @@ class KnAdragonAnim:
         closing_flash = 0.0
         self.hold_zoom = 0.0
         if self.sway_frozen:
-            zooming_in = min(self.held_seconds / self.hold_zoom_seconds, 1.0)
-            zooming_out = min(max(self.final_hold_seconds - self.held_seconds, 0.0) / self.hold_zoom_seconds, 1.0)
-            ease = min(zooming_in, zooming_out)
+            ease = min(self.held_seconds / self.hold_zoom_seconds, 1.0)
             self.hold_zoom = ease * ease * (3.0 - 2.0 * ease)
             frozen_snaps = min(self.held_seconds / self.frozen_jaw_snap_seconds, 1.0)
             closing_flash = min(max((self.held_seconds - self.frozen_jaw_snap_seconds)
@@ -1300,9 +1360,14 @@ class KnAdragonAnim:
         glMatrixMode(GL_PROJECTION)
         glPopMatrix()
         glMatrixMode(GL_MODELVIEW)
+        if self.showing_picture:
+            self.picture.render(self.hold_zoom_margin)
 
     def render_scene(self):
         dragon = self.dragon
+        if self.showing_picture:
+            self.render_fire()
+            return
         dragon.yaw = math.radians(self.sway_angle)
         dragon.begin()
         for phase, arrays in (("rocky base", self.model.rocky_base), ("solid base", self.model.solid_base),
@@ -1317,7 +1382,11 @@ class KnAdragonAnim:
             dragon.draw_figure(textures, self.eye_flash)
             glPopMatrix()
         dragon.end()
+        self.render_fire()
+
+    def render_fire(self):
         if self.started("fire"):
+            dragon = self.dragon
             dragon.yaw = 0.0
             dragon.begin()
             self.fire.render(self.progress("fire"))

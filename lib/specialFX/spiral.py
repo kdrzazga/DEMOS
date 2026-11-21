@@ -36,15 +36,13 @@ from OpenGL.GL import (
     glEnableClientState,
     glLineWidth,
     glPopAttrib,
-    glPopMatrix,
     glPushAttrib,
-    glPushMatrix,
-    glRotatef,
     glStencilFunc,
     glStencilOp,
-    glTranslatef,
     glVertexPointer,
 )
+
+from lib.specialFX.travelling_surface import TravellingSurface
 
 
 class Spiral:
@@ -319,83 +317,16 @@ class Spiral:
         glPopAttrib()
 
 
-class SpiralAnim:
+class SpiralAnim(TravellingSurface):
 
     def __init__(self, spiral, camera_distance, field_of_view_degrees, aspect_ratio):
+        spiral_extent = spiral.inner_radius + spiral.turn_spacing * spiral.turns + spiral.sine_amplitude
+        super().__init__(spiral, spiral.center, spiral_extent, camera_distance, field_of_view_degrees, aspect_ratio)
         self.spiral = spiral
-        self.travel_seconds = 14.0
-        self.max_depth = 1.5 * camera_distance
-        self.sway_period = 2.6
-        self.sway_tilt_degrees = 12.0
-        self.sway_roll_degrees = 4.0
         self.sway_bob_height = 0.25 * spiral.turn_spacing
-        self.drawing_starts_at_travel_share = 0.12
-        self.drawing_ends_at_travel_share = 0.8
-        self.surface_color = (0.0, 0.0, 0.0, 0.5)
         self.surface_margin = 0.4 * spiral.turn_spacing
         self.surface_depth_offset = 0.01 * spiral.turn_spacing
-        self.time = 0.0
-        spiral_extent = spiral.inner_radius + spiral.turn_spacing * spiral.turns + spiral.sine_amplitude
-        surface_half_size = spiral_extent + self.surface_margin
-        screen_half_width = camera_distance * math.tan(math.radians(field_of_view_degrees / 2.0)) * aspect_ratio
-        self.start_x = screen_half_width + surface_half_size
-        self.end_x = -self.start_x
-        self.surface_corners = self._surface_corners(surface_half_size)
 
     def restart(self):
-        self.time = 0.0
         self.spiral.show_steps(len(self.spiral.steps))
-        self.spiral.restart()
-
-    def update(self, delta_seconds):
-        self.time += delta_seconds
-        self.spiral.time = self.drawing_progress() * self.spiral.total_seconds()
-
-    def travel_progress(self):
-        return min(1.0, self.time / self.travel_seconds)
-
-    def drawing_progress(self):
-        drawing_share = self.drawing_ends_at_travel_share - self.drawing_starts_at_travel_share
-        return max(0.0, min(1.0, (self.travel_progress() - self.drawing_starts_at_travel_share) / drawing_share))
-
-    def _surface_corners(self, half_size):
-        center_x, center_y, spiral_z = (float(value) for value in self.spiral.center)
-        center_z = spiral_z - self.surface_depth_offset
-        return numpy.array([(center_x - half_size, center_y - half_size, center_z),
-                            (center_x + half_size, center_y - half_size, center_z),
-                            (center_x + half_size, center_y + half_size, center_z),
-                            (center_x - half_size, center_y + half_size, center_z)], dtype=numpy.float32)
-
-    def _draw_surface(self):
-        glPushAttrib(GL_ENABLE_BIT | GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT)
-        glDisable(GL_LIGHTING)
-        glDisable(GL_TEXTURE_2D)
-        glEnable(GL_BLEND)
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-        glColor4f(*self.surface_color)
-        glEnableClientState(GL_VERTEX_ARRAY)
-        glVertexPointer(3, GL_FLOAT, 0, self.surface_corners)
-        glDrawArrays(GL_TRIANGLE_FAN, 0, len(self.surface_corners))
-        glDisableClientState(GL_VERTEX_ARRAY)
-        glPopAttrib()
-
-    def is_finished(self):
-        return self.time >= self.travel_seconds
-
-    def draw(self):
-        if self.is_finished():
-            return
-        progress = self.travel_progress()
-        sway_phase = 2.0 * math.pi * self.time / self.sway_period
-        x = self.start_x + (self.end_x - self.start_x) * progress
-        y = self.sway_bob_height * math.sin(sway_phase)
-        z = -self.max_depth * math.sin(math.pi * progress)
-        spiral_center_x, spiral_center_y, spiral_center_z = (float(value) for value in self.spiral.center)
-        glPushMatrix()
-        glTranslatef(x, y, z)
-        glRotatef(self.sway_tilt_degrees * math.sin(sway_phase), 0.0, 1.0, 0.0)
-        glRotatef(self.sway_roll_degrees * math.sin(0.5 * sway_phase), 0.0, 0.0, 1.0)
-        glTranslatef(-spiral_center_x, -spiral_center_y, -spiral_center_z)
-        self._draw_surface()
-        self.spiral.draw()
-        glPopMatrix()
+        super().restart()

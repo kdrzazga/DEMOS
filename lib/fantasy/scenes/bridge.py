@@ -199,7 +199,6 @@ class LavaBridgeScene:
         self.post_x = -1.25
         self.arch_points = ((1.10, -0.05, 0.0), (1.30, 0.70, 0.0), (1.75, 1.10, 0.0), (2.30, 1.19, 0.0),
                             (2.80, 1.25, 0.0))
-        self.far_arch_depth = -4.6
         self.rock_count = 90
         self.approach_half_width = 0.7
         self.approach_overlap = 0.6
@@ -233,7 +232,6 @@ class LavaBridgeScene:
         self.mesh = StatueMesh()
         self.sculptor = Sculptor(self.mesh)
         self.build_bridge()
-        self.build_far_arch()
         self.build_rocks()
         self.build_trees()
         self.structures = self.mesh.arrays()
@@ -346,16 +344,6 @@ class LavaBridgeScene:
             length = generator.uniform(0.04, 0.38) * generator.uniform(0.4, 1.0)
             self.sculptor.spike(base, (generator.normal(0.0, 0.08), -1.0, side * 0.08), length,
                                 generator.uniform(0.008, 0.02), self.moss_color, rings=6, segments=6)
-
-    def build_far_arch(self):
-        depth = self.far_arch_depth
-        center = float(self.river_center(depth))
-        left, right = center - 1.9, center + 1.9
-        points = [(left, float(self.ground_height(left, depth)) - 0.1, depth), (center - 0.9, 0.9, depth),
-                  (center, 1.2, depth), (center + 0.9, 0.9, depth),
-                  (right, float(self.ground_height(right, depth)) - 0.1, depth)]
-        slab_sweep(self.mesh, catmull_rom(points, 60), (0.0, 0.0, 1.0), 0.16, 0.4, self.stone_color, roughness=0.3,
-                   segments=24, noise=self.stone_noise)
 
     def build_rocks(self):
         generator = self.generator

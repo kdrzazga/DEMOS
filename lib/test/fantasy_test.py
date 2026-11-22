@@ -11,6 +11,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 
 from lib.fantasy.demon import Demon, RamDemonModel
 from lib.fantasy.scenes.bridge import LavaBridgeScene
+from lib.fantasy.scenes.tower import TowerScene
 from lib.fantasy.sorcerer import Sorcerer
 from lib.fantasy.troll import Troll
 
@@ -110,7 +111,7 @@ class FantasyTest:
         self.orbit_yaw = 0.0
         self.orbit_pitch = 0.08
         self.closest_distance = 1.2
-        self.farthest_distance = 10.0
+        self.farthest_distance = 20.0
         self.zoom_step = 1.1
         self.spin_radians_per_second = 0.35
         self.drag_radians_per_pixel = 0.008
@@ -121,10 +122,11 @@ class FantasyTest:
         self.ram_demon_height = 0.95
         self.sorcerer_height = 1.0
         self.spinning = False
+        self.scene_camera = True
         self.paused = False
         self.dragging = False
         self.light_ids = (GL_LIGHT0, GL_LIGHT1, GL_LIGHT2)
-        self.caption = "{} - {:.0f} fps  (1/2/3/4/5/TAB exhibit, A act/idle, T talk, drag to orbit, wheel zoom, SPACE spin, W wings, P pause, R restart, ESC quit)"
+        self.caption = "{} - {:.0f} fps  (1/2/3/4/5/6/TAB exhibit, C scene camera, A act/idle, T talk, drag to orbit, wheel zoom, SPACE spin, W wings, P pause, R restart, ESC quit)"
         pygame.init()
         pygame.display.set_mode(self.window_size, DOUBLEBUF | OPENGL)
         self.clock = pygame.time.Clock()
@@ -139,6 +141,7 @@ class FantasyTest:
         self.ram_demon_circle.color = (1.0, 0.45, 0.08)
         self.sorcerer = Sorcerer(self.sorcerer_height)
         self.lava_bridge = LavaBridgeScene()
+        self.tower_scene = TowerScene()
         self.exhibits = [
             Exhibit("Demon", self.demon,
                     (((0.2, -0.7, 0.7, 0.0), (1.0, 0.36, 0.16, 1.0)),
@@ -164,7 +167,10 @@ class FantasyTest:
                     (0.08, 0.07, 0.12, 1.0), (0.03, 0.03, 0.06, 1.0), 0.5, 3.4),
             Exhibit("Lava bridge", self.lava_bridge,
                     (((0.0, 1.0, 0.0, 0.0), (0.0, 0.0, 0.0, 1.0)),) * 3,
-                    (0.02, 0.02, 0.02, 1.0), (0.01, 0.008, 0.015, 1.0), 0.7, 7.5)]
+                    (0.02, 0.02, 0.02, 1.0), (0.01, 0.008, 0.015, 1.0), 0.7, 7.5),
+            Exhibit("Dark tower", self.tower_scene,
+                    (((0.0, 1.0, 0.0, 0.0), (0.0, 0.0, 0.0, 1.0)),) * 3,
+                    (0.02, 0.02, 0.03, 1.0), (0.025, 0.03, 0.06, 1.0), 2.5, 12.0)]
         for exhibit in self.exhibits:
             exhibit.creature.talking = True
         self.exhibit_index = 0
@@ -214,6 +220,8 @@ class FantasyTest:
                     creature = self.exhibit.creature
                     if hasattr(creature, "flapping"):
                         creature.flapping = not creature.flapping
+                elif event.key == pygame.K_c:
+                    self.scene_camera = not self.scene_camera
                 elif event.key == pygame.K_t:
                     for exhibit in self.exhibits:
                         exhibit.creature.talking = not exhibit.creature.talking
@@ -227,7 +235,7 @@ class FantasyTest:
                     self.exhibit.restart()
                 elif event.key == pygame.K_TAB:
                     self.show_exhibit(self.exhibit_index + 1)
-                elif event.key in (pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5):
+                elif event.key in (pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5, pygame.K_6):
                     self.show_exhibit(event.key - pygame.K_1)
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 self.dragging = True
@@ -255,7 +263,11 @@ class FantasyTest:
         eye = (focus_x + horizontal * math.sin(self.orbit_yaw),
                look_at_height + self.orbit_distance * math.sin(self.orbit_pitch),
                focus_z + horizontal * math.cos(self.orbit_yaw))
-        gluLookAt(*eye, focus_x, look_at_height, focus_z, 0.0, 1.0, 0.0)
+        target = (focus_x, look_at_height, focus_z)
+        scene_view = getattr(self.exhibit.creature, "camera_view", None)
+        if self.scene_camera and scene_view is not None:
+            eye, target = scene_view()
+        gluLookAt(*eye, *target, 0.0, 1.0, 0.0)
         for light, (direction, _) in zip(self.light_ids, self.exhibit.lights):
             glLightfv(light, GL_POSITION, direction)
         self.exhibit.render()

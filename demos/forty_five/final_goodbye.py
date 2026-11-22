@@ -11,7 +11,7 @@ from lib.laser_line import smooth_step
 
 KOMODA_AMIGA_PLUS_LOGO_PATH = os.path.join(LIB_RESOURCES_DIRECTORY, "K&Alogo.png")
 DEMO_WORD = "Demo"
-BROUGHT_BY_WORDS = "brought to you by"
+BROUGHT_BY_WORDS = "was brought to you by"
 CREDITS_LINE = "Pls visit: https://ka-plus.pl/en/"
 
 

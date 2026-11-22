@@ -1,3 +1,4 @@
+from lib.specialFX.bw1 import SineWebPanel
 from lib.specialFX.cats import CatAnim
 from lib.specialFX.spiral import Spiral, SpiralAnim
 from lib.specialFX.travelling_surface import TravellingSurface
@@ -6,8 +7,9 @@ from lib.specialFX.travelling_surface import TravellingSurface
 class SpiralCatsAnim:
 
     def __init__(self, camera_distance, field_of_view_degrees, aspect_ratio):
-        self.cats_start_at_spiral_travel_share = 0.5
-        self.cat_size = 1.0
+        self.next_starts_at_travel_share = 0.5
+        self.sine_web_canvas_pixels = 1024
+        self.cat_size = 2.0
         self.time = 0.0
         spiral = Spiral(center=(0.0, 0.0, 0.0), turn_spacing=1.0, turns=5)
         self.spiral_surface = SpiralAnim(spiral, camera_distance, field_of_view_degrees, aspect_ratio)
@@ -17,8 +19,12 @@ class SpiralCatsAnim:
         self.cats_surface = TravellingSurface(cats, cats.area_center, cats_half_size, camera_distance,
                                               field_of_view_degrees, aspect_ratio)
         self.cats_surface.surface_margin = self.spiral_surface.surface_margin
-        self.cats_delay = self.cats_start_at_spiral_travel_share * self.spiral_surface.travel_seconds
-        self.surfaces = (self.spiral_surface, self.cats_surface)
+        sine_web = SineWebPanel((0.0, 0.0, 0.0), cats_half_size, self.sine_web_canvas_pixels)
+        self.sine_web_surface = TravellingSurface(sine_web, sine_web.center, cats_half_size, camera_distance,
+                                                  field_of_view_degrees, aspect_ratio)
+        self.sine_web_surface.surface_margin = self.spiral_surface.surface_margin
+        self.surfaces = (self.spiral_surface, self.cats_surface, self.sine_web_surface)
+        self.surface_delays = self._chained_delays()
 
     def restart(self):
         self.time = 0.0
@@ -37,6 +43,12 @@ class SpiralCatsAnim:
         for surface in sorted(self.surfaces, key=lambda surface: surface.depth()):
             surface.draw()
 
+    def _chained_delays(self):
+        delays = [0.0]
+        for previous_surface in self.surfaces[:-1]:
+            delays.append(delays[-1] + self.next_starts_at_travel_share * previous_surface.travel_seconds)
+        return delays
+
     def _sync_surfaces(self):
-        self.spiral_surface.set_time(self.time)
-        self.cats_surface.set_time(self.time - self.cats_delay)
+        for surface, delay in zip(self.surfaces, self.surface_delays):
+            surface.set_time(self.time - delay)

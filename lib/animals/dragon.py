@@ -5,6 +5,7 @@ import numpy
 import pygame
 from OpenGL.GL import *
 
+from lib import Globals
 from lib.animals.shark import hermite_profile, quadratic_curve
 
 

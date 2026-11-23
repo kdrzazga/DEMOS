@@ -321,6 +321,9 @@ class Choreography:
         self.keyframes.append((previous + seconds, pose, advance))
 
     def compose(self):
+        self.strike(self.approach())
+
+    def approach(self):
         start = -2.0 * self.stride
         self.add(0.0, self.crouch(), start)
         self.add(0.7, self.crouch(), start)
@@ -336,6 +339,9 @@ class Choreography:
             position += self.stride
             self.add(0.3, self.contact(lead), position)
         self.add(0.45, self.stand(), position)
+        return position
+
+    def strike(self, position):
         self.add(0.4, self.stand(), position)
         self.add(0.55, self.guard(), position)
         self.add(0.25, self.guard(), position)

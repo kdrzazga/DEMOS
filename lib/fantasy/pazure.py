@@ -5,9 +5,62 @@ from OpenGL.GL import *
 
 from lib.animals.dragon import Sculptor, catmull_rom, normalized
 from lib.fantasy.anatomy import HairGrower, Jaw, MuscleRelief, Speech, smoothstep
+from lib.fantasy.fireballs import Fireballs, ThrowingTarget
 from lib.fantasy.rig import Choreography, LabeledMesh, Skin, biped_skeleton, jaw_bone, mirrored, mirrored_all, \
-    side_name
+    side_name, sided
 from lib.fantasy.sorcerer import RobeFolds
+
+
+class FireballThrow(Choreography):
+
+    def __init__(self, standing_pose, stride):
+        self.releases = []
+        self.throwing_sides = (1.0, -1.0, 1.0)
+        super().__init__(standing_pose, stride)
+
+    def windup(self, side):
+        other = -side
+        pose = {"chest": (0.0, 30.0 * side, 0.0), "head": (0.0, -30.0 * side, 0.0),
+                side_name("fire_charge", side): (1.0, 0.0, 0.0)}
+        sided(pose, "upper_arm", side, -120.0, 30.0)
+        sided(pose, "forearm", side, -90.0)
+        sided(pose, "upper_arm", other, -70.0)
+        sided(pose, "forearm", other, -20.0)
+        sided(pose, "thigh", other, -22.0)
+        sided(pose, "shin", other, 25.0)
+        sided(pose, "foot", other, -3.0)
+        sided(pose, "thigh", side, 12.0)
+        sided(pose, "shin", side, 15.0)
+        sided(pose, "foot", side, -8.0)
+        return pose
+
+    def throw(self, side):
+        other = -side
+        pose = {"chest": (10.0, -25.0 * side, 0.0), "head": (-5.0, 25.0 * side, 0.0)}
+        sided(pose, "upper_arm", side, -85.0, 8.0)
+        sided(pose, "forearm", side, -5.0)
+        sided(pose, "upper_arm", other, 15.0)
+        sided(pose, "forearm", other, -40.0)
+        sided(pose, "thigh", other, -32.0)
+        sided(pose, "shin", other, 38.0)
+        sided(pose, "foot", other, -6.0)
+        sided(pose, "thigh", side, 20.0)
+        sided(pose, "shin", side, 12.0)
+        sided(pose, "foot", side, -12.0)
+        return pose
+
+    def strike(self, position):
+        self.add(0.4, self.stand(), position)
+        for side in self.throwing_sides:
+            self.add(0.5, self.windup(side), position)
+            self.add(0.25, self.windup(side), position)
+            self.add(0.13, self.throw(side), position + self.punch_lunge)
+            self.releases.append((self.keyframes[-1][0], side))
+            self.add(0.3, self.throw(side), position + self.punch_lunge)
+        self.add(0.6, self.stand(), position)
+        self.add(0.8, self.stand(), position)
+        self.add(1.0, self.crouch(), position)
+        self.add(0.5, self.crouch(), position)
 
 
 class PazureModel:
@@ -351,7 +404,14 @@ class Pazure:
         self.advance = 0.0
         model = self.model
         self.ground = model.bottom
-        self.choreography = Choreography(model.standing_pose, model.stride)
+        self.choreography = FireballThrow(model.standing_pose, model.stride)
+        self.palm_offset = 0.06
+        self.target = ThrowingTarget((0.0, 1.35, 3.6), 0.24)
+        self.fireballs = Fireballs(self.target)
+        self.fire_light_attenuation = (0.5, 0.0, 6.0)
+        self.aim_scatter = 0.07
+        self.charges = {1.0: 0.0, -1.0: 0.0}
+        self.matrices = model.skeleton.matrices({}, (0.0, 0.0, 0.0))
         self.body_skin = Skin(model.body, *model.body_bones, model.skeleton)
         self.clothes_skin = Skin(model.clothes, *model.clothes_bones, model.skeleton)
         self.hair_skin = Skin(model.hair, *model.hair_bones, model.skeleton)
@@ -361,20 +421,51 @@ class Pazure:
     def restart(self):
         self.seconds = 0.0
         self.act_seconds = 0.0
+        self.fireballs.clear()
+        self.target.clear_scorch()
         self.pose()
 
     def update(self, seconds):
         self.seconds += seconds
+        before = self.act_seconds % self.choreography.duration
         if self.acting:
             self.act_seconds += seconds
+        after = self.act_seconds % self.choreography.duration
         self.pose()
+        if after < before:
+            self.target.clear_scorch()
+        if self.acting:
+            for release, side in self.choreography.releases:
+                crossed = before < release <= after if after >= before else (release > before or release <= after)
+                if crossed:
+                    self.release_fireball(side)
+        self.fireballs.update(seconds)
+
+    def palm_point(self, side):
+        model = self.model
+        palm = numpy.asarray(model.wrist) + normalized(model.hand_direction) * self.palm_offset
+        matrix = self.matrices[model.skeleton.index[side_name("hand", side)]]
+        point = matrix[:3, :3] @ numpy.asarray(mirrored(tuple(palm), side)) + matrix[:3, 3]
+        return point - (0.0, self.ground, 0.0)
+
+    def release_fireball(self, side):
+        origin = self.palm_point(side)
+        aim = self.target.center + self.fireballs.generator.normal(0.0, self.aim_scatter, 3) * (1.0, 1.0, 0.0)
+        self.fireballs.throw(origin, aim - origin)
+
+    def held_fire(self):
+        return [(self.palm_point(side), charge) for side, charge in self.charges.items()]
 
     def pose(self):
         self.pose_hair()
         angles, self.advance = self.choreography.pose_at(self.act_seconds) if self.acting else ({}, 0.0)
+        for side in self.charges:
+            charge = angles.pop(side_name("fire_charge", side), (0.0, 0.0, 0.0))[0]
+            self.charges[side] = min(max(charge, 0.0), 1.0)
         if self.talking:
             angles["jaw"] = (self.model.jaw.max_degrees * self.speech.openness(self.seconds), 0.0, 0.0)
         matrices = self.model.skeleton.matrices(angles, (0.0, 0.0, self.advance))
+        self.matrices = matrices
         self.body_skin.deform(matrices)
         self.clothes_skin.deform(matrices)
         self.hair_skin.deform(matrices, self.hair_positions)
@@ -410,8 +501,9 @@ class Pazure:
         glTranslatef(*self.position)
         glRotatef(math.degrees(self.yaw), 0.0, 1.0, 0.0)
         glScalef(scale, scale, scale)
-        glTranslatef(0.0, -self.ground, 0.0)
         glPushAttrib(GL_LIGHTING_BIT | GL_ENABLE_BIT)
+        held = self.held_fire()
+        self.fireballs.place_light(GL_LIGHT3, held, self.fire_light_attenuation)
         glEnable(GL_NORMALIZE)
         glDisable(GL_CULL_FACE)
         glEnable(GL_COLOR_MATERIAL)
@@ -422,11 +514,16 @@ class Pazure:
         glEnableClientState(GL_VERTEX_ARRAY)
         glEnableClientState(GL_NORMAL_ARRAY)
         glEnableClientState(GL_COLOR_ARRAY)
+        glPushMatrix()
+        glTranslatef(0.0, -self.ground, 0.0)
         self.draw(*self.body_skin.arrays())
         self.draw(*self.clothes_skin.arrays())
         self.draw(*self.hair_skin.arrays())
+        glPopMatrix()
+        self.target.render()
         glDisableClientState(GL_COLOR_ARRAY)
         glDisableClientState(GL_NORMAL_ARRAY)
         glDisableClientState(GL_VERTEX_ARRAY)
+        self.fireballs.render(held)
         glPopAttrib()
         glPopMatrix()

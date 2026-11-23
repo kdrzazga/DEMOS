@@ -12,6 +12,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 from lib.fantasy.demon import Demon, RamDemonModel
 from lib.fantasy.scenes.bridge import LavaBridgeScene
 from lib.fantasy.scenes.tower import TowerScene
+from lib.fantasy.pazure import Pazure
 from lib.fantasy.sorcerer import Sorcerer
 from lib.fantasy.troll import Troll
 
@@ -126,7 +127,7 @@ class FantasyTest:
         self.paused = False
         self.dragging = False
         self.light_ids = (GL_LIGHT0, GL_LIGHT1, GL_LIGHT2)
-        self.caption = "{} - {:.0f} fps  (1/2/3/4/5/6/TAB exhibit, C scene camera, A act/idle, T talk, drag to orbit, wheel zoom, SPACE spin, W wings, P pause, R restart, ESC quit)"
+        self.caption = "{} - {:.0f} fps  (1-7/TAB exhibit, C scene camera, A act/idle, T talk, drag to orbit, wheel zoom, SPACE spin, W wings, P pause, R restart, ESC quit)"
         pygame.init()
         pygame.display.set_mode(self.window_size, DOUBLEBUF | OPENGL)
         self.clock = pygame.time.Clock()
@@ -142,6 +143,7 @@ class FantasyTest:
         self.sorcerer = Sorcerer(self.sorcerer_height)
         self.lava_bridge = LavaBridgeScene()
         self.tower_scene = TowerScene()
+        self.pazure = Pazure(1.0)
         self.exhibits = [
             Exhibit("Demon", self.demon,
                     (((0.2, -0.7, 0.7, 0.0), (1.0, 0.36, 0.16, 1.0)),
@@ -170,7 +172,12 @@ class FantasyTest:
                     (0.02, 0.02, 0.02, 1.0), (0.01, 0.008, 0.015, 1.0), 0.7, 7.5),
             Exhibit("Dark tower", self.tower_scene,
                     (((0.0, 1.0, 0.0, 0.0), (0.0, 0.0, 0.0, 1.0)),) * 3,
-                    (0.02, 0.02, 0.03, 1.0), (0.025, 0.03, 0.06, 1.0), 2.5, 12.0)]
+                    (0.02, 0.02, 0.03, 1.0), (0.025, 0.03, 0.06, 1.0), 2.5, 12.0),
+            Exhibit("Pazure", self.pazure,
+                    (((-0.5, 0.8, 0.6, 0.0), (0.95, 0.86, 0.76, 1.0)),
+                     ((0.6, 0.4, -0.7, 0.0), (0.35, 0.40, 0.50, 1.0)),
+                     ((0.3, -0.2, 0.8, 0.0), (0.25, 0.20, 0.18, 1.0))),
+                    (0.18, 0.16, 0.15, 1.0), (0.08, 0.09, 0.11, 1.0), 0.55, 3.0)]
         for exhibit in self.exhibits:
             exhibit.creature.talking = True
         self.exhibit_index = 0
@@ -235,7 +242,7 @@ class FantasyTest:
                     self.exhibit.restart()
                 elif event.key == pygame.K_TAB:
                     self.show_exhibit(self.exhibit_index + 1)
-                elif event.key in (pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5, pygame.K_6):
+                elif event.key in (pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5, pygame.K_6, pygame.K_7):
                     self.show_exhibit(event.key - pygame.K_1)
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 self.dragging = True

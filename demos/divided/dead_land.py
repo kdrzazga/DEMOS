@@ -376,8 +376,6 @@ class DeadLandScene:
 
     def __init__(self, seed=17):
         self.generator = numpy.random.default_rng(seed)
-        self.acting = True
-        self.talking = False
         self.seconds = 0.0
         self.terrain_extent = ((-186.0, 26.0), (-24.0, 10.0))
         self.terrain_step = 0.2
@@ -389,7 +387,7 @@ class DeadLandScene:
         self.forest_edge = -160.0
         self.forest_blend = 3.0
         self.forest_span = (-180.0, -161.0)
-        self.land_end = (-180.0, 17.0)
+        self.land_end = -180.0
         self.carcass_spot = (-88.0, -1.0)
         self.carcass_heading = 0.35
         self.carcass_clearing = 2.2
@@ -410,8 +408,6 @@ class DeadLandScene:
         self.lake_level = 0.1
         self.hero_tree_spot = (-1.5, -2.2)
         self.ruins_spot = (-7.5, -15.0)
-        self.mountain_line = -31.0
-        self.mountain_span = (-210.0, 50.0)
         self.ground_color = (0.11, 0.10, 0.095)
         self.mud_color = (0.07, 0.065, 0.06)
         self.scorched_color = (0.045, 0.035, 0.03)
@@ -421,7 +417,6 @@ class DeadLandScene:
         self.moss_color = (0.13, 0.14, 0.11)
         self.thorn_color = (0.10, 0.095, 0.09)
         self.ruin_color = (0.10, 0.10, 0.11)
-        self.mountain_color = (0.09, 0.095, 0.11)
         self.moon_direction = normalized((0.3, 0.36, -1.0))
         self.moonlight_color = (0.40, 0.46, 0.62, 1.0)
         self.moonlight_specular = (0.20, 0.24, 0.32, 1.0)
@@ -443,15 +438,13 @@ class DeadLandScene:
         self.ground_noise = SineNoise(self.generator, 5, 0.35, 2)
         self.detail_noise = SineNoise(self.generator, 4, 1.6, 2)
         self.stone_noise = SineNoise(self.generator, 4, 1.0, 3)
-        self.ridge_noise = SineNoise(self.generator, 5, 1.0, 1)
         self.lake = LavaLake(self.lake_center, self.lake_radii, self.lake_level, self.generator)
-        self.flight = CameraFlight(self.flight_keyframes())
-        self.camera_path = numpy.array([self.flight.view(time)[0] for time in numpy.linspace(0.0, self.flight.duration,
+        flight = CameraFlight(self.flight_keyframes())
+        self.camera_path = numpy.array([flight.view(time)[0] for time in numpy.linspace(0.0, flight.duration,
                                                                                                400)])
         self.terrain = self.build_terrain()
         self.mesh = StatueMesh()
         self.sculptor = Sculptor(self.mesh)
-        self.build_mountains()
         self.build_ruins()
         self.build_hero_tree()
         self.build_swamp_trees()
@@ -506,9 +499,8 @@ class DeadLandScene:
         height = height * (1.0 - wetness) + soaked * wetness
         flattening = self.carcass_flattening(x, z)
         height = height * (1.0 - flattening) + (self.carcass_ground + 0.03 * detail) * flattening
-        left_end, right_end = self.land_end
         height = height + 0.12 * numpy.clip(-z - 10.0, 0.0, None) ** 1.3 + 0.08 * numpy.clip(
-            x - right_end, 0.0, None) ** 1.3 + 0.08 * numpy.clip(left_end - x, 0.0, None) ** 1.3
+            self.land_end - x, 0.0, None) ** 1.3
         reach = self.lake.reach_at(x, z)
         basin = 1.0 - smoothstep((reach - 0.9) / 0.25)
         rim = 0.2 * numpy.exp(-((reach - 1.2) / 0.2) ** 2)
@@ -550,26 +542,6 @@ class DeadLandScene:
             z = generator.uniform(*z_range)
             if self.open_ground(x, z, margin) and (accept is None or accept(x, z)):
                 return x, z
-
-    def build_mountains(self):
-        generator = self.generator
-        for line, peak, base, wiggle, offset in ((self.mountain_line, 7.5, 2.5, 0.22, 0.0),
-                                                 (self.mountain_line + 6.0, 3.2, 1.2, 0.35, 1.7)):
-            x = numpy.linspace(*self.mountain_span, 1600)
-            rise = numpy.linspace(0.0, 1.0, 14)[:, None]
-            ridge = 1.0 - numpy.abs(numpy.sin(x * wiggle + offset))
-            noise = 0.5 + 0.5 * self.ridge_noise(x * 0.1 + offset)
-            heights = base + (peak - base) * noise * (0.45 + 0.55 * ridge ** 2) + 0.4 * self.ridge_noise(
-                x * 0.55 + offset)
-            depth = line + 2.5 * self.ridge_noise(x * 0.16 + offset + 3.0)
-            spread = depth[None, :] + (1.0 - rise) * heights[None, :] * 0.9
-            grid = numpy.stack((numpy.broadcast_to(x, spread.shape), -1.5 + rise * (heights[None, :] + 1.5), spread),
-                               axis=-1)
-            behind = numpy.stack((x, numpy.full_like(x, -3.0), depth - 6.0), axis=-1)[None, :, :]
-            normals = unit_or_fallback(surface_normals(grid, behind, False), numpy.array((0.0, 1.0, 0.0)))
-            colors = numpy.asarray(self.mountain_color) * mottling(grid * 0.2, 0.25)[..., None] * (
-                    0.8 + 0.2 * generator.uniform())
-            self.mesh.add_grid(grid, normals, colors)
 
     def build_ruins(self):
         generator = self.generator
@@ -757,9 +729,6 @@ class DeadLandScene:
                 (153.0, (14.0, 2.6, 3.5), (2.0, 1.2, -7.0)),
                 (159.0, *start)]
 
-    def camera_view(self):
-        return self.flight.view(self.seconds)
-
     def restart(self):
         self.seconds = 0.0
 
@@ -773,69 +742,23 @@ class DeadLandScene:
         self.carrion_crows.update(seconds)
         self.rain.update(seconds)
 
-    def focus(self):
-        return 0.0, 0.0
-
     def lava_light_strengths(self):
         flicker = numpy.sin(self.seconds * self.flicker_rates + self.flicker_phases)
         return self.lava_light_strength * (1.0 + 0.12 * flicker + 0.05 * numpy.sin(self.seconds * 23.0
                                                                                   + self.flicker_phases))
 
-    def setup_lights(self):
-        for light in range(8):
-            glDisable(GL_LIGHT0 + light)
-        glLightModelfv(GL_LIGHT_MODEL_AMBIENT, self.ambient)
-        glEnable(GL_LIGHT0)
-        glLightfv(GL_LIGHT0, GL_POSITION, (*self.moon_direction, 0.0))
-        glLightfv(GL_LIGHT0, GL_DIFFUSE, self.moonlight_color)
-        glLightfv(GL_LIGHT0, GL_SPECULAR, self.moonlight_specular)
-        glLightfv(GL_LIGHT0, GL_AMBIENT, (0.0, 0.0, 0.0, 1.0))
-        constant, linear, quadratic = self.lava_light_attenuation
-        for number, ((reach, angle), strength) in enumerate(zip(self.lava_light_spots, self.lava_light_strengths())):
-            light = GL_LIGHT1 + number
+    def lava_lights(self):
+        lights = []
+        for (reach, angle), strength in zip(self.lava_light_spots, self.lava_light_strengths()):
             x, z = self.lake.surface_point(reach, angle)
-            color = (*(self.lava_light_color * strength), 1.0)
-            glEnable(light)
-            glLightfv(light, GL_POSITION, (float(x), self.lake_level + self.lava_light_height, float(z), 1.0))
-            glLightfv(light, GL_DIFFUSE, color)
-            glLightfv(light, GL_SPECULAR, color)
-            glLightfv(light, GL_AMBIENT, (0.0, 0.0, 0.0, 1.0))
-            glLightf(light, GL_CONSTANT_ATTENUATION, constant)
-            glLightf(light, GL_LINEAR_ATTENUATION, linear)
-            glLightf(light, GL_QUADRATIC_ATTENUATION, quadratic)
+            lights.append((numpy.array((float(x), self.lake_level + self.lava_light_height, float(z))),
+                           self.lava_light_color * strength, self.lava_light_attenuation))
+        return lights
 
-    @staticmethod
-    def draw(positions, normals, colors, indices):
-        glVertexPointer(3, GL_FLOAT, 0, positions)
-        glNormalPointer(GL_FLOAT, 0, normals)
-        glColorPointer(3, GL_FLOAT, 0, colors)
-        glDrawElements(GL_TRIANGLES, len(indices), GL_UNSIGNED_INT, indices)
+    def static_meshes(self):
+        return self.terrain, self.scenery
 
-    def render(self):
-        glPushAttrib(GL_LIGHTING_BIT | GL_ENABLE_BIT | GL_FOG_BIT | GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT
-                     | GL_POINT_BIT | GL_CURRENT_BIT)
-        glEnable(GL_LIGHTING)
-        glEnable(GL_NORMALIZE)
-        glDisable(GL_CULL_FACE)
-        glEnable(GL_COLOR_MATERIAL)
-        glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE)
-        glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, (0.06, 0.06, 0.08, 1.0))
-        glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 12.0)
-        glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, (0.0, 0.0, 0.0, 1.0))
-        self.setup_lights()
-        glEnable(GL_FOG)
-        glFogi(GL_FOG_MODE, GL_EXP2)
-        glFogf(GL_FOG_DENSITY, self.fog_density)
-        glFogfv(GL_FOG_COLOR, self.fog_color)
-        self.sky.render()
-        glEnableClientState(GL_VERTEX_ARRAY)
-        glEnableClientState(GL_NORMAL_ARRAY)
-        glEnableClientState(GL_COLOR_ARRAY)
-        self.draw(*self.terrain)
-        self.draw(*self.scenery)
-        glDisableClientState(GL_COLOR_ARRAY)
-        glDisableClientState(GL_NORMAL_ARRAY)
-        glDisableClientState(GL_VERTEX_ARRAY)
+    def render_effects(self):
         self.lake.render()
         for water in self.waters:
             water.render()
@@ -843,4 +766,3 @@ class DeadLandScene:
         self.carrion_crows.render()
         self.embers.render()
         self.rain.draw()
-        glPopAttrib()

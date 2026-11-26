@@ -15,6 +15,8 @@ from lib.fantasy.scenes.tower import TowerScene
 from lib.fantasy.pazure import Pazure
 from lib.fantasy.sorcerer import Sorcerer
 from lib.fantasy.troll import Troll
+from lib.fantasy.vampire import Vampire
+from lib.fantasy.werewolf import Werewolf
 
 
 class SummoningCircle:
@@ -122,12 +124,14 @@ class FantasyTest:
         self.troll_height = 0.9
         self.ram_demon_height = 0.95
         self.sorcerer_height = 1.0
+        self.vampire_height = 1.0
+        self.werewolf_height = 1.3
         self.spinning = False
         self.scene_camera = True
         self.paused = False
         self.dragging = False
         self.light_ids = (GL_LIGHT0, GL_LIGHT1, GL_LIGHT2)
-        self.caption = "{} - {:.0f} fps  (1-7/TAB exhibit, C scene camera, A act/idle, T talk, drag to orbit, wheel zoom, SPACE spin, W wings, P pause, R restart, ESC quit)"
+        self.caption = "{} - {:.0f} fps  (1-9/TAB exhibit, C scene camera, A act/idle, T talk, drag to orbit, wheel zoom, SPACE spin, W wings, P pause, R restart, ESC quit)"
         pygame.init()
         pygame.display.set_mode(self.window_size, DOUBLEBUF | OPENGL)
         self.clock = pygame.time.Clock()
@@ -145,6 +149,8 @@ class FantasyTest:
         self.tower_scene = TowerScene()
         self.pazure = Pazure(1.0)
         self.pazure.yaw = -math.pi / 2.0
+        self.vampire = Vampire(self.vampire_height)
+        self.werewolf = Werewolf(self.werewolf_height)
         self.exhibits = [
             Exhibit("Demon", self.demon,
                     (((0.2, -0.7, 0.7, 0.0), (1.0, 0.36, 0.16, 1.0)),
@@ -178,7 +184,17 @@ class FantasyTest:
                     (((-0.5, 0.8, 0.6, 0.0), (0.95, 0.86, 0.76, 1.0)),
                      ((0.6, 0.4, -0.7, 0.0), (0.35, 0.40, 0.50, 1.0)),
                      ((0.3, -0.2, 0.8, 0.0), (0.25, 0.20, 0.18, 1.0))),
-                    (0.18, 0.16, 0.15, 1.0), (0.08, 0.09, 0.11, 1.0), 0.55, 3.6)]
+                    (0.18, 0.16, 0.15, 1.0), (0.08, 0.09, 0.11, 1.0), 0.55, 3.6),
+            Exhibit("Vampire", self.vampire,
+                    (((-0.5, 0.8, 0.7, 0.0), (0.70, 0.76, 0.95, 1.0)),
+                     ((0.3, 0.3, -0.9, 0.0), (0.65, 0.12, 0.10, 1.0)),
+                     ((0.4, -0.4, 0.6, 0.0), (0.22, 0.14, 0.30, 1.0))),
+                    (0.11, 0.11, 0.15, 1.0), (0.03, 0.02, 0.05, 1.0), 0.6, 3.0),
+            Exhibit("Werewolf", self.werewolf,
+                    (((-0.4, 0.8, 0.7, 0.0), (0.78, 0.84, 0.95, 1.0)),
+                     ((0.6, 0.3, -0.7, 0.0), (0.30, 0.50, 0.40, 1.0)),
+                     ((0.3, -0.4, 0.8, 0.0), (0.22, 0.24, 0.26, 1.0))),
+                    (0.14, 0.15, 0.17, 1.0), (0.06, 0.07, 0.08, 1.0), 0.8, 3.6)]
         for exhibit in self.exhibits:
             exhibit.creature.talking = True
         self.exhibit_index = 0
@@ -243,7 +259,8 @@ class FantasyTest:
                     self.exhibit.restart()
                 elif event.key == pygame.K_TAB:
                     self.show_exhibit(self.exhibit_index + 1)
-                elif event.key in (pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5, pygame.K_6, pygame.K_7):
+                elif event.key in (pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5, pygame.K_6, pygame.K_7,
+                                   pygame.K_8, pygame.K_9):
                     self.show_exhibit(event.key - pygame.K_1)
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 self.dragging = True

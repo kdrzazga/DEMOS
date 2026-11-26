@@ -5,7 +5,7 @@ import numpy
 from lib.animals.dragon import Sculptor, StatueMesh, mottling
 
 
-class Chair:
+class Stool:
 
     def __init__(self, back_center, floor, yaw, seat_height, seat_width, seat_depth):
         self.back_center = (float(back_center[0]), float(back_center[1]))
@@ -18,10 +18,7 @@ class Chair:
         self.cushion_thickness = 0.04
         self.cushion_inset = 0.025
         self.post_size = 0.05
-        self.back_height = 1.0
-        self.arch_height = 0.24
-        self.panel_thickness = 0.03
-        self.finial_height = 0.13
+        self.rear_leg_depth = (0.0, self.post_size)
         self.stretcher_height = 0.09
         self.stretcher_size = 0.025
         self.wood = (0.21, 0.12, 0.07)
@@ -56,6 +53,59 @@ class Chair:
             shade = numpy.asarray(color) * mottling(corners * 6.0, 0.12)[:, None]
             mesh.add_quad(corners, numpy.broadcast_to(self.turned(normal), (4, 3)), shade)
 
+    def slab_top(self):
+        return self.seat_height - self.cushion_thickness
+
+    def slab_bottom(self):
+        return self.slab_top() - self.slab_thickness
+
+    def rear_leg_top(self):
+        return self.slab_bottom()
+
+    def rear_leg(self, mesh, side, left, right):
+        back, front = self.rear_leg_depth
+        self.box(mesh, (left, 0.0, back), (right, self.rear_leg_top(), front), self.wood)
+
+    def build(self, mesh):
+        half_width = self.seat_width / 2.0
+        post = self.post_size
+        slab_top, slab_bottom = self.slab_top(), self.slab_bottom()
+        self.box(mesh, (-half_width, slab_bottom, 0.0), (half_width, slab_top, self.seat_depth), self.wood)
+        inset = self.cushion_inset
+        self.box(mesh, (-half_width + inset, slab_top, inset), (half_width - inset, self.seat_height,
+                                                               self.seat_depth - inset), self.cushion)
+        stretcher_top = self.stretcher_height + self.stretcher_size
+        for side in (1.0, -1.0):
+            outer = side * half_width
+            inner = outer - side * post
+            left, right = min(outer, inner), max(outer, inner)
+            self.box(mesh, (left, 0.0, self.seat_depth - post), (right, slab_bottom, self.seat_depth), self.wood)
+            self.rear_leg(mesh, side, left, right)
+            self.box(mesh, (left, self.stretcher_height, self.rear_leg_depth[1]),
+                     (right, stretcher_top, self.seat_depth - post), self.dark_wood)
+        self.box(mesh, (-half_width + post, self.stretcher_height, self.seat_depth - post),
+                 (half_width - post, stretcher_top, self.seat_depth), self.dark_wood)
+
+
+class Chair(Stool):
+
+    def __init__(self, back_center, floor, yaw, seat_height, seat_width, seat_depth):
+        super().__init__(back_center, floor, yaw, seat_height, seat_width, seat_depth)
+        self.rear_leg_depth = (-self.post_size, 0.0)
+        self.back_height = 1.0
+        self.arch_height = 0.24
+        self.panel_thickness = 0.03
+        self.finial_height = 0.13
+
+    def rear_leg_top(self):
+        return self.seat_height + self.back_height
+
+    def rear_leg(self, mesh, side, left, right):
+        super().rear_leg(mesh, side, left, right)
+        post = self.post_size
+        tip = self.placed((side * (self.seat_width / 2.0 - post / 2.0), self.rear_leg_top(), -post / 2.0))
+        Sculptor(mesh).spike(tip, (0.0, 1.0, 0.0), self.finial_height, post * 0.55, self.iron)
+
     def back_panel(self, mesh, half_width, bottom, top):
         rows, columns = 16, 21
         across = numpy.linspace(-half_width, half_width, columns)[None, :]
@@ -74,28 +124,8 @@ class Chair:
             mesh.add_grid(grid, numpy.broadcast_to(self.turned((0.0, 0.0, facing)), grid.shape), colors)
 
     def build(self, mesh):
-        half_width = self.seat_width / 2.0
-        post = self.post_size
-        slab_top = self.seat_height - self.cushion_thickness
-        slab_bottom = slab_top - self.slab_thickness
-        back_top = self.seat_height + self.back_height
-        self.box(mesh, (-half_width, slab_bottom, 0.0), (half_width, slab_top, self.seat_depth), self.wood)
-        inset = self.cushion_inset
-        self.box(mesh, (-half_width + inset, slab_top, inset), (half_width - inset, self.seat_height,
-                                                               self.seat_depth - inset), self.cushion)
-        for side in (1.0, -1.0):
-            outer = side * half_width
-            inner = outer - side * post
-            left, right = min(outer, inner), max(outer, inner)
-            self.box(mesh, (left, 0.0, self.seat_depth - post), (right, slab_bottom, self.seat_depth), self.wood)
-            self.box(mesh, (left, 0.0, -post), (right, back_top, 0.0), self.wood)
-            self.box(mesh, (left, self.stretcher_height, 0.0),
-                     (right, self.stretcher_height + self.stretcher_size, self.seat_depth - post), self.dark_wood)
-            tip = self.placed((side * (half_width - post / 2.0), back_top, -post / 2.0))
-            Sculptor(mesh).spike(tip, (0.0, 1.0, 0.0), self.finial_height, post * 0.55, self.iron)
-        self.box(mesh, (-half_width + post, self.stretcher_height, self.seat_depth - post),
-                 (half_width - post, self.stretcher_height + self.stretcher_size, self.seat_depth), self.dark_wood)
-        self.back_panel(mesh, half_width - post, slab_top, back_top - 0.05)
+        super().build(mesh)
+        self.back_panel(mesh, self.seat_width / 2.0 - self.post_size, self.slab_top(), self.rear_leg_top() - 0.05)
 
 
 def build_chairs(chairs):

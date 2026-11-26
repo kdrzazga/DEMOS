@@ -10,6 +10,7 @@ from OpenGL.GLU import gluLookAt, gluPerspective
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 from lib.fantasy.demon import Demon, RamDemonModel
+from lib.fantasy.gargoyle import Gargoyle, GargoyleModel
 from lib.fantasy.scenes.bridge import LavaBridgeScene
 from lib.fantasy.scenes.tower import TowerScene
 from lib.fantasy.pazure import Pazure
@@ -79,6 +80,49 @@ class SummoningCircle:
         glPopAttrib()
 
 
+class GargoyleRow:
+
+    def __init__(self, height, shades, spacing):
+        self.gargoyles = []
+        for index, shade in enumerate(shades):
+            gargoyle = Gargoyle(height, GargoyleModel(shade))
+            gargoyle.position = ((index - (len(shades) - 1) / 2.0) * spacing, 0.0, 0.0)
+            self.gargoyles.append(gargoyle)
+
+    @property
+    def talking(self):
+        return self.gargoyles[0].talking
+
+    @talking.setter
+    def talking(self, value):
+        for gargoyle in self.gargoyles:
+            gargoyle.talking = value
+
+    @property
+    def acting(self):
+        return self.gargoyles[0].acting
+
+    @acting.setter
+    def acting(self, value):
+        for gargoyle in self.gargoyles:
+            gargoyle.acting = value
+
+    def restart(self):
+        for gargoyle in self.gargoyles:
+            gargoyle.restart()
+
+    def update(self, seconds):
+        for gargoyle in self.gargoyles:
+            gargoyle.update(seconds)
+
+    def focus(self):
+        return 0.0, 0.0
+
+    def render(self):
+        for gargoyle in self.gargoyles:
+            gargoyle.render()
+
+
 class Exhibit:
 
     def __init__(self, name, creature, lights, ambient, background, look_at_height, orbit_distance, props=()):
@@ -126,12 +170,14 @@ class FantasyTest:
         self.sorcerer_height = 1.0
         self.vampire_height = 1.0
         self.werewolf_height = 1.3
+        self.gargoyle_height = 0.8
+        self.gargoyle_spacing = 1.1
         self.spinning = False
         self.scene_camera = True
         self.paused = False
         self.dragging = False
         self.light_ids = (GL_LIGHT0, GL_LIGHT1, GL_LIGHT2)
-        self.caption = "{} - {:.0f} fps  (1-9/TAB exhibit, C scene camera, A act/idle, T talk, drag to orbit, wheel zoom, SPACE spin, W wings, P pause, R restart, ESC quit)"
+        self.caption = "{} - {:.0f} fps  (1-9,0/TAB exhibit, C scene camera, A act/idle, T talk, drag to orbit, wheel zoom, SPACE spin, W wings, P pause, R restart, ESC quit)"
         pygame.init()
         pygame.display.set_mode(self.window_size, DOUBLEBUF | OPENGL)
         self.clock = pygame.time.Clock()
@@ -151,6 +197,7 @@ class FantasyTest:
         self.pazure.yaw = -math.pi / 2.0
         self.vampire = Vampire(self.vampire_height)
         self.werewolf = Werewolf(self.werewolf_height)
+        self.gargoyles = GargoyleRow(self.gargoyle_height, ("grey", "light grey", "brown"), self.gargoyle_spacing)
         self.exhibits = [
             Exhibit("Demon", self.demon,
                     (((0.2, -0.7, 0.7, 0.0), (1.0, 0.36, 0.16, 1.0)),
@@ -194,7 +241,12 @@ class FantasyTest:
                     (((-0.4, 0.8, 0.7, 0.0), (0.78, 0.84, 0.95, 1.0)),
                      ((0.6, 0.3, -0.7, 0.0), (0.30, 0.50, 0.40, 1.0)),
                      ((0.3, -0.4, 0.8, 0.0), (0.22, 0.24, 0.26, 1.0))),
-                    (0.14, 0.15, 0.17, 1.0), (0.06, 0.07, 0.08, 1.0), 0.8, 3.6)]
+                    (0.14, 0.15, 0.17, 1.0), (0.06, 0.07, 0.08, 1.0), 0.8, 3.6),
+            Exhibit("Gargoyles", self.gargoyles,
+                    (((-0.4, 0.8, 0.7, 0.0), (0.85, 0.85, 0.88, 1.0)),
+                     ((0.6, 0.4, -0.7, 0.0), (0.35, 0.38, 0.48, 1.0)),
+                     ((0.3, -0.3, 0.8, 0.0), (0.25, 0.23, 0.22, 1.0))),
+                    (0.16, 0.16, 0.18, 1.0), (0.05, 0.05, 0.07, 1.0), 0.45, 4.2)]
         for exhibit in self.exhibits:
             exhibit.creature.talking = True
         self.exhibit_index = 0
@@ -260,8 +312,8 @@ class FantasyTest:
                 elif event.key == pygame.K_TAB:
                     self.show_exhibit(self.exhibit_index + 1)
                 elif event.key in (pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5, pygame.K_6, pygame.K_7,
-                                   pygame.K_8, pygame.K_9):
-                    self.show_exhibit(event.key - pygame.K_1)
+                                   pygame.K_8, pygame.K_9, pygame.K_0):
+                    self.show_exhibit((event.key - pygame.K_1) % 10)
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 self.dragging = True
             elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:

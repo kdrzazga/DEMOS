@@ -45,7 +45,33 @@ class CapeSwoop(Choreography):
         return pose
 
 
-class VampireModel(SorcererModel):
+class PointedEars:
+
+    def build_ear(self, side):
+        base = mirrored(self.ear_base, side)
+        reach = mirrored(self.ear_tip, side) - base
+        facing = normalized(mirrored(self.ear_facing, side))
+        across = normalized(numpy.cross(facing, reach))
+        along = numpy.linspace(0.0, 1.0, self.ear_rows)[:, None]
+        spread = numpy.linspace(-1.0, 1.0, self.ear_columns)[None, :]
+        width = self.ear_width * (1.0 - along) ** 0.8 * (1.0 + 0.6 * along * (1.0 - along))
+        cup = (self.ear_cup * (1.0 - spread ** 2)
+               * numpy.sin(math.pi * numpy.clip(along * 1.15, 0.0, 1.0)) ** 0.6)
+        middle = (base + reach * along[..., None] + across * (width * spread)[..., None]
+                  - facing * cup[..., None])
+        normals = numpy.cross(numpy.gradient(middle, axis=0), numpy.gradient(middle, axis=1))
+        normals[normals @ facing < 0.0] *= -1.0
+        normals = unit_or_fallback(normals, facing)
+        thickness = (self.ear_thickness * (1.0 - spread ** 6) * (1.0 - along ** 6))[..., None]
+        centrality = ((1.0 - spread ** 2) * (1.0 - along ** 2))[..., None]
+        crease = (numpy.exp(-((spread + 0.35 * side) / 0.09) ** 2) * (along < 0.8))[..., None]
+        skin = numpy.asarray(self.skin)
+        inside = (skin + (numpy.asarray(self.ear_inside) - skin) * centrality) * (1.0 - 0.45 * crease)
+        self.mesh.add_grid(middle + normals * thickness, normals, inside * mottling(middle, 0.04)[..., None])
+        self.mesh.add_grid(middle - normals * thickness, -normals, skin * mottling(middle, 0.04)[..., None])
+
+
+class VampireModel(PointedEars, SorcererModel):
 
     def __init__(self, seed=31):
         self.generator = numpy.random.default_rng(seed)
@@ -308,29 +334,6 @@ class VampireModel(SorcererModel):
         sheen = numpy.clip(direction[..., 1], 0.0, 1.0)[..., None] * combing[..., None] * 0.6
         colors = numpy.asarray(self.hair) + (numpy.asarray(self.hair_shine) - numpy.asarray(self.hair)) * sheen
         self.mesh.add_grid(grid, normals, colors * mottling(grid, 0.05)[..., None])
-
-    def build_ear(self, side):
-        base = mirrored(self.ear_base, side)
-        reach = mirrored(self.ear_tip, side) - base
-        facing = normalized(mirrored(self.ear_facing, side))
-        across = normalized(numpy.cross(facing, reach))
-        along = numpy.linspace(0.0, 1.0, self.ear_rows)[:, None]
-        spread = numpy.linspace(-1.0, 1.0, self.ear_columns)[None, :]
-        width = self.ear_width * (1.0 - along) ** 0.8 * (1.0 + 0.6 * along * (1.0 - along))
-        cup = (self.ear_cup * (1.0 - spread ** 2)
-               * numpy.sin(math.pi * numpy.clip(along * 1.15, 0.0, 1.0)) ** 0.6)
-        middle = (base + reach * along[..., None] + across * (width * spread)[..., None]
-                  - facing * cup[..., None])
-        normals = numpy.cross(numpy.gradient(middle, axis=0), numpy.gradient(middle, axis=1))
-        normals[normals @ facing < 0.0] *= -1.0
-        normals = unit_or_fallback(normals, facing)
-        thickness = (self.ear_thickness * (1.0 - spread ** 6) * (1.0 - along ** 6))[..., None]
-        centrality = ((1.0 - spread ** 2) * (1.0 - along ** 2))[..., None]
-        crease = (numpy.exp(-((spread + 0.35 * side) / 0.09) ** 2) * (along < 0.8))[..., None]
-        skin = numpy.asarray(self.skin)
-        inside = (skin + (numpy.asarray(self.ear_inside) - skin) * centrality) * (1.0 - 0.45 * crease)
-        self.mesh.add_grid(middle + normals * thickness, normals, inside * mottling(middle, 0.04)[..., None])
-        self.mesh.add_grid(middle - normals * thickness, -normals, skin * mottling(middle, 0.04)[..., None])
 
     def build_eye(self, side):
         sculptor = self.sculptor

@@ -3,10 +3,11 @@ import math
 import numpy
 from OpenGL.GL import *
 
-from demos.divided.chairs import Chair, build_chairs
+from demos.divided.chairs import Chair, Stool, build_chairs
 from demos.divided.dead_land import DeadLandScene
 from lib.animals.dragon import StatueMesh, catmull_rom, mottling, surface_normals, unit_or_fallback
 from lib.fantasy.anatomy import smoothstep
+from lib.fantasy.gargoyle import Gargoyle, GargoyleModel
 from lib.fantasy.scenes.bridge import LavaBridgeScene, SineNoise
 from lib.fantasy.scenes.tower import CameraFlight, TowerScene
 from lib.fantasy.sorcerer import Sorcerer
@@ -445,17 +446,22 @@ class TowerRegion(Region):
         self.werewolf_chair = 0
         self.violet_vampire_size = 0.8
         self.violet_vampire_chair = 2
+        self.gargoyle_stool = 3
+        self.gargoyle_shade = "grey"
         self.seated_eye_height = 1.0
         self.arch_pass_height = 0.85
         self.vampire = Vampire(self.sorcerer_height)
         self.werewolf = Werewolf(self.sorcerer_height * self.werewolf_size)
         self.violet_vampire = Vampire(self.sorcerer_height * self.violet_vampire_size, VioletVampireModel())
+        self.gargoyle = Gargoyle(self.sorcerer_height * self.violet_vampire_size, GargoyleModel(self.gargoyle_shade))
         self.chairs = self.place_chairs(floor, math.atan2(outward[0], outward[2]))
         self.chair_mesh = build_chairs(self.chairs)
         self.vampire.sit(self.chairs[self.vampire_chair])
         self.werewolf.sit(self.chairs[self.werewolf_chair])
         self.violet_vampire.sit(self.chairs[self.violet_vampire_chair])
+        self.gargoyle.perch_on(self.chairs[self.gargoyle_stool])
         self.sitters = (self.vampire, self.werewolf, self.violet_vampire)
+        self.figures = (*self.sitters, self.gargoyle)
 
     def place_chairs(self, floor, facing):
         seat_height, seat_depth = self.vampire.natural_seat()
@@ -464,7 +470,8 @@ class TowerRegion(Region):
             angle = facing + (slot - (self.chair_count - 1) / 2.0) * self.chair_spacing
             back = self.to_world((math.sin(angle) * self.chair_ring_radius, floor,
                                   math.cos(angle) * self.chair_ring_radius))
-            chairs.append(Chair((back[0], back[2]), back[1], angle, seat_height, self.chair_width, seat_depth))
+            seat = Stool if slot == self.gargoyle_stool else Chair
+            chairs.append(seat((back[0], back[2]), back[1], angle, seat_height, self.chair_width, seat_depth))
         return chairs
 
     def lava_lights(self):
@@ -476,8 +483,8 @@ class TowerRegion(Region):
     def update(self, seconds):
         super().update(seconds)
         self.sorcerer.update(seconds)
-        for sitter in self.sitters:
-            sitter.update(seconds)
+        for figure in self.figures:
+            figure.update(seconds)
 
     def render_effects(self):
         self.begin()
@@ -493,8 +500,8 @@ class TowerRegion(Region):
         glDisableClientState(GL_NORMAL_ARRAY)
         glDisableClientState(GL_VERTEX_ARRAY)
         self.sorcerer.render()
-        for sitter in self.sitters:
-            sitter.render()
+        for figure in self.figures:
+            figure.render()
 
 
 class BridgeRegion(Region):

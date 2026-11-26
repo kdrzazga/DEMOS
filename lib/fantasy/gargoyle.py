@@ -41,7 +41,7 @@ class GargoyleModel(PointedEars, DemonModel):
         self.horns = ((((0.035, 1.895, 0.045), (0.05, 1.95, 0.0), (0.062, 1.975, -0.06), (0.066, 1.955, -0.12)),
                        0.024, 7, None),)
         self.has_tail = False
-        self.wing_scale = 0.9
+        self.wing_scale = 0.18
         self.speckle_strength = 0.22
         self.crack_darkening = 0.35
         self.crack_width = 0.012
@@ -84,6 +84,7 @@ class Gargoyle(Demon):
         self.perch_contact_band = 0.06
         self.perched_wing_fold = 30.0
         self.perched_wing_sweep = 55.0
+        self.wing_spread = 0.0
         super().__init__(height, model or GargoyleModel())
         self.acting = False
         self.flapping = False
@@ -97,6 +98,11 @@ class Gargoyle(Demon):
     def restart(self):
         self.settled = False
         super().restart()
+
+    def spread_wings(self, spread):
+        self.wing_spread = spread
+        self.settled = False
+        self.pose()
 
     def perch_angles(self):
         return dict(self.perch)
@@ -125,7 +131,8 @@ class Gargoyle(Demon):
         if self.acting:
             return
         model = self.model
-        angles = model.wing_sides * math.radians(self.perched_wing_fold) * model.wing_weights
+        folded = 1.0 - self.wing_spread
+        angles = model.wing_sides * math.radians(self.perched_wing_fold * folded) * model.wing_weights
         cosines, sines = numpy.cos(angles), numpy.sin(angles)
         offset_x = self.wing_positions[:, 0] - model.wing_pivots[:, 0]
         offset_y = self.wing_positions[:, 1] - model.wing_pivots[:, 1]
@@ -135,7 +142,7 @@ class Gargoyle(Demon):
         self.wing_normals[:, 0] = normal_x * cosines - normal_y * sines
         self.wing_normals[:, 1] = normal_x * sines + normal_y * cosines
         sides = model.wing_sides
-        sweep = math.radians(self.perched_wing_sweep) * model.wing_weights
+        sweep = math.radians(self.perched_wing_sweep * folded) * model.wing_weights
         cosines, sines = numpy.cos(sweep), numpy.sin(sweep)
         shoulder_z = model.wing_shoulder[2]
         offset_x = self.wing_positions[:, 0] - model.wing_pivots[:, 0]

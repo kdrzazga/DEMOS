@@ -82,10 +82,11 @@ class SummoningCircle:
 
 class GargoyleRow:
 
-    def __init__(self, height, shades, spacing):
+    def __init__(self, height, shades, wing_spreads, spacing):
         self.gargoyles = []
-        for index, shade in enumerate(shades):
+        for index, (shade, wing_spread) in enumerate(zip(shades, wing_spreads)):
             gargoyle = Gargoyle(height, GargoyleModel(shade))
+            gargoyle.spread_wings(wing_spread)
             gargoyle.position = ((index - (len(shades) - 1) / 2.0) * spacing, 0.0, 0.0)
             self.gargoyles.append(gargoyle)
 
@@ -197,7 +198,8 @@ class FantasyTest:
         self.pazure.yaw = -math.pi / 2.0
         self.vampire = Vampire(self.vampire_height)
         self.werewolf = Werewolf(self.werewolf_height)
-        self.gargoyles = GargoyleRow(self.gargoyle_height, ("grey", "light grey", "brown"), self.gargoyle_spacing)
+        self.gargoyles = GargoyleRow(self.gargoyle_height, ("grey", "light grey", "brown"), (0.0, 0.5, 1.0),
+                                     self.gargoyle_spacing)
         self.exhibits = [
             Exhibit("Demon", self.demon,
                     (((0.2, -0.7, 0.7, 0.0), (1.0, 0.36, 0.16, 1.0)),
